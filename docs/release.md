@@ -19,7 +19,9 @@ release-please opens/updates ONE Release PR
 tag vX.Y.Z cut automatically
         ▼
 release.yml publishes: OIDC → npmjs (+ provenance + SBOM artifact),
-then mirrors the same tarball to GitHub Packages (repo Packages tab)
+then mirrors the same tarball to GitHub Packages as `@er-sajan-plg/usa`
+(owner scope — GPR maps scopes to GitHub identities, so the npmjs
+`@xenos1996` scope is not writable with this repo's token)
 ```
 
 What you do: write conventional titles, review PRs, merge the Release PR.
