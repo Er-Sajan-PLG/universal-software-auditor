@@ -149,6 +149,18 @@ a missing key fails, a cosign rejection fails — and when the `cosign`
 binary itself is absent, verification throws an explicit error instead of
 passing. An unverifiable report is never reported as verified.
 
+### Verifying from the CLI (`usa verify-report`)
+
+```bash
+usa verify-report AUDIT.md --bundle AUDIT.md.sig.json --key cosign.pub [--cosign-binary <path>] [--quiet]
+```
+
+Exit codes mirror the gate convention: `0` verified, `1` mismatch or
+failed verification, `2` malformed input (no trailer, bad sidecar, missing
+files) or an unrunnable environment (absent `cosign` binary) — always with
+a loud error on stderr. `--quiet` suppresses the success line and the
+mismatch detail; exit-2 errors stay loud.
+
 ## Decisions with permanent consequences
 
 - **No moving `v1` tag.** It would retrigger `release.yml` (`v*` matches)

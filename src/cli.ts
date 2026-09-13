@@ -9,6 +9,11 @@ import { loadDetectorFile } from './detect/index.js';
 import { Project } from './util/project.js';
 import { detect } from './detect/index.js';
 import { renderMarkdown, parseTrailer } from './report/markdown.js';
+import {
+  parseDetachedSignature,
+  verifyDetachedSignature,
+  type DetachedSignature,
+} from './report/signature.js';
 import { renderJson } from './report/json.js';
 import { renderSarif } from './report/sarif.js';
 import type { MaturityProfile } from './engine/maturity.js';
@@ -97,6 +102,7 @@ const COMMANDS: Record<string, (args: Args) => number> = {
   rules: cmdRules,
   explain: cmdExplain,
   diff: cmdDiff,
+  'verify-report': cmdVerifyReport,
   init: cmdInit,
   bootstrap: cmdBootstrap,
   learn: cmdLearn,
@@ -469,6 +475,84 @@ function cmdDiff(args: Args): number {
   }
 }
 
+/* -------------------------------------------------------- verify-report -- */
+
+/** Reads a text input, or reports it loudly and returns null (exit 2). */
+function readTextInput(file: string, label: string): string | null {
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch {
+    console.error(`${label} not found or unreadable: ${file}`);
+    return null;
+  }
+}
+
+function cmdVerifyReport(args: Args): number {
+  const reportPath = args._[1] as string | undefined;
+  const bundlePath = str(args, 'bundle');
+  if (!reportPath || !bundlePath) {
+    console.error(
+      'Usage: usa verify-report <AUDIT.md> --bundle <sidecar.sig.json> [--key <pubkey>] [--cosign-binary <path>] [--quiet]',
+    );
+    return 2;
+  }
+  const markdown = readTextInput(reportPath, 'Report file');
+  if (markdown === null) return 2;
+  const sidecarRaw = readTextInput(bundlePath, 'Signature sidecar');
+  if (sidecarRaw === null) return 2;
+  const trailerYaml = parseTrailer(markdown);
+  if (!trailerYaml || !trailerYaml.trim()) {
+    console.error(`Report has no machine-readable trailer: ${reportPath}`);
+    return 2;
+  }
+  let signature;
+  try {
+    signature = parseDetachedSignature(sidecarRaw);
+  } catch (err) {
+    console.error(`Signature sidecar is malformed (${bundlePath}): ${(err as Error).message}`);
+    return 2;
+  }
+  // Payload bytes are exactly canonicalReportBytes(report) for the report
+  // that rendered this trailer: the trailer projection plus '\n'. The CLI
+  // only ever sees rendered bytes, so it reconstructs them from the parsed
+  // trailer rather than re-deriving a report object.
+  const payload = Buffer.from(`${trailerYaml}\n`, 'utf8');
+  return runSignatureVerify(args, reportPath, payload, signature);
+}
+
+/**
+ * Runs the cosign verification and maps the outcome onto the gate
+ * convention: 0 verified, 1 mismatch/failed, 2 environment refusal (an
+ * absent cosign binary throws — a loud error, never a fake pass).
+ */
+function runSignatureVerify(
+  args: Args,
+  reportPath: string,
+  payload: Buffer,
+  signature: DetachedSignature,
+): number {
+  const quiet = bool(args, 'quiet');
+  const cosignBinary = str(args, 'cosign-binary');
+  let result;
+  try {
+    result = verifyDetachedSignature(payload, signature, {
+      publicKeyPath: str(args, 'key') ?? '',
+      ...(cosignBinary === undefined ? {} : { cosignBinary }),
+    });
+  } catch (err) {
+    console.error((err as Error).message);
+    return 2;
+  }
+  if (result.ok) {
+    if (!quiet) console.log(`Signature verified: ${reportPath}`);
+    return 0;
+  }
+  // Gate convention: the mismatch detail goes to stderr, suppressed by
+  // --quiet; the exit code alone carries the verdict then.
+  if (!quiet) console.error(`Signature verification failed for ${reportPath}: ${result.detail}`);
+  return 1;
+}
+
 /* -------------------------------------------------------------- bootstrap -- */
 
 function cmdBootstrap(args: Args): number {
@@ -796,6 +880,7 @@ usa — Universal Software Auditor
   usa rules [--section S2]      List all loaded rule packs and rules
   usa explain <RULE-ID>         Show everything about one rule
   usa diff <before> <after>     Compare two previously generated reports
+  usa verify-report <AUDIT.md>  Verify a report's detached signature sidecar
   usa init [path]               Scaffold .usa.yaml + a GitHub Actions workflow
   usa bootstrap [path]          Propose rule packs for stacks USA cannot audit yet
   usa learn <report.md>         Generate suggested rules from audit findings
@@ -842,6 +927,12 @@ audit options
 bootstrap options
   --out <file|dir>    Write pack files instead of printing (default: print)
 
+verify-report options
+  --bundle <file>       Signature sidecar (required, e.g. AUDIT.md.sig.json)
+  --key <file>          PEM public key the bundle is verified against
+  --cosign-binary <bin> Override the cosign binary (default cosign)
+  --quiet               Only errors
+
 examples
   usa audit . --depth deep
   usa bootstrap ~/code/legacy-php-app --out /tmp/packs
@@ -849,6 +940,7 @@ examples
   usa audit . --baseline reports/2026-08.md --fail-on high
   usa audit . --out reports/audit-$(date +%F).md
   usa learn AUDIT.md --out swift-suggestions.yaml
+  usa verify-report AUDIT.md --bundle AUDIT.md.sig.json --key cosign.pub
 `.trim();
 
 const WORKFLOW_TEMPLATE = `# USA — Universal Software Auditor
