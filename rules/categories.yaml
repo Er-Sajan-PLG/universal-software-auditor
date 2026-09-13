@@ -1,0 +1,124 @@
+# =============================================================================
+# USA assurance categories  (schema: usa-categories-v1)
+# -----------------------------------------------------------------------------
+# The future-ready categorization axis: ten stable categories that group the
+# sixteen report sections (S1..S16) and the rule-id prefixes into assurance
+# themes. Categories never replace sections and never change scoring — they
+# are a *derived* view (see src/engine/categories.ts), the same derivation
+# precedent ADR-0021 set for catalogues.
+#
+# Honesty discipline (normative): every description states IMPLEMENTED (real
+# rules mapped below) or PROPOSED (aspirational, no rules mapped yet). An
+# aspirational-but-empty category is a valid, labeled state — never pad
+# `sections` or `rulePrefixes` to fake coverage.
+#
+# Adding a category is not supported: the set is frozen at these ten ids and
+# the loader skips any unknown id with a warning.
+# =============================================================================
+
+schema: usa-categories-v1
+
+categories:
+  - id: foundational
+    name: Foundational
+    description: 'Status: IMPLEMENTED. Covers repository structure, project hygiene, and
+      foundation readiness — the ground an audit stands on. It matters for
+      assurance because undetectable projects (no manifest, no VCS, no stated
+      intent) cannot be audited deterministically, so every deeper category
+      depends on this one holding.'
+    sections: [S1, S3]
+    rulePrefixes: [REPO-, FND-]
+
+  - id: security
+    name: Security
+    description: 'Status: IMPLEMENTED. Covers application security controls, supply-chain
+      integrity and provenance, and dependency risk — what keeps malicious
+      input, tampered artifacts, and known-vulnerable components out. It
+      matters for assurance because a single auth or provenance failure
+      outweighs tidy docs or passing linters, which is why these rules carry
+      the heaviest scoring weights.'
+    sections: [S2, S3, S10]
+    rulePrefixes: [SEC-, SUP-, DEP-]
+
+  - id: networking
+    name: Networking
+    description: 'Status: PROPOSED — aspirational, no rules mapped yet. Will cover
+      transport security, DNS hygiene, ingress/egress policy, and service
+      connectivity. It matters for assurance because most breaches cross a
+      network boundary, but the current rule tree has no dedicated networking
+      checks, so this category is an empty placeholder until such packs land.'
+    sections: []
+    rulePrefixes: []
+
+  - id: communication
+    name: Communication
+    description: 'Status: PROPOSED — aspirational, no rules mapped yet. Will cover
+      messaging, eventing, notification, and human coordination surfaces
+      (queues, webhooks, changelogs, incident channels). It matters for
+      assurance because silent systems fail silently, but the current rule
+      tree has no communication packs, so this category stays empty by
+      design rather than borrowing unrelated rules.'
+    sections: []
+    rulePrefixes: []
+
+  - id: ux
+    name: User Experience
+    description: 'Status: PROPOSED — aspirational, no rules mapped yet. Will cover
+      interaction quality, accessibility behaviour, and user-facing clarity
+      beyond static compliance text. It matters for assurance because users
+      work around hostile interfaces in unsafe ways, but the current tree
+      holds no dedicated UX checks, so nothing is mapped here yet.'
+    sections: []
+    rulePrefixes: []
+
+  - id: vision
+    name: Vision
+    description: 'Status: PROPOSED — aspirational, no rules mapped yet. Will cover the
+      live-assurance future: continuous verification, runtime attestation,
+      and audit-as-a-service loops that outgrow point-in-time reports. It
+      matters for assurance because auditing must become continuous to stay
+      relevant, but no vision packs exist yet, so this category is a labeled
+      empty axis awaiting them.'
+    sections: []
+    rulePrefixes: []
+
+  - id: technical-sota
+    name: Technical State of the Art
+    description: "Status: IMPLEMENTED. Covers AI/LLM-era risk controls, machine-learning
+      stack hygiene, and future-readiness signals — the frontier where new
+      failure modes appear first. It matters for assurance because yesterday's
+      checklist misses prompt injection, model provenance, and framework
+      churn, so the audit must track what the state of the art demands now."
+    sections: [S14, S15, S16]
+    rulePrefixes: [AI-, ML-, FUT-]
+
+  - id: architecture
+    name: Architecture
+    description: 'Status: IMPLEMENTED. Covers system structure, modularity, and design
+      intent — the decisions that make a codebase comprehensible or
+      accidental. It matters for assurance because architectural drift
+      compounds every other risk: monoliths that should be modules fail
+      reviews, rollbacks, and onboarding alike.'
+    sections: [S4]
+    rulePrefixes: [ARCH-]
+
+  - id: standards
+    name: Standards
+    description: 'Status: IMPLEMENTED. Covers compliance posture and alignment with
+      external frameworks — accessibility, licensing, data-protection, and
+      regulatory duties. It matters for assurance because contractual and
+      legal obligations are audit findings with counterparties, not opinions,
+      so conformance evidence must be checkable independently of taste.'
+    sections: [S13]
+    rulePrefixes: [COMP-]
+
+  - id: protocol
+    name: Protocol
+    description: 'Status: PROPOSED — aspirational, no rules mapped yet. Will cover
+      wire-protocol conformance, API contract fidelity, and schema
+      compatibility guarantees. It matters for assurance because
+      integrations fail at boundaries, but the current tree has no
+      protocol-conformance packs, so this category is empty until they
+      exist.'
+    sections: []
+    rulePrefixes: []

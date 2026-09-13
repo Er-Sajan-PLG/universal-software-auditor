@@ -13,6 +13,7 @@
 | [Agent integration](agent-integration.md)     | Driving USA from Claude, Cursor, Codex, Copilot                                                                                      |
 | [CI integration](ci-integration.md)           | GitHub Actions, GitLab CI, quality gates, drift detection                                                                            |
 | [Standards mapping](standards-mapping.md)     | USA ↔ ASVS 5.0, SSDF, SLSA, Scorecard, ISO 5055, WCAG, CRA, OWASP LLM/ASI                                                            |
+| [Categories](categories.md)                   | The ten assurance categories, honest coverage labels, and how to extend them                                                         |
 | [Architecture](ARCHITECTURE.md)               | How the engine is put together, and what it deliberately does not do                                                                 |
 | [Evolution loop](EVOLUTION.md)                | The deterministic self-extension pipeline: snapshot → gap → propose → benchmark → release                                            |
 | [Experiment protocol](EXPERIMENT_PROTOCOL.md) | The mandatory process for capability-stress experiments                                                                              |
