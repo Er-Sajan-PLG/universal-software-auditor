@@ -114,6 +114,41 @@ duplicate version fails closed at the registry with nothing mutated.
 Never push `v*` tags by hand; the tag is the release act and belongs to
 release-please (bootstrap tag `v1.0.0` excepted).
 
+## Verifying a signed report (verify-only)
+
+A rendered report can ship with an optional detached signature sidecar
+(`AUDIT.md.sig.json`) as supply-chain-grade evidence that the bytes being
+read are the bytes that were audited. USA only **verifies** such sidecars —
+it never mints them.
+
+**Minting is blocked.** The charter constraint behind ADR-0011 says USA has
+no signer, so adding a sign capability would re-open ADR-0011 first — which
+has not happened. Until such an amendment lands, signatures are produced
+outside USA with stock Sigstore tooling, and USA only checks them. There is
+deliberately no `sign` function, no CLI flag, and no key handling in the
+codebase; the verify-side module is `src/report/signature.ts`.
+
+How it fits together:
+
+1. The signed payload is the report's canonical trailer bytes — the same
+   machine-readable trailer `usa diff` already parses, so a signature binds
+   exactly what a diff compares. No second canonicalization exists.
+2. Whoever holds the signing key signs that payload externally:
+   `cosign sign-blob --key key.pem --bundle report.bundle --yes AUDIT.md`
+   (key management stays entirely outside USA).
+3. The bundle is stored beside the report as `AUDIT.md.sig.json`, holding
+   the payload hash plus the base64-encoded bundle.
+4. Verification replays the check with the public key:
+   `cosign verify-blob --key key.pub --bundle report.bundle AUDIT.md`,
+   or programmatically through `verifyDetachedSignature()` in
+   `src/report/signature.ts`, which performs the same subprocess call after
+   first comparing the sidecar's bound hash.
+
+Fail-closed contract (mirrors `command` checks): a tampered payload fails,
+a missing key fails, a cosign rejection fails — and when the `cosign`
+binary itself is absent, verification throws an explicit error instead of
+passing. An unverifiable report is never reported as verified.
+
 ## Decisions with permanent consequences
 
 - **No moving `v1` tag.** It would retrigger `release.yml` (`v*` matches)
