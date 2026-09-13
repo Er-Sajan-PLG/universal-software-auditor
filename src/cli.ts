@@ -501,11 +501,12 @@ async function cmdLive(args: Args): Promise<number> {
       const model = modelOpt;
       chat = (req) => complete({ ...req, provider, ...(model === undefined ? {} : { model }) });
     } catch {
-      // Deliberately NOT printing the error: provider failures name key
-      // material (env vars, endpoints), and a transcript-adjacent CLI must
-      // never paraphrase secrets into logs. The provider id is safe to name.
+      // Deliberately a STATIC message: provider failures name key material
+      // (env vars, endpoints) and even the provider id is env-derived, so a
+      // transcript-adjacent CLI interpolates nothing here — neither the
+      // error nor the id. The user just typed it; they know which one failed.
       console.error(
-        `live: LLM provider "${providerId}" unavailable (check its API key) — continuing in deterministic-only mode.`,
+        'live: LLM provider unavailable (check its API key) — continuing in deterministic-only mode.',
       );
       chat = undefined;
     }
