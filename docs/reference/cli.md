@@ -23,6 +23,7 @@ usa — Universal Software Auditor
   usa categories                Report future-domain category coverage
   usa foundation init [path]    Capture project intent into .usa/foundation.yaml
   usa foundation show [path]    Print the effective intent and asserted facts
+  usa live [path]               Conversational audit session (deterministic without a provider)
 
 evolve options
   --store <dir>        Persist audit runs/results (content-addressed store)
@@ -49,6 +50,11 @@ categories options
 foundation options
   --dir <path>        Project directory (default .; a positional path works too)
   --non-interactive   Write the defaults file without prompting (init only)
+
+live options
+  --provider <id>     LLM provider preset (default $USA_PROVIDER, else deterministic-only)
+  --model <m>         Model id (default preset default or $USA_MODEL)
+  --transcript <file> Write the session transcript to this file
 
 audit options
   --out <file>        Report path (default AUDIT.md)

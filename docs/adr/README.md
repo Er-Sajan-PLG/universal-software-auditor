@@ -42,6 +42,8 @@ a changed decision gets a _new_ ADR that supersedes the old one).
 | 0031 | LLM providers: one transport, presets, no keys in files    | Accepted   | —          |
 | 0032 | Testing assurance ships as deterministic slices            | Accepted   | —          |
 | 0033 | Future categories are derived, some honestly empty         | Accepted   | —          |
+| 0034 | Live sessions: deterministic machine, stubbed mind         | Accepted   | —          |
+| 0035 | Test evidence starts as counted signals, not verdicts      | Accepted   | —          |
 
 ## Coverage map (what has no ADR, and why)
 
