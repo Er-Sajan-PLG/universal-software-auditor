@@ -128,15 +128,8 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
 /** Names of explicitly PROPOSED-but-unimplemented native transports. */
 const UNIMPLEMENTED_TRANSPORTS = new Set(['anthropic', 'google', 'gemini', 'vertex', 'bedrock']);
 
-/**
- * Resolve a provider id to a concrete config, reading the API key from
- * the environment. Fail-closed: a missing key throws naming the variable;
- * the caller disables LLM features on that error. Never logs key material.
- */
-export function loadProviderConfig(
-  providerId: string,
-  overrides?: ProviderOverrides,
-): ResolvedConfig {
+/** Resolve a provider id to its preset, or throw naming what exists. */
+function findPreset(providerId: string): ProviderPreset {
   if (UNIMPLEMENTED_TRANSPORTS.has(providerId)) {
     throw new Error(
       `LLM provider "${providerId}" is PROPOSED, not implemented: ` +
@@ -150,6 +143,19 @@ export function loadProviderConfig(
       `Unknown LLM provider "${providerId}". Known providers: ${Object.keys(PROVIDER_PRESETS).join(', ')}.`,
     );
   }
+  return preset;
+}
+
+/**
+ * Resolve a provider id to a concrete config, reading the API key from
+ * the environment. Fail-closed: a missing key throws naming the variable;
+ * the caller disables LLM features on that error. Never logs key material.
+ */
+export function loadProviderConfig(
+  providerId: string,
+  overrides?: ProviderOverrides,
+): ResolvedConfig {
+  const preset = findPreset(providerId);
   const baseURL = overrides?.baseURL ?? preset.baseURL;
   if (!baseURL) {
     throw new Error(
@@ -157,25 +163,8 @@ export function loadProviderConfig(
         `(custom endpoints must always provide a baseURL).`,
     );
   }
-  const apiKeyEnv = overrides?.apiKeyEnv ?? preset.apiKeyEnv;
-  let apiKey: string | undefined;
-  if (apiKeyEnv) {
-    const raw = process.env[apiKeyEnv];
-    if (!raw) {
-      throw new Error(
-        `LLM provider "${providerId}" needs an API key: environment variable ${apiKeyEnv} ` +
-          `is missing or empty. Set it, or disable LLM features.`,
-      );
-    }
-    apiKey = raw;
-  }
-  const model = overrides?.model ?? preset.defaultModel;
-  if (!model) {
-    throw new Error(
-      `LLM provider "${providerId}" has no default model: supply one via overrides.model ` +
-        `or ChatRequest.model.`,
-    );
-  }
+  const apiKey = resolveApiKey(providerId, overrides?.apiKeyEnv ?? preset.apiKeyEnv);
+  const model = resolveModel(providerId, overrides?.model ?? preset.defaultModel);
   const resolved: ResolvedConfig = {
     providerId: preset.id,
     label: preset.label,
@@ -184,6 +173,28 @@ export function loadProviderConfig(
   };
   if (apiKey !== undefined) resolved.apiKey = apiKey;
   return resolved;
+}
+
+/** Key from the environment, or undefined for keyless local endpoints. */
+function resolveApiKey(providerId: string, apiKeyEnv: string): string | undefined {
+  if (!apiKeyEnv) return undefined;
+  const raw = process.env[apiKeyEnv];
+  if (!raw) {
+    throw new Error(
+      `LLM provider "${providerId}" needs an API key: environment variable ${apiKeyEnv} ` +
+        `is missing or empty. Set it, or disable LLM features.`,
+    );
+  }
+  return raw;
+}
+
+/** Explicit model wins; otherwise the preset default (both may be absent). */
+function resolveModel(providerId: string, model: string): string {
+  if (model) return model;
+  throw new Error(
+    `LLM provider "${providerId}" has no default model: supply one via overrides.model ` +
+      `or ChatRequest.model.`,
+  );
 }
 
 function authHeaders(apiKey: string | undefined): Record<string, string> {
@@ -223,24 +234,37 @@ function numOrUndefined(v: unknown): number | undefined {
  */
 export async function complete(req: ChatRequest): Promise<ChatResult> {
   const cfg = loadProviderConfig(req.provider, { model: req.model });
+  const res = await fetch(`${cfg.baseURL}/chat/completions`, {
+    method: 'POST',
+    headers: authHeaders(cfg.apiKey),
+    body: JSON.stringify(buildChatBody(req, cfg.model)),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  await ensureOk(res);
+  return readChatResult(res, cfg.model);
+}
+
+/** Optional fields ride along ONLY when set — provider defaults win otherwise. */
+function buildChatBody(req: ChatRequest, model: string): Record<string, unknown> {
   const body: Record<string, unknown> = {
-    model: cfg.model,
+    model,
     messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
   };
   if (req.temperature !== undefined) body['temperature'] = req.temperature;
   if (req.maxTokens !== undefined) body['max_tokens'] = req.maxTokens;
   if (req.reasoningEffort !== undefined) body['reasoning_effort'] = req.reasoningEffort;
+  return body;
+}
 
-  const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-    method: 'POST',
-    headers: authHeaders(cfg.apiKey),
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
-  if (!res.ok) {
-    const snippet = await readSnippet(res);
-    throw new Error(`Chat completions request failed: HTTP ${res.status} ${snippet}`);
-  }
+/** Non-2xx becomes an Error carrying status plus a body snippet (no keys). */
+async function ensureOk(res: Response): Promise<void> {
+  if (res.ok) return;
+  const snippet = await readSnippet(res);
+  throw new Error(`Chat completions request failed: HTTP ${res.status} ${snippet}`);
+}
+
+/** Parse the completion envelope; anything shapeless throws loudly. */
+async function readChatResult(res: Response, fallbackModel: string): Promise<ChatResult> {
   let json: ChatCompletionsResponse;
   try {
     json = (await res.json()) as ChatCompletionsResponse;
@@ -258,20 +282,26 @@ export async function complete(req: ChatRequest): Promise<ChatResult> {
       'Chat completions request failed: response has no choices[0].message.content string',
     );
   }
-  const result: ChatResult = {
+  return {
     text: content,
-    model: typeof json.model === 'string' && json.model ? json.model : cfg.model,
+    model: typeof json.model === 'string' && json.model ? json.model : fallbackModel,
+    ...usageOf(json),
   };
+}
+
+/** Usage block only when at least one counter parsed (else omitted). */
+function usageOf(json: ChatCompletionsResponse): Pick<ChatResult, 'usage'> {
   const promptTokens = numOrUndefined(json.usage?.prompt_tokens);
   const completionTokens = numOrUndefined(json.usage?.completion_tokens);
   const totalTokens = numOrUndefined(json.usage?.total_tokens);
-  if (promptTokens !== undefined || completionTokens !== undefined || totalTokens !== undefined) {
-    result.usage = {};
-    if (promptTokens !== undefined) result.usage.promptTokens = promptTokens;
-    if (completionTokens !== undefined) result.usage.completionTokens = completionTokens;
-    if (totalTokens !== undefined) result.usage.totalTokens = totalTokens;
+  if (promptTokens === undefined && completionTokens === undefined && totalTokens === undefined) {
+    return {};
   }
-  return result;
+  const usage: NonNullable<ChatResult['usage']> = {};
+  if (promptTokens !== undefined) usage.promptTokens = promptTokens;
+  if (completionTokens !== undefined) usage.completionTokens = completionTokens;
+  if (totalTokens !== undefined) usage.totalTokens = totalTokens;
+  return { usage };
 }
 
 /** Extract model names tolerantly from a `GET /models` payload. */

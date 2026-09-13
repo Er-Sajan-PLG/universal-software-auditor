@@ -27,6 +27,7 @@ import { runEvolutionCycle, type EvolutionCycleOutput } from './evolution/run.js
 import { capabilityFromPack } from './evolution/capability.js';
 import { ruleAutomatability } from './engine/automatability.js';
 import { catalogueCoverage, catalogueOf, loadCatalogues } from './engine/catalogues.js';
+import { categoryCoverage, loadCategories } from './engine/categories.js';
 import { runFoundationInit, runFoundationShow } from './foundation/interview.js';
 import type { Catalogue } from './engine/catalogues.js';
 import type { QueueSummary } from './evolution/queue.js';
@@ -110,6 +111,7 @@ const COMMANDS: Record<string, (args: Args) => number> = {
   evolve: cmdEvolve,
   standards: cmdStandards,
   foundation: cmdFoundation,
+  categories: cmdCategories,
 };
 
 export function main(argv: string[]): number {
@@ -423,6 +425,32 @@ function cmdStandards(args: Args): number {
   for (const row of rows) {
     console.log(
       `| ${row.name} (\`${row.catalogue}\`) | ${row.rules} | ${row.automatable.full} | ${row.automatable.assist} | ${row.automatable.manual} |`,
+    );
+  }
+  return 0;
+}
+
+/**
+ * Category coverage is derived, never scored (ADR-0030 taxonomy rule): the
+ * table answers "which future domains already have rules" without touching
+ * scoring, gates, or confidence.
+ */
+function cmdCategories(args: Args): number {
+  const rulesDir = path.resolve(str(args, 'rules-dir', DEFAULT_RULES_DIR) ?? DEFAULT_RULES_DIR);
+  const { packs } = loadRulePacks(rulesDir);
+  const { categories, warnings } = loadCategories(rulesDir);
+  for (const w of warnings) console.error(`warning: ${w}`);
+  const rows = categoryCoverage(packs, categories);
+  const fmt = (str(args, 'format') ?? 'md').toLowerCase();
+  if (fmt === 'json') {
+    console.log(JSON.stringify(rows, null, 2));
+    return 0;
+  }
+  console.log('| Category | Rules | Sections |');
+  console.log('| -------- | ----- | -------- |');
+  for (const row of rows) {
+    console.log(
+      `| ${row.name} (\`${row.id}\`) | ${row.ruleCount} | ${row.sections.join(', ') || '—'} |`,
     );
   }
   return 0;
@@ -903,6 +931,7 @@ usa — Universal Software Auditor
   usa learn <report.md>         Generate suggested rules from audit findings
   usa evolve [path]             Run the audit → gap → candidate → release loop
   usa standards                 Report catalogue coverage and automatability
+  usa categories                Report future-domain category coverage
   usa foundation init [path]    Capture project intent into .usa/foundation.yaml
   usa foundation show [path]    Print the effective intent and asserted facts
 
@@ -921,6 +950,10 @@ learn options
   --min-severity <s>  Minimum severity to consider (CRITICAL|HIGH|MEDIUM|LOW|FUTURE, default MEDIUM)
 
 standards options
+  --format <fmt>      md | json                       (default md)
+  --rules-dir <dir>   Rule pack directory             (default bundled rules/)
+
+categories options
   --format <fmt>      md | json                       (default md)
   --rules-dir <dir>   Rule pack directory             (default bundled rules/)
 

@@ -89,7 +89,37 @@ verify` chain at production (`core/provenance-cosign`, SUP-018–020),
 - [ ] **MADR/log4brains** — only when the ADR corpus triples or decisions
       become routinely contested. Not now.
 
-## Deliberately not planned
+## Next phase: live assurance (VISION.md)
+
+- [x] **LLM provider layer** — `src/agent/` with major-provider presets,
+      custom endpoints, tunable reasoning/temperature/context, live model
+      listing (free + paid). Deterministic spine untouched; the model proposes,
+      the engine verifies. ADR-0031. _(L)_
+- [ ] **Live audit sessions + interactive interviews** — `usa live`: a
+      conversing session (foundation interview, environment checks, vision
+      alignment) with a transcript. Deterministic state machine; LLM calls
+      behind a stubbed interface. _(L)_
+- [x] **Testing assurance, deterministic subset** — TAS-001–011 presence
+      heuristics with per-rule honesty clauses (what each proves and does
+      not); interpretation, gap narratives, and the assurance report section
+      stay agent-side or Wave B. ADR-0032. _(XL — swarm waves)_
+- [x] **Future-ready categorization** — ten domains as a derived axis over
+      rules (`rules/categories.yaml` + `usa categories`); five resolve, five
+      honestly empty. ADR-0033. _(M)_
+- [ ] **Report format selection** — five candidate formats drafted as
+      specified-not-implemented exemplars; one graduates to a renderer. _(S)_
+
+## Deliberately not planned (yet)
+
+- Penetration testing: USA finds the hole, never exploits it. Explicitly
+  future (VISION.md); needs its own charter + safety ADR first.
+- CVE database / lockfile resolver / reachability analysis (ADR-0011)
+- Interprocedural analysis, DAST, fuzzing (see "What USA is not")
+- Compliance certification (USA maps to standards; auditors certify)
+- Full DORA platform (no deployment to measure at this scale)
+- Renovate migration (no problem to solve at ~10 dependencies)
+- HTML / JUnit renderers (JSON and SARIF feed standards-based consumers;
+  HTML/JUnit would only feed bespoke ones — ADR-0018)
 
 - CVE database / lockfile resolver / reachability analysis (ADR-0011)
 - Interprocedural analysis, DAST, fuzzing (see "What USA is not")

@@ -55,6 +55,23 @@ export {
   type Catalogue,
   type CatalogueCoverage,
 } from './engine/catalogues.js';
+export {
+  loadCategories,
+  categoryCoverage,
+  type CategoryDef,
+  type CategoryCoverage,
+  type CategoryId,
+} from './engine/categories.js';
+export { complete, listModels, loadProviderConfig, PROVIDER_PRESETS } from './agent/providers.js';
+export type {
+  ChatMessage,
+  ChatRequest,
+  ChatResult,
+  ProviderPreset,
+  ProviderOverrides,
+  ResolvedConfig,
+  ModelInfo,
+} from './agent/types.js';
 export { renderMarkdown, parseTrailer, trailer } from './report/markdown.js';
 export {
   renderJson,
