@@ -27,6 +27,7 @@ import { runEvolutionCycle, type EvolutionCycleOutput } from './evolution/run.js
 import { capabilityFromPack } from './evolution/capability.js';
 import { ruleAutomatability } from './engine/automatability.js';
 import { catalogueCoverage, catalogueOf, loadCatalogues } from './engine/catalogues.js';
+import { runFoundationInit, runFoundationShow } from './foundation/interview.js';
 import type { Catalogue } from './engine/catalogues.js';
 import type { QueueSummary } from './evolution/queue.js';
 import type {
@@ -108,6 +109,7 @@ const COMMANDS: Record<string, (args: Args) => number> = {
   learn: cmdLearn,
   evolve: cmdEvolve,
   standards: cmdStandards,
+  foundation: cmdFoundation,
 };
 
 export function main(argv: string[]): number {
@@ -424,6 +426,21 @@ function cmdStandards(args: Args): number {
     );
   }
   return 0;
+}
+
+/* ------------------------------------------------------------ foundation -- */
+
+function cmdFoundation(args: Args): number {
+  const sub = args._[1] as string | undefined;
+  const dir = str(args, 'dir') ?? (args._[2] as string | undefined) ?? '.';
+  if (sub === 'init') {
+    return runFoundationInit({ dir, nonInteractive: bool(args, 'non-interactive') });
+  }
+  if (sub === 'show' || sub === undefined) {
+    return runFoundationShow({ dir });
+  }
+  console.error('Usage: usa foundation <init|show> [path] [--dir <path>] [--non-interactive]');
+  return 2;
 }
 
 function printRuleDetail(packId: string, rule: Rule, catalogues: Catalogue[]): void {
@@ -886,6 +903,8 @@ usa — Universal Software Auditor
   usa learn <report.md>         Generate suggested rules from audit findings
   usa evolve [path]             Run the audit → gap → candidate → release loop
   usa standards                 Report catalogue coverage and automatability
+  usa foundation init [path]    Capture project intent into .usa/foundation.yaml
+  usa foundation show [path]    Print the effective intent and asserted facts
 
 evolve options
   --store <dir>        Persist audit runs/results (content-addressed store)
@@ -904,6 +923,10 @@ learn options
 standards options
   --format <fmt>      md | json                       (default md)
   --rules-dir <dir>   Rule pack directory             (default bundled rules/)
+
+foundation options
+  --dir <path>        Project directory (default .; a positional path works too)
+  --non-interactive   Write the defaults file without prompting (init only)
 
 audit options
   --out <file>        Report path (default AUDIT.md)
