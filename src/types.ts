@@ -242,6 +242,14 @@ export interface Suppression {
   rule: string;
   reason: string;
   until?: string;
+  /**
+   * Restrict the waiver to findings in files matching this glob. Without it the
+   * waiver applies to the whole rule. With it, only the matching locations are
+   * suppressed (ADR-0022).
+   */
+  file?: string;
+  /** Restrict to one line within `file`; a finding elsewhere stays active. */
+  line?: number;
 }
 
 export interface UsaConfig {

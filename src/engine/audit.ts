@@ -15,6 +15,7 @@ import { MAX_FILE_BYTES, MAX_FILES, Project } from '../util/project.js';
 import { detect, loadDetectorFile } from '../detect/index.js';
 import { loadRulePacks, applyRuleOverrides } from './loader.js';
 import { evaluateRule, packApplies, ruleApplies, type EvalContext } from './evaluate.js';
+import { buildSuppressionIndex, describeSuppression, unusedSuppressions } from './suppression.js';
 import { loadSections } from './sections.js';
 import { loadProfiles, dampen, type MaturityProfile } from './maturity.js';
 import { loadConfig } from '../config.js';
@@ -99,7 +100,7 @@ export function runAudit(options: AuditOptions): AuditOutcome {
   const { disabled, overrides } = collectRuleSettings(config, warnings);
   applyRuleOverrides(packs, overrides);
 
-  const suppressions = resolveSuppressions(config.suppressions, warnings);
+  const suppressions = buildSuppressionIndex(resolveSuppressions(config.suppressions, warnings));
   const { include, exclude } = resolvePackSets(options, config);
 
   // A pack may assert extra facts simply by applying (e.g. "we are a monorepo").
@@ -143,6 +144,7 @@ export function runAudit(options: AuditOptions): AuditOutcome {
   // Index warnings go last: content reads happen lazily during rule
   // evaluation, so oversize counts are only complete once scoring is done.
   appendIndexWarnings(project, warnings);
+  appendUnusedSuppressionWarnings(suppressions, warnings);
   const card = score(evaluated, sections, profile);
   const report = buildReport(
     opts,
@@ -196,14 +198,14 @@ function normalizeAuditOptions(options: AuditOptions, config: UsaConfig) {
 function resolveSuppressions(
   suppressions: Suppression[] | undefined,
   warnings: string[],
-): Map<string, string> {
-  const map = new Map<string, string>();
+): Suppression[] {
+  const active: Suppression[] = [];
   for (const s of suppressions ?? []) {
     if (!s.rule) continue;
     if (s.until && isSuppressionExpired(s.rule, s.until, warnings)) continue;
-    map.set(s.rule, s.reason);
+    active.push(s);
   }
-  return map;
+  return active;
 }
 
 function isSuppressionExpired(rule: string, until: string, warnings: string[]): boolean {
@@ -254,6 +256,22 @@ function selectSections(
     if (!known.has(id)) warnings.push(`.usa.yaml: unknown section "${id}" in sections — ignored`);
   }
   return all.filter((s) => wanted.includes(s.id));
+}
+
+/**
+ * A waiver that matched nothing is dead weight — usually a rule that no longer
+ * fires there, a renamed file, or a passing rule. Report it so suppressions
+ * decay instead of accumulating (ADR-0022, the ESLint model).
+ */
+function appendUnusedSuppressionWarnings(
+  suppressions: ReturnType<typeof buildSuppressionIndex>,
+  warnings: string[],
+): void {
+  for (const s of unusedSuppressions(suppressions)) {
+    warnings.push(
+      `suppression for ${describeSuppression(s)} matched no finding — remove it or fix the target`,
+    );
+  }
 }
 
 /**

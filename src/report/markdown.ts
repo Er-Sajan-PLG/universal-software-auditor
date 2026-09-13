@@ -352,14 +352,34 @@ function renderSuppressed(p: Print, suppressed: Finding[]): void {
   if (suppressed.length === 0) return;
   p('## 🤝 Accepted Risk (suppressions)');
   p();
-  p('| Rule | Severity | Reason |');
-  p('|---|---|---|');
-  for (const f of suppressed) {
-    p(
-      `| \`${f.ruleId}\` ${escapeCell(f.title)} | ${SEV_TAG[f.severity]} ${f.severity} | ${escapeCell(f.suppressedReason ?? '')} |`,
-    );
+  // Site-level waivers point at a place; show it so an accepted risk is
+  // reviewable at the exact location, not just the rule (ADR-0022).
+  const anyLocated = suppressed.some((f) => f.locations.length > 0);
+  if (anyLocated) {
+    p('| Rule | Severity | Where | Reason |');
+    p('|---|---|---|---|');
+    for (const f of suppressed) {
+      p(
+        `| \`${f.ruleId}\` ${escapeCell(f.title)} | ${SEV_TAG[f.severity]} ${f.severity} | ${escapeCell(locationLabel(f))} | ${escapeCell(f.suppressedReason ?? '')} |`,
+      );
+    }
+  } else {
+    p('| Rule | Severity | Reason |');
+    p('|---|---|---|');
+    for (const f of suppressed) {
+      p(
+        `| \`${f.ruleId}\` ${escapeCell(f.title)} | ${SEV_TAG[f.severity]} ${f.severity} | ${escapeCell(f.suppressedReason ?? '')} |`,
+      );
+    }
   }
   p();
+}
+
+/** `file:line` for the first location, or `—` when the finding has none. */
+function locationLabel(f: Finding): string {
+  const loc = f.locations[0];
+  if (!loc) return '—';
+  return loc.line === undefined ? loc.file : `${loc.file}:${loc.line}`;
 }
 
 /* --------------------------------------------------------------- roadmap -- */

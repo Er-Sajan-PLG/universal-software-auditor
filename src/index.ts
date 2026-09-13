@@ -20,6 +20,16 @@ export { runAudit } from './engine/audit.js';
 export { score } from './engine/score.js';
 export { evaluateRule, evalPredicate, ruleApplies, packApplies } from './engine/evaluate.js';
 export {
+  buildSuppressionIndex,
+  applySuppressions,
+  unusedSuppressions,
+  describeSuppression,
+  isSuppressed,
+  type SuppressionIndex,
+  type SuppressionEntry,
+  type SuppressionOutcome,
+} from './engine/suppression.js';
+export {
   automatabilityOf,
   ruleAutomatability,
   parseCatalogue,

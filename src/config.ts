@@ -37,6 +37,8 @@ export function loadConfig(target: string, explicit?: string): UsaConfig {
         rule: String(s.rule ?? ''),
         reason: str(s.reason) ?? 'no reason recorded',
         until: str(s.until),
+        file: str(s.file),
+        line: num(s.line),
       })),
       ignore: strList(doc.ignore),
       facts: strList(doc.facts),
@@ -69,10 +71,15 @@ rules:
   #   reason: "Not applicable — no user-facing auth in this worker"
 
 # Accepted risk. USA still lists these, but excludes them from the score.
+# A suppression may target a whole rule, or one file/line (file: glob with an
+# optional line:). Unused waivers are reported at the end of the audit.
 suppressions:
   # - rule: PERF-005
   #   reason: "Known N+1 in the admin panel; 40 rows max. Revisit Q4."
   #   until: "2026-12-31"
+  # - rule: SEC-004
+  #   file: "scripts/legacy/**"
+  #   reason: "Vendored legacy script; replaced in the Q3 migration."
 
 # Extra globs to exclude from indexing (on top of .gitignore + USA defaults).
 ignore: []

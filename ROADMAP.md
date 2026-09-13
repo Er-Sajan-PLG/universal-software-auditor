@@ -56,8 +56,9 @@ Automation and governance:
 - [ ] **Provenance verification checks (verify, don't mint)** — `cosign
 verify` success, attestation/VSA presence where network allows; existence
       checks at beta, chain verification at production. _(L)_
-- [ ] **Site-level suppressions** — file:line-anchored waivers with reason +
-      expiry + unused-suppression reporting (ESLint model). _(M)_
+- [x] **Site-level suppressions** — a waiver may carry a `file` glob (and
+      optional `line`); only matching locations are excused, unmatched ones
+      stay active, and a waiver that matched nothing is reported. ADR-0022. _(M)_
 - [ ] **Hotspot triage + review staleness** — split "tool uncertain, human
       confirms once" from deterministic violations; per-item last-reviewed
       dates next to confidence. _(M)_

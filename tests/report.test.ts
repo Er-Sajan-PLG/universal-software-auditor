@@ -157,6 +157,20 @@ describe('markdown report', () => {
     expect(md).toContain('Accepted: admin-only, 40 rows');
   });
 
+  it('shows a Where column for site-level suppressed findings', () => {
+    const md = renderMarkdown(
+      baseReport([
+        finding({
+          suppressedReason: 'Vendored legacy script',
+          locations: [{ file: 'scripts/legacy/old.js', line: 7 }],
+        }),
+      ]),
+      profile,
+    );
+    expect(md).toContain('| Where |');
+    expect(md).toContain('scripts/legacy/old.js:7');
+  });
+
   it('shows "not verified" for sections nothing could resolve', () => {
     const report = baseReport([]);
     report.score.sections = [

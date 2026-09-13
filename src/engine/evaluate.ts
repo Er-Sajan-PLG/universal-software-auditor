@@ -13,6 +13,7 @@ import type {
 } from '../types.js';
 import { Project } from '../util/project.js';
 import { DEFAULT_WEIGHT } from './loader.js';
+import { applySuppressions, type SuppressionIndex } from './suppression.js';
 
 export interface EvalContext {
   project: Project;
@@ -20,7 +21,7 @@ export interface EvalContext {
   depth: Depth;
   allowCommands: boolean;
   disabled: Set<string>;
-  suppressions: Map<string, string>;
+  suppressions: SuppressionIndex;
 }
 
 /* ------------------------------------------------------------ applicability */
@@ -138,7 +139,6 @@ export function evaluateRule(rule: Rule, ctx: EvalContext): Finding {
     };
   }
 
-  const suppressed = ctx.suppressions.get(rule.id);
   const { status, message, locations } = runCheck(rule, ctx, rule.check);
 
   const finding: Finding = {
@@ -150,10 +150,30 @@ export function evaluateRule(rule: Rule, ctx: EvalContext): Finding {
     locations,
   };
 
-  if (suppressed && status !== 'PASS' && status !== 'NOT_APPLICABLE') {
-    finding.suppressedReason = suppressed;
+  if (status !== 'PASS' && status !== 'NOT_APPLICABLE') {
+    applySuppressionToFinding(ctx.suppressions, rule.id, finding);
   }
   return finding;
+}
+
+/**
+ * Excuse the locations a waiver matches (ADR-0022). A rule-wide entry excuses
+ * every location and sets `suppressedReason`. A site-level entry excuses only
+ * its matches: if none remain the finding is suppressed; if some survive, the
+ * finding stays active with the excused locations removed — a partial waiver
+ * must not hide the rest.
+ */
+function applySuppressionToFinding(
+  index: SuppressionIndex,
+  ruleId: string,
+  finding: Finding,
+): void {
+  const { kept, reasons, suppressedAny } = applySuppressions(index, ruleId, finding.locations);
+  if (!suppressedAny) return;
+  finding.locations = kept;
+  // Only a finding with nothing left to show is fully suppressed. A finding
+  // that still has unmatched locations stays visible and keeps its severity.
+  if (kept.length === 0) finding.suppressedReason = reasons.join('; ');
 }
 
 type CheckOutcome = { status: Status; message: string; locations: Location[] };

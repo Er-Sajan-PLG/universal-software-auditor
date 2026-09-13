@@ -180,6 +180,22 @@ suppressions:
     until: '2026-12-31'
 ```
 
+A suppression may be **rule-wide** (as above) or **site-level**: add a `file`
+glob, and optionally a `line`, to excuse only the findings at that place.
+
+```yaml
+suppressions:
+  - rule: SEC-004
+    file: 'scripts/legacy/**'
+    reason: 'Vendored legacy script; replaced in the Q3 migration.'
+```
+
+A site-level waiver removes only the locations it matches. If a finding has
+other locations too, it stays active with those kept — the waiver can never
+hide more than it names. A waiver that matches **nothing** this run (the
+finding was fixed, the file was renamed, the rule moved) is reported as a
+warning, so exceptions decay instead of accumulating. See ADR-0022.
+
 Suppressed findings are **excluded from the score, the severity tallies, and
 the action sections, but still listed** under _Accepted Risk_. Anyone reading
 the report can see what was waived and why — and the Findings Summary can

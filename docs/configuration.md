@@ -26,9 +26,14 @@ rules:
 
 # ── Accepted risk ──────────────────────────────────────────────────────────
 suppressions:
+  # Whole rule, everywhere.
   - rule: PERF-005
     reason: 'Known N+1 in the admin panel; 40 rows max.'
     until: '2026-12-31'
+  # One file (glob), optionally one line — everything else stays active.
+  - rule: SEC-004
+    file: 'scripts/legacy/**'
+    reason: 'Vendored legacy script; replaced in the Q3 migration.'
 
 # ── Indexing ───────────────────────────────────────────────────────────────
 ignore: # extra globs, on top of .gitignore + USA defaults
@@ -43,20 +48,20 @@ facts: # assert what detection could not infer
 
 ## Field reference
 
-| Field                 | Type                    | Effect                                                                         |
-| --------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `version`             | `1`                     | Schema version                                                                 |
-| `maturity`            | stage                   | Overrides auto-detection; changes dampening and the expected band              |
-| `include`             | pack ids                | Force packs on even when `skip_when` says no                                   |
-| `exclude`             | pack ids                | Force packs off                                                                |
-| `rules.<id>.severity` | severity                | Re-grade one rule (must be on the ladder, else ignored with a warning)         |
-| `rules.<id>.weight`   | number                  | Change how much it moves the score (finite, ≥ 0, else ignored with a warning)  |
-| `rules.<id>.disabled` | bool                    | Skip entirely (still listed as ➖ SKIPPED)                                     |
-| `rules.<id>.reason`   | string                  | **Required in practice** — an override with no reason is an unaudited decision |
-| `suppressions[]`      | `{rule, reason, until}` | Excluded from the score, listed under Accepted Risk                            |
-| `ignore`              | globs                   | Extra paths to keep out of the index                                           |
-| `facts`               | fact strings            | Assert detection facts manually (`ns:value`)                                   |
-| `sections`            | section ids             | Restrict the report to these sections                                          |
+| Field                 | Type                                  | Effect                                                                         |
+| --------------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
+| `version`             | `1`                                   | Schema version                                                                 |
+| `maturity`            | stage                                 | Overrides auto-detection; changes dampening and the expected band              |
+| `include`             | pack ids                              | Force packs on even when `skip_when` says no                                   |
+| `exclude`             | pack ids                              | Force packs off                                                                |
+| `rules.<id>.severity` | severity                              | Re-grade one rule (must be on the ladder, else ignored with a warning)         |
+| `rules.<id>.weight`   | number                                | Change how much it moves the score (finite, ≥ 0, else ignored with a warning)  |
+| `rules.<id>.disabled` | bool                                  | Skip entirely (still listed as ➖ SKIPPED)                                     |
+| `rules.<id>.reason`   | string                                | **Required in practice** — an override with no reason is an unaudited decision |
+| `suppressions[]`      | `{rule, reason, until, file?, line?}` | Excluded from the score, listed under Accepted Risk                            |
+| `ignore`              | globs                                 | Extra paths to keep out of the index                                           |
+| `facts`               | fact strings                          | Assert detection facts manually (`ns:value`)                                   |
+| `sections`            | section ids                           | Restrict the report to these sections                                          |
 
 ## What is indexed
 
@@ -105,6 +110,17 @@ facts: ['has:database', 'orm:prisma']
 
 **Prefer a suppression over disabling a rule.** A suppression stays visible in the
 report under Accepted Risk; a disabled rule disappears and takes its knowledge with it.
+
+**Scope a suppression to the site you are excusing.** A suppression with `file`
+(a glob, optionally `line`) hides only the matching locations; a finding that
+still has unmatched locations stays active with those locations kept. This is
+the deliberate difference between "this one place is fine" and "we never want to
+see this rule again" (ADR-0022).
+
+**Unused waivers are reported.** A suppression that suppressed nothing this run
+— a fixed finding, a renamed file, a rule that no longer fires — is listed in
+the audit warnings so exceptions decay instead of accumulating. Delete it or
+fix its target.
 
 **Waivers expire — and expiry fails closed.** An `until` date in the past, or
 one that cannot be parsed as a date, excludes the suppression with a warning
