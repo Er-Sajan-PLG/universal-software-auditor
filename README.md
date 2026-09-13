@@ -10,6 +10,7 @@
 [![npm](https://img.shields.io/npm/v/@xenos1996/usa)](https://www.npmjs.com/package/@xenos1996/usa)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Rules](https://img.shields.io/badge/rules-280%2B-blue)](rules/)
+[![CII Best Practices](https://img.shields.io/badge/CII%20Best%20Practices-in%20progress-yellow)](https://www.bestpractices.dev/en)
 
 </div>
 
