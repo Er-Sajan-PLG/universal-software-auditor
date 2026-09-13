@@ -1,0 +1,240 @@
+id: core/testing-assurance
+title: Testing Assurance Markers
+section: S7
+section_title: Testing & Quality Assurance
+description: >
+  Deterministic presence-markers for the testing assurance program: unit,
+  integration, and system layouts; contract tests; coverage and mutation
+  evidence; retry/determinism guards; failure assertions; and test-data
+  isolation. Every rule asserts only that a marker exists — never that the
+  tests are good, sufficient, or green.
+version: '1.0'
+
+rules:
+  - id: TAS-001
+    title: A unit-test layout exists
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: MEDIUM
+    class: correctness
+    check:
+      kind: any_file
+      patterns:
+        - 'tests/unit/**'
+        - 'test/unit/**'
+        - 'unit/**'
+        - '**/*.unit.test.*'
+        - '**/*.unit.spec.*'
+    why: 'A conventional unit-test location tells contributors and CI exactly where confidence lives.'
+    remediation: 'Put unit tests under tests/unit (or mark them *.unit.test.*) and wire the directory into CI.'
+    references: ['Testing-Trophy', 'OpenSSF-Scorecard:CI-Tests']
+
+  - id: TAS-002
+    title: An integration-test layout exists
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: MEDIUM
+    class: correctness
+    check:
+      kind: any_file
+      patterns:
+        - 'tests/integration/**'
+        - 'test/integration/**'
+        - 'tests/integ/**'
+        - '**/*.integration.test.*'
+        - '**/*.integ.test.*'
+        - '**/*.int.test.*'
+    why: 'Unit tests with everything mocked verify the mock, not the seam; a named integration layout is where seam coverage lives.'
+    remediation: 'Add tests/integration with tests that exercise a real database, queue, or HTTP boundary.'
+    references: ['Testing-Trophy']
+
+  - id: TAS-003
+    title: A system/end-to-end test layout exists
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: MEDIUM
+    class: correctness
+    check:
+      kind: any_file
+      patterns:
+        - 'tests/e2e/**'
+        - 'test/e2e/**'
+        - 'e2e/**'
+        - 'tests/system/**'
+        - 'test/system/**'
+        - 'system-tests/**'
+        - '**/*.e2e.*'
+    why: 'Unit tests cannot tell you that checkout is broken because a button moved; a system-level layout is where journey coverage lives.'
+    remediation: 'Cover three journeys first: sign up/log in, the core money path, and the path that would lose data if it failed.'
+    references: ['Testing-Trophy']
+
+  - id: TAS-004
+    title: Contract tests are present
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: LOW
+    class: correctness
+    check:
+      kind: any_file
+      patterns:
+        - 'pacts/**'
+        - 'pact/**'
+        - '**/*.pact.*'
+        - 'tests/contracts/**'
+        - 'tests/contract/**'
+        - 'test/contracts/**'
+        - '**/*.contract.test.*'
+        - '**/*.contract.spec.*'
+    why: 'An API without checked-in consumer contracts can only be tested by hand; pact files and contract suites are the machine-checkable shadow of that agreement.'
+    remediation: 'Record consumer-driven contracts (e.g. Pact) or add a tests/contracts suite asserting request/response shapes.'
+    references: ['OpenAPI', 'Testing-Trophy']
+
+  - id: TAS-005
+    title: Coverage configuration or output is present
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: LOW
+    class: correctness
+    check:
+      kind: any_file
+      patterns:
+        - '.codecov.yml'
+        - 'codecov.yml'
+        - 'codecov.yaml'
+        - '.coveragerc'
+        - '.nycrc'
+        - '.nycrc.json'
+        - '.c8rc'
+        - '.c8rc.json'
+        - 'coverage/**'
+        - '**/lcov.info'
+    why: 'Unmeasured coverage drifts down silently; a coverage config or report artifact proves measurement was set up at least once.'
+    remediation: 'Turn on coverage reporting in the test runner and publish the number on every PR.'
+    references: ['NIST-SSDF-RV.1.1']
+
+  - id: TAS-006
+    title: A coverage threshold is pinned in the package.json-embedded jest config
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: LOW
+    class: correctness
+    check:
+      kind: json_path
+      file: 'package.json'
+      path: 'jest.coverageThreshold'
+    why: 'A gate stops the slide — but this check reads only the package.json-embedded jest config, the one JSON location with a stable schema. Thresholds kept in vitest.config, jest.config.js, or .nycrc are invisible to it.'
+    remediation: 'Set jest.coverageThreshold in package.json, or keep the threshold wherever the runner reads it and accept this marker as not-applicable.'
+    references: ['NIST-SSDF-RV.1.1']
+
+  - id: TAS-007
+    title: Mutation-testing evidence is present
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: FUTURE
+    class: correctness
+    check:
+      kind: any_file
+      patterns:
+        - 'reports/**/*mut*'
+        - 'reports/mutation/**'
+        - 'stryker.conf.*'
+        - '.stryker.conf.*'
+        - '.mutmut*'
+        - 'mutants/**'
+    why: 'Coverage tells you which lines ran, not whether the test would have failed if the line were wrong; a mutation config or report proves the question was asked.'
+    remediation: 'Run mutation testing on the highest-risk module first and keep the config or report in the repo.'
+    references: ['Mutation-Testing']
+
+  - id: TAS-008
+    title: A determinism guard is set in test config or CI
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: LOW
+    class: correctness
+    check:
+      kind: grep_present
+      pattern: '(forbidOnly|forbid-only|forbid_only|failOnConsole|fail-on-console)'
+      include:
+        [
+          'playwright.config.*',
+          'cypress.config.*',
+          'vitest.config.*',
+          'vitest.workspace.*',
+          'jest.config.*',
+          'package.json',
+          '.github/workflows/*.yml',
+          '.github/workflows/*.yaml',
+          '.gitlab-ci.yml',
+        ]
+    why: 'Focused-test markers (.only) committed by accident silently skip the rest of the suite; a forbid-only guard string proves the leak was thought about.'
+    remediation: 'Set forbidOnly on CI (e.g. Playwright forbidOnly) so a stray .only fails the build instead of shrinking it.'
+    references: ['Google-Testing-Blog:Flaky']
+
+  - id: TAS-009
+    title: A test retry budget is declared
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: LOW
+    class: operations
+    check:
+      kind: grep_present
+      pattern: '(retries\s*:\s*[1-9]|"retries"\s*:\s*[1-9]|retries=[1-9]|--retries[ =][1-9]|rerun-failed|flaky-test-retry|retry-on-failure)'
+      include:
+        [
+          'playwright.config.*',
+          'cypress.config.*',
+          'vitest.config.*',
+          'jest.config.*',
+          'package.json',
+          '.github/workflows/*.yml',
+          '.github/workflows/*.yaml',
+          '.gitlab-ci.yml',
+        ]
+    why: 'A retries setting proves the project pays for reruns; it proves nothing about whether the tests are flaky or stable — only that the budget exists.'
+    remediation: 'Declare an explicit retry budget (e.g. retries: 2 on CI) and track which tests consume it; quarantine chronic consumers.'
+    references: ['Google-Testing-Blog:Flaky']
+
+  - id: TAS-010
+    title: Tests assert failure paths
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: MEDIUM
+    class: correctness
+    check:
+      kind: grep_present
+      pattern: '(\.toThrow\(|\.rejects|pytest\.raises|assertRaises|assert\.rejects|ShouldThrow|assert\.throws)'
+      include:
+        [
+          '**/*.test.*',
+          '**/*.spec.*',
+          '**/test_*.py',
+          '**/*_test.*',
+          'tests/**',
+          'test/**',
+          '__tests__/**',
+          'spec/**',
+        ]
+    why: 'A suite that only asserts happy paths never proves the error handling works; failure-assertion strings prove at least one test looks at the sad path.'
+    remediation: 'Add negative tests for every permission boundary and every error branch — 401/403 paths, validation rejections, and cross-tenant attempts.'
+    references: ['Testing-Patterns']
+
+  - id: TAS-011
+    title: Test-data and environment isolation markers exist
+    section: S7
+    section_title: Testing & Quality Assurance
+    severity: LOW
+    class: maintainability
+    check:
+      kind: any_file
+      patterns:
+        - 'tests/fixtures/**'
+        - 'test/fixtures/**'
+        - '**/__fixtures__/**'
+        - '**/factories/**'
+        - '**/__factories__/**'
+        - '.env.test'
+        - '.env.testing'
+        - 'tests/.env.test'
+    why: 'Hand-built object literals in 200 tests make every schema change a 200-file migration, and tests sharing the live environment leak state; fixtures, factories, and a dedicated test env file are the markers of isolation.'
+    remediation: 'Add a factory or fixtures directory and a .env.test so tests generate data and never touch the dev or prod environment.'
+    references: ['Testing-Patterns', '12-Factor:Config']

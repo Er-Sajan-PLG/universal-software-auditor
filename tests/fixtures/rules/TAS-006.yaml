@@ -1,0 +1,13 @@
+rule: TAS-006
+negative:
+  files:
+    package.json: |
+      {
+        "name": "app",
+        "jest": { "coverageThreshold": { "global": { "lines": 80 } } }
+      }
+positive:
+  files:
+    package.json: |
+      { "name": "app", "scripts": { "test": "vitest run" } }
+  expect: MISSING

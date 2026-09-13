@@ -1,0 +1,16 @@
+rule: TAS-003
+negative:
+  files:
+    tests/system/checkout.e2e.ts: |
+      import { test, expect } from '@playwright/test';
+      test('checkout journey', async ({ page }) => {
+        await page.goto('/');
+        await expect(page).toHaveTitle(/shop/);
+      });
+positive:
+  files:
+    README.md: |
+      # Project
+    src/index.ts: |
+      export const x = 1;
+  expect: MISSING

@@ -1,0 +1,19 @@
+rule: TAS-011
+negative:
+  files:
+    tests/fixtures/users.ts: |
+      export const user = { id: 'u-1', email: 'test@example.com' };
+    .env.test: |
+      DATABASE_URL=postgres://localhost:5432/app_test
+positive:
+  files:
+    README.md: |
+      # Project
+    tests/auth.test.ts: |
+      import { describe, it, expect } from 'vitest';
+      describe('auth', () => {
+        it('works', () => {
+          expect(1).toBe(1);
+        });
+      });
+  expect: MISSING

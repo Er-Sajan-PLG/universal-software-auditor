@@ -1,0 +1,12 @@
+rule: TAS-004
+negative:
+  files:
+    pacts/web-api.json: |
+      { "consumer": { "name": "web" }, "interactions": [] }
+positive:
+  files:
+    README.md: |
+      # Project
+    openapi.yaml: |
+      openapi: 3.0.0
+  expect: MISSING
