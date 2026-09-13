@@ -168,11 +168,22 @@ export function loadProviderConfig(
   const resolved: ResolvedConfig = {
     providerId: preset.id,
     label: preset.label,
-    baseURL: baseURL.replace(/\/+$/, ''),
+    baseURL: stripTrailingSlashes(baseURL),
     model,
   };
   if (apiKey !== undefined) resolved.apiKey = apiKey;
   return resolved;
+}
+
+/**
+ * Trailing-slash strip without a regex: the input is caller-controlled
+ * (custom baseURL), and a regex here is a ReDoS surface CodeQL flags.
+ * Linear scan, identical result to `/\/+$/` removal.
+ */
+function stripTrailingSlashes(url: string): string {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === '/') end -= 1;
+  return url.slice(0, end);
 }
 
 /** Key from the environment, or undefined for keyless local endpoints. */
