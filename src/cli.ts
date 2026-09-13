@@ -28,7 +28,9 @@ import { capabilityFromPack } from './evolution/capability.js';
 import { ruleAutomatability } from './engine/automatability.js';
 import { catalogueCoverage, catalogueOf, loadCatalogues } from './engine/catalogues.js';
 import { categoryCoverage, loadCategories } from './engine/categories.js';
-import { runFoundationInit, runFoundationShow } from './foundation/interview.js';
+import { createStdinAsk, runFoundationInit, runFoundationShow } from './foundation/interview.js';
+import { runLiveSession, type ChatFn } from './live/runner.js';
+import { complete, loadProviderConfig } from './agent/index.js';
 import type { Catalogue } from './engine/catalogues.js';
 import type { QueueSummary } from './evolution/queue.js';
 import type {
@@ -98,7 +100,7 @@ function list(args: Args, key: string): string[] {
 
 /* -------------------------------------------------------------------- main -- */
 
-const COMMANDS: Record<string, (args: Args) => number> = {
+const COMMANDS: Record<string, (args: Args) => number | Promise<number>> = {
   audit: cmdAudit,
   detect: cmdDetect,
   rules: cmdRules,
@@ -112,9 +114,10 @@ const COMMANDS: Record<string, (args: Args) => number> = {
   standards: cmdStandards,
   foundation: cmdFoundation,
   categories: cmdCategories,
+  live: cmdLive,
 };
 
-export function main(argv: string[]): number {
+export function main(argv: string[]): number | Promise<number> {
   const args = parseArgs(argv);
   if (bool(args, 'help')) {
     console.log(HELP);
@@ -470,6 +473,66 @@ function cmdFoundation(args: Args): number {
   console.error('Usage: usa foundation <init|show> [path] [--dir <path>] [--non-interactive]');
   return 2;
 }
+
+/* ------------------------------------------------------------------ live -- */
+
+/**
+ * `usa live`: conversational audit session (foundation → audit → triage →
+ * report). The default chat is the agent layer's `complete()`; without a
+ * configured provider the session runs deterministically (loud skips, no
+ * model calls). Async only because the LLM transport is async — every
+ * deterministic step stays synchronous underneath.
+ */
+async function cmdLive(args: Args): Promise<number> {
+  if (bool(args, 'help')) {
+    console.log(LIVE_HELP_TEXT);
+    return 0;
+  }
+  const dir = (args._[1] as string | undefined) ?? '.';
+  const providerId =
+    str(args, 'provider') ?? process.env['USA_PROVIDER'] ?? process.env['USA_LIVE_PROVIDER'];
+  const modelOpt = str(args, 'model') ?? process.env['USA_MODEL'];
+  const transcriptPath = str(args, 'transcript');
+  let chat: ChatFn | undefined;
+  if (providerId) {
+    try {
+      loadProviderConfig(providerId, modelOpt === undefined ? undefined : { model: modelOpt });
+      const provider = providerId;
+      const model = modelOpt;
+      chat = (req) => complete({ ...req, provider, ...(model === undefined ? {} : { model }) });
+    } catch (err) {
+      console.error(`live: ${(err as Error).message} — continuing in deterministic-only mode.`);
+      chat = undefined;
+    }
+  } else {
+    console.log(
+      'live: no provider configured (set --provider or USA_PROVIDER) — deterministic-only mode.',
+    );
+  }
+  return runLiveSession({
+    dir,
+    ask: createStdinAsk(),
+    print: (line: string) => console.log(line),
+    chat,
+    transcriptPath,
+    provider: providerId,
+    model: modelOpt,
+  });
+}
+
+const LIVE_HELP_TEXT = `
+usa live — conversational audit session
+
+  usa live [path] [--provider ID] [--model M] [--transcript FILE]
+
+  Walks foundation → audit → triage → report with you. The deterministic
+  engine verifies; the model only proposes. Without a provider the session
+  runs deterministically (model turns are skipped loudly, never faked).
+
+  --provider <id>     LLM provider preset (default $USA_PROVIDER, else deterministic-only)
+  --model <m>         Model id (default preset default or $USA_MODEL)
+  --transcript <file> Write the session transcript to this file
+`.trim();
 
 function printRuleDetail(packId: string, rule: Rule, catalogues: Catalogue[]): void {
   console.log(`# ${rule.id} — ${rule.title}`);
@@ -934,6 +997,7 @@ usa — Universal Software Auditor
   usa categories                Report future-domain category coverage
   usa foundation init [path]    Capture project intent into .usa/foundation.yaml
   usa foundation show [path]    Print the effective intent and asserted facts
+  usa live [path]               Conversational audit session (deterministic without a provider)
 
 evolve options
   --store <dir>        Persist audit runs/results (content-addressed store)
@@ -960,6 +1024,11 @@ categories options
 foundation options
   --dir <path>        Project directory (default .; a positional path works too)
   --non-interactive   Write the defaults file without prompting (init only)
+
+live options
+  --provider <id>     LLM provider preset (default $USA_PROVIDER, else deterministic-only)
+  --model <m>         Model id (default preset default or $USA_MODEL)
+  --transcript <file> Write the session transcript to this file
 
 audit options
   --out <file>        Report path (default AUDIT.md)
@@ -1041,5 +1110,16 @@ function isEntryPoint(
 export { isEntryPoint };
 
 if (isEntryPoint()) {
-  process.exit(main(process.argv.slice(2)));
+  const out = main(process.argv.slice(2));
+  if (typeof out === 'number') {
+    process.exit(out);
+  } else {
+    out.then(
+      (code) => process.exit(code),
+      (err) => {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(2);
+      },
+    );
+  }
 }
