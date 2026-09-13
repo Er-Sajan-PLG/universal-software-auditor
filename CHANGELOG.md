@@ -5,6 +5,16 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.3.4...v2.4.0) (2026-09-13)
+
+
+### Features
+
+* **foundation:** intent file loader and interview CLI ([79e5a30](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/79e5a308f23ccf84a173e7692a752279d20becb9))
+* **foundation:** intent wiring, tags plumbing, registration, sync, ADR-0029 ([59b7376](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/59b73769ffbe17fdb9fb7d6522acc422362f3f16))
+* **report:** foundation readiness section and docs ([16bc2d0](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/16bc2d007be73a92f8a47f8282ecb8a3db7f5a2b))
+* **rules:** foundation readiness checks (FND-001+) ([00221b2](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/00221b2fa86f5971e7e4cf30302a091aef435a5d))
+
 ## [2.3.4](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.3.3...v2.3.4) (2026-09-13)
 
 
