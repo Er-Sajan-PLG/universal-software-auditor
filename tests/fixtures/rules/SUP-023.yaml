@@ -1,0 +1,10 @@
+rule: SUP-023
+negative:
+  files:
+    attestations/image.vsa.json: |
+      {"_type": "https://in-toto.io/Statement/v1", "predicateType": "https://slsa.dev/verification_summary/v1"}
+positive:
+  files:
+    package.json: |
+      { "name": "app" }
+  expect: MISSING
