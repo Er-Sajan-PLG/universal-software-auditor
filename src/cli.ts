@@ -15,7 +15,7 @@ import type { MaturityProfile } from './engine/maturity.js';
 import { diffReports } from './engine/diff.js';
 import { bootstrapPacks, writeBootstrapPacks } from './bootstrap/index.js';
 import { EXAMPLE_CONFIG, loadConfig } from './config.js';
-import { evaluateGate } from './engine/gate.js';
+import { evaluateGate, evaluateNewCodeGate, parseBaselineTrailer } from './engine/gate.js';
 import { learnFromReport, renderSuggestions, type LearnOptions } from './learn/index.js';
 import { Store } from './store/index.js';
 import { runEvolutionCycle, type EvolutionCycleOutput } from './evolution/run.js';
@@ -149,6 +149,7 @@ interface AuditCliOptions {
   out: string;
   format: OutputFormat;
   failOn: string;
+  baseline?: string;
   quiet: boolean;
   maxFiles?: number;
   maxBytes?: number;
@@ -179,6 +180,7 @@ function readAuditOptions(args: Args): AuditCliOptions {
     out,
     format: resolveFormat(str(args, 'format'), out),
     failOn: (str(args, 'fail-on', 'none') ?? 'none').toLowerCase(),
+    baseline: str(args, 'baseline'),
     quiet: bool(args, 'quiet'),
     maxFiles: parseCountFlag(str(args, 'max-files')),
     maxBytes: parseCountFlag(str(args, 'max-bytes')),
@@ -242,7 +244,50 @@ function cmdAudit(args: Args): number {
     console.log(`  report → ${o.out}`);
   }
 
-  return evaluateGate(report, o.failOn, o.quiet);
+  // Without --baseline the absolute gate below is byte-identical to before:
+  // same function, same arguments, same exit codes.
+  if (!o.baseline) return evaluateGate(report, o.failOn, o.quiet);
+  return runBaselineGate(report, o.baseline, o.failOn, o.quiet, args);
+}
+
+/**
+ * New-code gate: fail only on findings this change introduced or regressed,
+ * compared against a previous report's trailer. Every baseline failure mode
+ * exits 2 loudly — a gate that cannot read its baseline must never pass.
+ */
+function runBaselineGate(
+  report: AuditReport,
+  baselinePath: string,
+  failOn: string,
+  quiet: boolean,
+  args: Args,
+): number {
+  let text: string;
+  try {
+    text = fs.readFileSync(baselinePath, 'utf8');
+  } catch {
+    console.error(`--baseline file not found or unreadable: ${baselinePath}`);
+    return 2;
+  }
+  // Tolerate a raw YAML trailer file, mirroring `usa diff`.
+  const trailerYaml = parseTrailer(text) ?? text;
+  if (!trailerYaml.trim()) {
+    console.error(`--baseline has no report trailer and no YAML content: ${baselinePath}`);
+    return 2;
+  }
+  try {
+    const baseline = parseBaselineTrailer(trailerYaml);
+    // An explicit --fail-on (even none) wins; otherwise the new-code gate
+    // defaults to HIGH so legacy MEDIUM/LOW debt never blocks adoption.
+    const threshold =
+      failOn === 'none' && args['baseline'] !== undefined && args['fail-on'] === undefined
+        ? 'high'
+        : failOn;
+    return evaluateNewCodeGate(report, baseline, threshold, quiet);
+  } catch (err) {
+    console.error(`--baseline is malformed (${baselinePath}): ${(err as Error).message}`);
+    return 2;
+  }
 }
 
 function renderReport(report: AuditReport, profile: MaturityProfile, format: OutputFormat): string {
@@ -787,6 +832,9 @@ audit options
   --fact <ns:value>   Assert a fact detection missed, e.g. --fact has:database
   --allow-commands    Run \`command:\` checks (shells out; off by default)
   --fail-on <sev>     Exit 1 on findings >= sev: critical|high|medium|low|none
+  --baseline <file>   New-code gate: only fail on findings new or regressed
+                      vs this previous report (default threshold high;
+                      explicit --fail-on overrides it)
   --quiet             Only errors
   --max-files <n>     Index at most n files (overrides config; default 60000)
   --max-bytes <n>     Skip files larger than n bytes (overrides config; default 2 MiB)
@@ -798,6 +846,7 @@ examples
   usa audit . --depth deep
   usa bootstrap ~/code/legacy-php-app --out /tmp/packs
   usa audit ../api --profile production --fail-on high
+  usa audit . --baseline reports/2026-08.md --fail-on high
   usa audit . --out reports/audit-$(date +%F).md
   usa learn AUDIT.md --out swift-suggestions.yaml
 `.trim();
