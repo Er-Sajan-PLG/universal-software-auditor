@@ -108,6 +108,18 @@ The diff reads the YAML trailer embedded in every report — so a Markdown repor
 still the only artefact you need to keep. (If you also emit SARIF/JSON for
 dashboards, the Markdown stays the human-readable source of truth.)
 
+## Live session (conversational audit)
+
+```bash
+usa live . --transcript SESSION.md
+```
+
+Walks foundation → audit → triage → report with you, keeping a transcript.
+With a provider configured (`--provider`, `--model`, or `USA_PROVIDER`), the
+model turns converse; without one the session runs deterministically, saying
+so loudly at every skipped turn. See [Agent integration](agent-integration.md)
+for driving it with an agent, and `usa live --help` for flags.
+
 ## Next steps
 
 - [Concepts](concepts.md) — how severity, status, and scoring actually work

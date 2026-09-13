@@ -72,6 +72,28 @@ export type {
   ResolvedConfig,
   ModelInfo,
 } from './agent/types.js';
+export { initialSession, advance, renderTranscript } from './live/session.js';
+export {
+  runLiveSession,
+  DETERMINISTIC_SKIP_PREFIX,
+  type LiveSessionOptions,
+} from './live/runner.js';
+export type { SessionState, SessionPhase, TranscriptEntry, TranscriptKind } from './live/types.js';
+export {
+  classifyTestFile,
+  inventoryTests,
+  assertionSignals,
+  pyramidAssessment,
+  freshnessCheck,
+  DEFAULT_PATTERNS,
+  TOP_HEAVY_SHARE,
+  MS_PER_DAY,
+  type TestLevel,
+  type LevelPatterns,
+  type AssertionSignals,
+  type PyramidAssessment,
+  type FreshnessResult,
+} from './engine/test-evidence.js';
 export { renderMarkdown, parseTrailer, trailer } from './report/markdown.js';
 export {
   renderJson,

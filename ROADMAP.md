@@ -95,14 +95,17 @@ verify` chain at production (`core/provenance-cosign`, SUP-018–020),
       custom endpoints, tunable reasoning/temperature/context, live model
       listing (free + paid). Deterministic spine untouched; the model proposes,
       the engine verifies. ADR-0031. _(L)_
-- [ ] **Live audit sessions + interactive interviews** — `usa live`: a
+- [x] **Live audit sessions + interactive interviews** — `usa live`: a
       conversing session (foundation interview, environment checks, vision
       alignment) with a transcript. Deterministic state machine; LLM calls
-      behind a stubbed interface. _(L)_
+      behind a stubbed interface; degrades loudly to deterministic-only.
+      ADR-0034. _(L)_
 - [x] **Testing assurance, deterministic subset** — TAS-001–011 presence
       heuristics with per-rule honesty clauses (what each proves and does
-      not); interpretation, gap narratives, and the assurance report section
-      stay agent-side or Wave B. ADR-0032. _(XL — swarm waves)_
+      not), plus counted evidence signals (inventory, assertion signals,
+      pyramid shape, freshness) as library code; interpretation, gap
+      narratives, and the assurance report section stay agent-side or later
+      waves. ADR-0032, ADR-0035. _(XL — swarm waves)_
 - [x] **Future-ready categorization** — ten domains as a derived axis over
       rules (`rules/categories.yaml` + `usa categories`); five resolve, five
       honestly empty. ADR-0033. _(M)_
