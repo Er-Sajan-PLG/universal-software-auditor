@@ -19,6 +19,7 @@ packs:
   - core/architecture.yaml
   - core/code-quality.yaml
   - core/testing.yaml
+  - core/testing-assurance.yaml
   - core/cicd.yaml
   - core/release.yaml
   - core/dependencies.yaml

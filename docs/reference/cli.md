@@ -20,6 +20,7 @@ usa — Universal Software Auditor
   usa learn <report.md>         Generate suggested rules from audit findings
   usa evolve [path]             Run the audit → gap → candidate → release loop
   usa standards                 Report catalogue coverage and automatability
+  usa categories                Report future-domain category coverage
   usa foundation init [path]    Capture project intent into .usa/foundation.yaml
   usa foundation show [path]    Print the effective intent and asserted facts
 
@@ -38,6 +39,10 @@ learn options
   --min-severity <s>  Minimum severity to consider (CRITICAL|HIGH|MEDIUM|LOW|FUTURE, default MEDIUM)
 
 standards options
+  --format <fmt>      md | json                       (default md)
+  --rules-dir <dir>   Rule pack directory             (default bundled rules/)
+
+categories options
   --format <fmt>      md | json                       (default md)
   --rules-dir <dir>   Rule pack directory             (default bundled rules/)
 

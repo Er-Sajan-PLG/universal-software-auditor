@@ -97,7 +97,7 @@ Counts, versions, and the CLI reference are **derived from source**, not typed
 by hand. In a doc, write a fact as a marker and it keeps itself correct:
 
 ```markdown
-Rules: <!-- usa:fact rules -->301<!-- /usa:fact -->
+Rules: <!-- usa:fact rules -->312<!-- /usa:fact -->
 ```
 
 - `npm run docs:sync` rewrites every marker from source (also runs on commit via
