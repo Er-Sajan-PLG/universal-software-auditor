@@ -38,6 +38,10 @@ a changed decision gets a _new_ ADR that supersedes the old one).
 | 0027 | Provenance is verified: existence, then chain              | Accepted   | —          |
 | 0028 | Signature verification gets a CLI command                  | Accepted   | —          |
 | 0029 | Foundation readiness: declared intent, deterministic check | Accepted   | —          |
+| 0030 | Live assurance phase: LLM outside the spine, honesty gate  | Accepted   | —          |
+| 0031 | LLM providers: one transport, presets, no keys in files    | Accepted   | —          |
+| 0032 | Testing assurance ships as deterministic slices            | Accepted   | —          |
+| 0033 | Future categories are derived, some honestly empty         | Accepted   | —          |
 
 ## Coverage map (what has no ADR, and why)
 
