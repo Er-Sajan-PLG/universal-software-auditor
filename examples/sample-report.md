@@ -472,9 +472,9 @@ Maturity signals:
 - +0 contributing guide (absent)
 - maturity score 0.0/7.5 → prototype
 
-Rule packs loaded (14): core/repo, core/security, core/supply-chain, core/architecture, core/code-quality, core/testing, core/cicd, core/release, core/dependencies, core/documentation, core/future-readiness, stacks/node-typescript, stacks/data, stacks/api-backend
+Rule packs loaded (15): core/repo, core/security, core/supply-chain, core/provenance-cosign, core/architecture, core/code-quality, core/testing, core/cicd, core/release, core/dependencies, core/documentation, core/future-readiness, stacks/node-typescript, stacks/data, stacks/api-backend
 
-Rule packs skipped as not applicable (14): stacks/python, stacks/go, stacks/rust, stacks/jvm, stacks/web-frontend, stacks/mobile, stacks/containers, stacks/iac, stacks/solidity, stacks/ml-ai, stacks/cli, stacks/compliance, stacks/ai-era, stacks/swift
+Rule packs skipped as not applicable (15): core/provenance-attestation, stacks/python, stacks/go, stacks/rust, stacks/jvm, stacks/web-frontend, stacks/mobile, stacks/containers, stacks/iac, stacks/solidity, stacks/ml-ai, stacks/cli, stacks/compliance, stacks/ai-era, stacks/swift
 
 </details>
 

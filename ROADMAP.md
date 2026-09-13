@@ -53,9 +53,11 @@ Automation and governance:
       allowed, `full` refused on non-deterministic kinds). `usa standards`
       reports coverage; the table is machine-synced into
       `docs/standards-mapping.md`. ADR-0021. _(S)_
-- [ ] **Provenance verification checks (verify, don't mint)** — `cosign
-verify` success, attestation/VSA presence where network allows; existence
-      checks at beta, chain verification at production. _(L)_
+- [x] **Provenance verification checks (verify, don't mint)** — `cosign
+verify` chain at production (`core/provenance-cosign`, SUP-018–020),
+      attestation/VSA existence at beta and up
+      (`core/provenance-attestation`, SUP-022–024); verification only per
+      ADR-0011. ADR-0027. _(L)_
 - [x] **Site-level suppressions** — a waiver may carry a `file` glob (and
       optional `line`); only matching locations are excused, unmatched ones
       stay active, and a waiver that matched nothing is reported. ADR-0022. _(M)_
@@ -63,16 +65,20 @@ verify` success, attestation/VSA presence where network allows; existence
       automatability (`assist` = the tool settles it once allowed, `manual` =
       reasoning required), and `.usa.yaml` `reviews:` record dated human
       attention with an optional `until` deadline that surfaces as stale. ADR-0023. _(M)_
-- [ ] **New-code quality gates** — gate on newly-introduced ≥ HIGH plus
-      regressed rules (trailer + `diff` already compute the inputs), instead of
-      absolute `--fail-on` which punishes legacy adoption. _(M)_
+- [x] **New-code quality gates** — `usa audit --baseline` fails only on
+      newly-introduced ≥ HIGH plus regressed rules, sharing the `usa diff`
+      movement taxonomy so text and verdict agree. ADR-0024. _(M)_
 
 ## Next: automation and governance
 
-- [ ] **OpenSSF Best Practices badge** — self-certify the CII baseline
-      (the Scorecard action and branch protection are already in place). _(S)_
-- [ ] **Signed reports (Sigstore)** — optional detached signature for
-      `AUDIT.md` as supply-chain-grade evidence. _(M)_
+- [x] **OpenSSF Best Practices badge** — honest in-progress badge + status
+      section (Scorecard action and branch protection already in place;
+      registration at bestpractices.dev is the remaining step). _(S)_
+- [x] **Signed reports, verify side (Sigstore)** — detached-signature
+      verification via local cosign (`src/report/signature.ts`); minting stays
+      blocked pending an ADR-0011 amendment. ADR-0025. _(M)_
+- [x] **Generated docs resync** — the `resync` CI job regenerates and pushes
+      `cli.md`/`sample-report.md` on PRs instead of merely failing. ADR-0026.
 - [ ] **MADR/log4brains** — only when the ADR corpus triples or decisions
       become routinely contested. Not now.
 
