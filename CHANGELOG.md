@@ -5,6 +5,22 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.4.0...v2.5.0) (2026-09-13)
+
+
+### Features
+
+* **agent:** openAI-compatible LLM provider layer ([9547c8f](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/9547c8f587b28c88e15c597d203a30a8308fb052))
+* **categories:** future-ready assurance taxonomy with derived coverage ([8ac21af](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/8ac21af72c6f7377737a34229b1b16db7f634234))
+* **phase:** categories CLI, agent exports, provider refactor, vision, ADRs 0030-0033 ([c2d1d4d](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/c2d1d4d04a064d537f5f29a43f12b9c1b388b96d))
+* **rules:** register testing-assurance pack and sync generated docs ([2b5b5f0](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/2b5b5f0d56f990c30b7d4dd8e73e8ae3d7624117))
+* **rules:** testing assurance checks (TAS-001+) ([6186257](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/61862573f994e06f6dec31d171dfbdd9bc8cab4f))
+
+
+### Bug Fixes
+
+* **agent:** strip trailing slashes without regex (ReDoS surface) ([d36da07](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/d36da073d1c1042ab2ed7e7038b3a5dfa25326b2))
+
 ## [2.4.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.3.4...v2.4.0) (2026-09-13)
 
 
