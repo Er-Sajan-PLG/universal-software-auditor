@@ -1120,10 +1120,14 @@ if (isEntryPoint()) {
   if (typeof out === 'number') {
     process.exit(out);
   } else {
+    // Static text: an async rejection can carry provider internals (env var
+    // names, endpoints, HTTP snippets) from the agent layer, and this sink
+    // must never paraphrase them into logs — see the cmdLive catch above.
+    // Only `live` runs async today, and it already reports its own failures.
     out.then(
       (code) => process.exit(code),
-      (err) => {
-        console.error(err instanceof Error ? err.message : String(err));
+      () => {
+        console.error('usa: async command failed unexpectedly (exit 2).');
         process.exit(2);
       },
     );
