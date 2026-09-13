@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.4](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.3.3...v2.3.4) (2026-09-13)
+
+
+### Bug Fixes
+
+* **ci:** publish GPR mirror with public access ([#44](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/44)) ([dc44d21](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/dc44d21c77d4dcf89d5b13ab3106e41c73d8feca))
+
 ## [2.3.3](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.3.2...v2.3.3) (2026-09-13)
 
 
