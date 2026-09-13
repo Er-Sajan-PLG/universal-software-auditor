@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.3.0...v2.3.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* **detect:** recognise git worktree gitdir pointers as repos ([#38](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/38)) ([bee82f2](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/bee82f28cef8256cfa1300e241685557c6b9cee8))
+
 ## [2.3.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.2.0...v2.3.0) (2026-09-13)
 
 
