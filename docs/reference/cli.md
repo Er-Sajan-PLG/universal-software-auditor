@@ -243,6 +243,21 @@ examples
    TEST-011   FUTURE   correctness      Mutation testing or equivalent
    TEST-012   LOW      maintainability  Test data comes from fixtures or factories
 
+## core/testing-assurance — Testing Assurance Markers (11 rules)
+   Deterministic presence-markers for the testing assurance program: unit, integration, and system layouts; contract tests; coverage and mutation evidence; retry/determinism guards; failure assertions; and test-data isolation. Every rule asserts only that a marker exists — never that the tests are good, sufficient, or green.
+
+   TAS-001    MEDIUM   correctness      A unit-test layout exists
+   TAS-002    MEDIUM   correctness      An integration-test layout exists
+   TAS-003    MEDIUM   correctness      A system/end-to-end test layout exists
+   TAS-004    LOW      correctness      Contract tests are present
+   TAS-005    LOW      correctness      Coverage configuration or output is present
+   TAS-006    LOW      correctness      A coverage threshold is pinned in the package.json-embedded jest config
+   TAS-007    FUTURE   correctness      Mutation-testing evidence is present
+   TAS-008    LOW      correctness      A determinism guard is set in test config or CI
+   TAS-009    LOW      operations       A test retry budget is declared
+   TAS-010    MEDIUM   correctness      Tests assert failure paths
+   TAS-011    LOW      maintainability  Test-data and environment isolation markers exist
+
 ## core/cicd — CI/CD, Infrastructure & Observability (12 rules)
    How code becomes running software, and how you find out when it breaks. Heavily informed by the OpenSSF Scorecard and DORA's delivery metrics.
 
@@ -502,5 +517,5 @@ examples
    SW-005     HIGH     security         Request validation uses Validatable or a validation library
    SW-006     MEDIUM   security         Security headers middleware is configured
 
-301 rule(s) across 31 pack(s).
+312 rule(s) across 32 pack(s).
 ```
