@@ -17,11 +17,11 @@
 
 ## 📊 Executive Summary
 
-### Overall Health Score: **40.4/100**
+### Overall Health Score: **37.3/100**
 
-`██████████░░░░░░░░░░░░░░`
+`█████████░░░░░░░░░░░░░░░`
 
-Verified automatically: **70.7%** of applicable checks. 27 checks need a human — see the judgement queue.
+Verified automatically: **73.8%** of applicable checks. 27 checks need a human — see the judgement queue.
 
 Expected band for **Prototype / Spike**: 30–65 — **within the expected band** 👍
 
@@ -35,7 +35,7 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 | S4 · Architecture & Design | 8/10 | 60% | 0/2 recorded |
 | S5 · Code Quality | 3.5/10 | 87.5% | 0/1 recorded |
 | S6 · Data & Database | 1.3/10 | 66.7% | 0/3 recorded |
-| S7 · Testing & Quality Assurance | 0/10 † | 33.3% | 0/2 recorded |
+| S7 · Testing & Quality Assurance | 0/10 | 85.7% | 0/2 recorded |
 | S8 · CI/CD, Infrastructure & Observability | 3.3/10 | 66.7% | 0/1 recorded |
 | S9 · Release & Change Management | — not verified | 0% | 0/2 recorded |
 | S10 · Dependencies & Third-Party | 10/10 † | 25% | 0/3 recorded |
@@ -43,7 +43,7 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 | S15 · Platform-Specific | 5.1/10 | 50% | 0/5 recorded |
 | S16 · Future Readiness | — not verified | 0% | 0/2 recorded |
 
-*Confidence = share of applicable rules the engine could verify automatically; unverified checks are excluded from the score rather than counted as passes. **†** = fewer than half of that section's applicable checks could be verified. **Review** = judgement checks with a dated human review on record (`⏳` marks an overdue review). Automation coverage: **70.7%**. The rest is in the judgement queue below.*
+*Confidence = share of applicable rules the engine could verify automatically; unverified checks are excluded from the score rather than counted as passes. **†** = fewer than half of that section's applicable checks could be verified. **Review** = judgement checks with a dated human review on record (`⏳` marks an overdue review). Automation coverage: **73.8%**. The rest is in the judgement queue below.*
 
 ## 🏷️ Findings Summary
 
@@ -52,8 +52,8 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 | ✅ GOOD | 21 | : | 🔴 CRITICAL | 2 |
 | 🔴 FAIL | 4 | : | 🟠 HIGH | 0 |
 | ⚠️ WRONG | 5 | : | 🟡 MEDIUM | 7 |
-| 🚫 MISSING | 34 | : | 🟢 LOW | 13 |
-| 💀 DEPRECATED | 1 | : | 🔵 FUTURE | 22 |
+| 🚫 MISSING | 45 | : | 🟢 LOW | 17 |
+| 💀 DEPRECATED | 1 | : | 🔵 FUTURE | 29 |
 | 🧪 EXPERIMENTAL | 0 | : |   |  |
 | ❓ NEEDS REVIEW | 27 | : |   |  |
 
@@ -306,12 +306,55 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 
 ### S7 · Testing & Quality Assurance
 
-**Score 0/10** · `░░░░░░░░░░░░░░░░░░░░░░░░` · 0 passed / 1 open / 2 to review
+**Score 0/10** · `░░░░░░░░░░░░░░░░░░░░░░░░` · 0 passed / 12 open / 2 to review
 
 - 🚫 **A test suite exists** `TEST-001` — Not detected — no files matching **/*.test.{ts,tsx,js,jsx,mjs,cjs}, **/*.spec.{ts,tsx,js,jsx,mjs,cjs}, **/test_*.py, **/*_test.py, **/*_test.go, **/*_spec.rb, **/*Test.java, **/*Test.kt, **/*Test.php, **/tests/**/*.rs, **/__tests__/**, **/Tests/**/*.swift, **/*Tests.swift.
   - 🪶 Downgraded HIGH → MEDIUM by the Prototype / Spike profile
   - 🛠️ Start with the happy path of the main flow and every bug you have already fixed once.
   - 📚 OpenSSF-Scorecard:CI-Tests · NIST-SSDF-RV.1.1
+- 🚫 **A unit-test layout exists** `TAS-001` — Not detected — no files matching tests/unit/**, test/unit/**, unit/**, **/*.unit.test.*, **/*.unit.spec.*.
+  - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
+  - 🛠️ Put unit tests under tests/unit (or mark them *.unit.test.*) and wire the directory into CI.
+  - 📚 Testing-Trophy · OpenSSF-Scorecard:CI-Tests
+- 🚫 **An integration-test layout exists** `TAS-002` — Not detected — no files matching tests/integration/**, test/integration/**, tests/integ/**, **/*.integration.test.*, **/*.integ.test.*, **/*.int.test.*.
+  - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
+  - 🛠️ Add tests/integration with tests that exercise a real database, queue, or HTTP boundary.
+  - 📚 Testing-Trophy
+- 🚫 **A system/end-to-end test layout exists** `TAS-003` — Not detected — no files matching tests/e2e/**, test/e2e/**, e2e/**, tests/system/**, test/system/**, system-tests/**, **/*.e2e.*.
+  - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
+  - 🛠️ Cover three journeys first: sign up/log in, the core money path, and the path that would lose data if it failed.
+  - 📚 Testing-Trophy
+- 🚫 **Tests assert failure paths** `TAS-010` — Not detected — pattern not found in **/*.test.*, **/*.spec.*, **/test_*.py, **/*_test.*, tests/**, test/**, __tests__/**, spec/**.
+  - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
+  - 🛠️ Add negative tests for every permission boundary and every error branch — 401/403 paths, validation rejections, and cross-tenant attempts.
+  - 📚 Testing-Patterns
+- 🚫 **Contract tests are present** `TAS-004` — Not detected — no files matching pacts/**, pact/**, **/*.pact.*, tests/contracts/**, tests/contract/**, test/contracts/**, **/*.contract.test.*, **/*.contract.spec.*.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Record consumer-driven contracts (e.g. Pact) or add a tests/contracts suite asserting request/response shapes.
+  - 📚 OpenAPI · Testing-Trophy
+- 🚫 **Coverage configuration or output is present** `TAS-005` — Not detected — no files matching .codecov.yml, codecov.yml, codecov.yaml, .coveragerc, .nycrc, .nycrc.json, .c8rc, .c8rc.json, coverage/**, **/lcov.info.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Turn on coverage reporting in the test runner and publish the number on every PR.
+  - 📚 NIST-SSDF-RV.1.1
+- 🚫 **A coverage threshold is pinned in the package.json-embedded jest config** `TAS-006` — Not detected — `jest.coverageThreshold` not set in package.json.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Set jest.coverageThreshold in package.json, or keep the threshold wherever the runner reads it and accept this marker as not-applicable.
+  - 📚 NIST-SSDF-RV.1.1
+- 🚫 **Mutation-testing evidence is present** `TAS-007` — Not detected — no files matching reports/**/*mut*, reports/mutation/**, stryker.conf.*, .stryker.conf.*, .mutmut*, mutants/**.
+  - 🛠️ Run mutation testing on the highest-risk module first and keep the config or report in the repo.
+  - 📚 Mutation-Testing
+- 🚫 **A determinism guard is set in test config or CI** `TAS-008` — Not detected — pattern not found in playwright.config.*, cypress.config.*, vitest.config.*, vitest.workspace.*, jest.config.*, package.json, .github/workflows/*.yml, .github/workflows/*.yaml, .gitlab-ci.yml.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Set forbidOnly on CI (e.g. Playwright forbidOnly) so a stray .only fails the build instead of shrinking it.
+  - 📚 Google-Testing-Blog:Flaky
+- 🚫 **A test retry budget is declared** `TAS-009` — Not detected — pattern not found in playwright.config.*, cypress.config.*, vitest.config.*, jest.config.*, package.json, .github/workflows/*.yml, .github/workflows/*.yaml, .gitlab-ci.yml.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Declare an explicit retry budget (e.g. retries: 2 on CI) and track which tests consume it; quarantine chronic consumers.
+  - 📚 Google-Testing-Blog:Flaky
+- 🚫 **Test-data and environment isolation markers exist** `TAS-011` — Not detected — no files matching tests/fixtures/**, test/fixtures/**, **/__fixtures__/**, **/factories/**, **/__factories__/**, .env.test, .env.testing, tests/.env.test.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Add a factory or fixtures directory and a .env.test so tests generate data and never touch the dev or prod environment.
+  - 📚 Testing-Patterns · 12-Factor:Config
 
 ### S8 · CI/CD, Infrastructure & Observability
 
@@ -521,6 +564,10 @@ Nothing here. ✅
 - 🟢 `CQ-006` There is a central error handler → Add a framework-level error handler and an ErrorBoundary (React); report to your error tracker.
 - 🟢 `DATA-002` Foreign keys / relations are defined → Declare constraints at the DB level; add a periodic orphan-row check if you cannot.
 - 🟢 `DATA-005` List queries are paginated → Enforce a default and maximum page size on every list endpoint; prefer cursor pagination.
+- 🟢 `TAS-001` A unit-test layout exists → Put unit tests under tests/unit (or mark them *.unit.test.*) and wire the directory into CI.
+- 🟢 `TAS-002` An integration-test layout exists → Add tests/integration with tests that exercise a real database, queue, or HTTP boundary.
+- 🟢 `TAS-003` A system/end-to-end test layout exists → Cover three journeys first: sign up/log in, the core money path, and the path that would lose data if it failed.
+- 🟢 `TAS-010` Tests assert failure paths → Add negative tests for every permission boundary and every error branch — 401/403 paths, validation rejections, and cross-tenant attempts.
 - 🟢 `CICD-001` A CI pipeline exists → Add a minimal pipeline first: install → lint → test → build. Expand from there.
 - 🟢 `NODE-003` Unhandled promise rejections are handled → Register process handlers for unhandledRejection/uncaughtException that log and exit non-zero so the orchestrator restarts cleanly.
 - 🟢 `NODE-006` Environment variables are validated at startup → Parse process.env against a schema at boot and exit with a clear message on failure.
@@ -532,11 +579,7 @@ Nothing here. ✅
 - 🔵 `FND-005` Architecture decisions are recorded as ADRs → Record significant decisions as ADRs under docs/adr.
 - 🔵 `FND-006` Agent instructions (AGENTS.md or llms.txt) exist → Add an AGENTS.md (or llms.txt) with build, test, and contribution instructions for agents.
 - 🔵 `FND-007` Docs carry machine-readable markers → Reference AGENTS.md/llms.txt from the README and tag machine-actionable facts with usa: markers.
-- 🔵 `FND-009` A coverage configuration exists → Add a coverage config (e.g. codecov.yml or coverage settings in your test runner config).
-- 🔵 `FND-010` The runtime version is pinned → Pin the runtime with .nvmrc, .tool-versions, .python-version, or the ecosystem equivalent.
-- 🔵 `FND-011` The environment is reproducible from checked-in files → Commit a .env.example and a Dockerfile (or compose/devcontainer definition) so setup is declarative.
-- 🔵 `FND-012` A CI workflow exists → Add a CI workflow that runs build, tests, and lint on every pull request.
-- …and 10 more
+- …and 21 more
 
 ### 🎯 What actually matters at **Prototype / Spike**
 
@@ -583,7 +626,7 @@ Maturity signals:
 - +0 contributing guide (absent)
 - maturity score 0.0/7.5 → prototype
 
-Rule packs loaded (16): core/repo, core/security, core/supply-chain, core/foundation, core/provenance-cosign, core/architecture, core/code-quality, core/testing, core/cicd, core/release, core/dependencies, core/documentation, core/future-readiness, stacks/node-typescript, stacks/data, stacks/api-backend
+Rule packs loaded (17): core/repo, core/security, core/supply-chain, core/foundation, core/provenance-cosign, core/architecture, core/code-quality, core/testing, core/testing-assurance, core/cicd, core/release, core/dependencies, core/documentation, core/future-readiness, stacks/node-typescript, stacks/data, stacks/api-backend
 
 Rule packs skipped as not applicable (15): core/provenance-attestation, stacks/python, stacks/go, stacks/rust, stacks/jvm, stacks/web-frontend, stacks/mobile, stacks/containers, stacks/iac, stacks/solidity, stacks/ml-ai, stacks/cli, stacks/compliance, stacks/ai-era, stacks/swift
 
@@ -598,7 +641,7 @@ Rule packs skipped as not applicable (15): core/provenance-attestation, stacks/p
 schema: usa-report-v1
 generated_at: 2026-01-01T00:00:00.000Z
 usa_version: 2.4.0
-overall: 40.4
+overall: 37.3
 sections:
   S1: {score: 7.2, open: 4, review: 2}
   S2: {score: 4.9, open: 7, review: 1}
@@ -606,7 +649,7 @@ sections:
   S4: {score: 8, open: 1, review: 2}
   S5: {score: 3.5, open: 6, review: 1}
   S6: {score: 1.3, open: 5, review: 3}
-  S7: {score: 0, open: 1, review: 2}
+  S7: {score: 0, open: 12, review: 2}
   S8: {score: 3.3, open: 1, review: 1}
   S9: {score: null, open: 0, review: 2}
   S10: {score: 10, open: 0, review: 3}
@@ -617,8 +660,8 @@ severity_totals:
   CRITICAL: 2
   HIGH: 0
   MEDIUM: 7
-  LOW: 13
-  FUTURE: 22
+  LOW: 17
+  FUTURE: 29
 rules:
   "REPO-001": {status: PASS, severity: CRITICAL, section: S1}
   "REPO-002": {status: PASS, severity: CRITICAL, section: S1}
@@ -664,6 +707,10 @@ rules:
   "DATA-002": {status: MISSING, severity: LOW, section: S6}
   "DATA-004": {status: UNKNOWN, severity: LOW, section: S6}
   "DATA-005": {status: MISSING, severity: LOW, section: S6}
+  "TAS-001": {status: MISSING, severity: LOW, section: S7}
+  "TAS-002": {status: MISSING, severity: LOW, section: S7}
+  "TAS-003": {status: MISSING, severity: LOW, section: S7}
+  "TAS-010": {status: MISSING, severity: LOW, section: S7}
   "TEST-006": {status: UNKNOWN, severity: LOW, section: S7}
   "TEST-008": {status: UNKNOWN, severity: LOW, section: S7}
   "CICD-001": {status: MISSING, severity: LOW, section: S8}
@@ -700,6 +747,13 @@ rules:
   "DATA-003": {status: UNKNOWN, severity: FUTURE, section: S6}
   "DATA-008": {status: WRONG, severity: FUTURE, section: S6}
   "DATA-009": {status: UNKNOWN, severity: FUTURE, section: S6}
+  "TAS-004": {status: MISSING, severity: FUTURE, section: S7}
+  "TAS-005": {status: MISSING, severity: FUTURE, section: S7}
+  "TAS-006": {status: MISSING, severity: FUTURE, section: S7}
+  "TAS-007": {status: MISSING, severity: FUTURE, section: S7}
+  "TAS-008": {status: MISSING, severity: FUTURE, section: S7}
+  "TAS-009": {status: MISSING, severity: FUTURE, section: S7}
+  "TAS-011": {status: MISSING, severity: FUTURE, section: S7}
   "DEP-004": {status: UNKNOWN, severity: FUTURE, section: S10}
   "DEP-006": {status: UNKNOWN, severity: FUTURE, section: S10}
   "DOC-001": {status: UNKNOWN, severity: FUTURE, section: S12}

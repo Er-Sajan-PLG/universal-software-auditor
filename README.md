@@ -179,7 +179,7 @@ Override it: `usa audit . --profile production` — the "what would it take to s
 
 **<!-- usa:fact sections -->16<!-- /usa:fact --> sections**, S1–S16, in [`USA.md`](USA.md) — the human/agent-facing document.
 
-**<!-- usa:fact rules-floor -->300+<!-- /usa:fact --> rules** in [`rules/`](rules) — the machine-facing ones:
+**<!-- usa:fact rules-floor -->310+<!-- /usa:fact --> rules** in [`rules/`](rules) — the machine-facing ones:
 
 <!-- usa:begin rules-tree -->
 
@@ -188,7 +188,7 @@ rules/
 ├── index.yaml              pack registry
 ├── detectors.yaml          ~230 detection signals → facts
 ├── profiles/maturity.yaml  the five lifecycle profiles
-├── core/                   14 universal packs
+├── core/                   15 universal packs
 │   ├── repo.yaml           ├── security.yaml      ├── supply-chain.yaml
 │   ├── architecture.yaml   ├── code-quality.yaml  ├── testing.yaml
 │   ├── cicd.yaml           ├── release.yaml       ├── dependencies.yaml
