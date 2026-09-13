@@ -467,3 +467,122 @@ describe('sarif report', () => {
     expect(renderSarif(r)).toBe(renderSarif(r));
   });
 });
+
+describe('foundation readiness section', () => {
+  const fnd = (over: Partial<Finding> & { tags?: string[] }): Finding =>
+    ({ ...finding({}), ...over }) as Finding;
+
+  const docsFail = () =>
+    fnd({
+      ruleId: 'FND-002',
+      title: 'Docs gap',
+      status: 'MISSING',
+      message: 'No vision recorded.',
+      tags: ['pillar:docs'],
+    });
+  const docsPass = () =>
+    fnd({
+      ruleId: 'FND-001',
+      title: 'Docs present',
+      status: 'PASS',
+      message: 'Vision recorded.',
+      tags: ['pillar:docs'],
+    });
+
+  it('returns no lines when there are no FND findings', async () => {
+    const { renderFoundationSection } = await import('../src/report/foundation.js');
+    expect(renderFoundationSection([])).toEqual([]);
+    expect(renderFoundationSection([finding({}), finding({ ruleId: 'SEC-001' })])).toEqual([]);
+  });
+
+  it('leaves FND-less reports byte-identical (no foundation section)', () => {
+    const md = renderMarkdown(baseReport([finding({ ruleId: 'X-001', status: 'FAIL' })]), profile);
+    expect(md).not.toContain('Foundation');
+    expect(md).not.toContain('FND-');
+    // Stable: the wiring adds nothing when there is nothing to report.
+    const again = renderMarkdown(
+      baseReport([finding({ ruleId: 'X-001', status: 'FAIL' })]),
+      profile,
+    );
+    expect(md).toBe(again);
+  });
+
+  it('grades pillars READY, PARTIAL, and MISSING with passed/applicable counts', () => {
+    const md = renderMarkdown(
+      baseReport([
+        docsPass(),
+        docsFail(),
+        fnd({
+          ruleId: 'FND-010',
+          title: 'Gov present',
+          status: 'PASS',
+          message: 'Owners recorded.',
+          tags: ['pillar:governance'],
+        }),
+        fnd({
+          ruleId: 'FND-020',
+          title: 'Test gap',
+          status: 'FAIL',
+          message: 'No test evidence.',
+          tags: ['pillar:testing'],
+        }),
+      ]),
+      profile,
+    );
+    expect(md).toContain('Foundation Readiness');
+    expect(md).toContain('Docs — **PARTIAL** · 1 passed / 2 applicable');
+    expect(md).toContain('Governance — **READY** · 1 passed / 1 applicable');
+    expect(md).toContain('Testing — **MISSING** · 0 passed / 1 applicable');
+  });
+
+  it('groups open FND items under their pillar, after the findings and before the queue', () => {
+    const md = renderMarkdown(baseReport([docsFail(), docsPass()]), profile);
+    const sectionIdx = md.indexOf('Section-by-Section Findings');
+    const foundationIdx = md.indexOf('Foundation Readiness');
+    const queueIdx = md.indexOf('Judgement Queue');
+    expect(foundationIdx).toBeGreaterThan(sectionIdx);
+    expect(queueIdx).toBeGreaterThan(foundationIdx);
+    const block = md.slice(foundationIdx, queueIdx);
+    expect(block).toContain('`FND-002`');
+    // Passing FND items are folded into a details block, not the open list.
+    expect(block).toContain('<details><summary>1 check(s) passing in Docs</summary>');
+    expect(block).toContain('- ✅ Docs present `FND-001`');
+  });
+
+  it('lists open items sorted by rule id and renders deterministically', async () => {
+    const { renderFoundationSection } = await import('../src/report/foundation.js');
+    const a = renderFoundationSection([docsFail(), docsPass()]);
+    const b = renderFoundationSection([docsPass(), docsFail()]);
+    expect(a).toEqual(b);
+    expect(a.join('\n')).toBe(b.join('\n'));
+    const idx1 = a.findIndex((l) => l.includes('FND-001'));
+    const idx2 = a.findIndex((l) => l.includes('FND-002'));
+    expect(idx1).toBeGreaterThan(-1);
+    expect(idx2).toBeGreaterThan(-1);
+  });
+
+  it('excludes suppressed and not-applicable FND findings from pillar counts', () => {
+    const md = renderMarkdown(
+      baseReport([
+        docsFail(),
+        fnd({
+          ruleId: 'FND-003',
+          title: 'Waived gap',
+          status: 'FAIL',
+          message: 'Waived.',
+          suppressedReason: 'Accepted risk',
+          tags: ['pillar:docs'],
+        }),
+        fnd({
+          ruleId: 'FND-004',
+          title: 'Skipped gap',
+          status: 'NOT_APPLICABLE',
+          message: 'Skipped.',
+          tags: ['pillar:docs'],
+        }),
+      ]),
+      profile,
+    );
+    expect(md).toContain('Docs — **MISSING** · 0 passed / 1 applicable');
+  });
+});

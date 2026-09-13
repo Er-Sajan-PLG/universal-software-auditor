@@ -29,6 +29,15 @@ and fixing it takes one line of config:
 facts: ['has:database'] # assert anything detection missed
 ```
 
+## Declare your foundation
+
+Before the first full audit, record what the project is for — see
+[Foundation readiness](foundation.md). The interview takes a few minutes and
+produces `.usa/foundation.yaml` (vision, intents, per-pillar evidence); the
+report then grades each pillar as READY, PARTIAL, or MISSING next to the rule
+findings. Skip it and the audit still runs — it just grades the code without
+knowing what the code is for.
+
 ## Reading the report
 
 **1 · Look at the band, not the number.**

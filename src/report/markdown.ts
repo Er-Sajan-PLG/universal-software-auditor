@@ -1,6 +1,7 @@
 import type { AuditReport, Finding, Severity, Status } from '../types.js';
 import type { MaturityProfile } from '../engine/maturity.js';
 import { isReviewStale, reviewAgeDays } from '../engine/review.js';
+import { renderFoundationSection } from './foundation.js';
 
 const TAG: Record<Status, string> = {
   PASS: '✅',
@@ -60,6 +61,7 @@ export function renderMarkdown(report: AuditReport, profile: MaturityProfile): s
   renderCounts(p, report, suppressed.length);
   renderImmediate(p, actioned);
   renderBySection(p, report, profile, actioned, passed);
+  renderFoundation(p, active);
   renderJudgementQueue(p, unresolved, atMs);
   renderSuppressed(p, suppressed);
   renderRoadmap(p, profile, actioned);
@@ -363,6 +365,15 @@ function renderPassingDetails(p: Print, id: string, good: Finding[]): void {
   for (const f of good) p(`- ✅ ${f.title} \`${f.ruleId}\``);
   p();
   p('</details>');
+}
+
+/* ------------------------------------------------------------ foundation -- */
+
+/** Foundation readiness, between the findings and the judgement queue. */
+function renderFoundation(p: Print, active: Finding[]): void {
+  // renderFoundationSection returns [] when there are no FND findings, so
+  // reports without foundation rules render byte-identically to before.
+  for (const line of renderFoundationSection(active)) p(line);
 }
 
 /* ------------------------------------------------------------- judgement -- */
