@@ -5,6 +5,22 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.5.0...v2.6.0) (2026-09-13)
+
+
+### Features
+
+* **engine:** deterministic test-evidence analyzers ([da5cc79](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/da5cc79c24aba77de35cf0291e4d8ca09df28c8e))
+* **live:** conversational audit sessions with stubbed LLM ([e0595ae](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/e0595ae798a9ec67e34b04f94e69929b9983194d))
+* **phase:** live and evidence exports, ADRs 0034-0035, session docs ([2d7a3ea](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/2d7a3eafea22eaa3255b4f91738b05ca5b612ff3))
+
+
+### Bug Fixes
+
+* **cli:** fully static provider-unavailable message ([b6d96ba](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/b6d96ba20e231dcf140c9d5e51bbe498ea81e271))
+* **cli:** never paraphrase provider errors into logs (secret hygiene) ([a3e495a](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/a3e495a15d07f1455d807f0e0184946090815585))
+* **cli:** static async rejection message at entrypoint ([756caa4](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/756caa439f76b3add2e5015e8e5b46fcca290825))
+
 ## [2.5.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.4.0...v2.5.0) (2026-09-13)
 
 
