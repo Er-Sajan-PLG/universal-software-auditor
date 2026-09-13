@@ -14,6 +14,7 @@ usa — Universal Software Auditor
   usa rules [--section S2]      List all loaded rule packs and rules
   usa explain <RULE-ID>         Show everything about one rule
   usa diff <before> <after>     Compare two previously generated reports
+  usa verify-report <AUDIT.md>  Verify a report's detached signature sidecar
   usa init [path]               Scaffold .usa.yaml + a GitHub Actions workflow
   usa bootstrap [path]          Propose rule packs for stacks USA cannot audit yet
   usa learn <report.md>         Generate suggested rules from audit findings
@@ -60,6 +61,12 @@ audit options
 bootstrap options
   --out <file|dir>    Write pack files instead of printing (default: print)
 
+verify-report options
+  --bundle <file>       Signature sidecar (required, e.g. AUDIT.md.sig.json)
+  --key <file>          PEM public key the bundle is verified against
+  --cosign-binary <bin> Override the cosign binary (default cosign)
+  --quiet               Only errors
+
 examples
   usa audit . --depth deep
   usa bootstrap ~/code/legacy-php-app --out /tmp/packs
@@ -67,6 +74,7 @@ examples
   usa audit . --baseline reports/2026-08.md --fail-on high
   usa audit . --out reports/audit-$(date +%F).md
   usa learn AUDIT.md --out swift-suggestions.yaml
+  usa verify-report AUDIT.md --bundle AUDIT.md.sig.json --key cosign.pub
 ```
 
 ## `usa rules`
