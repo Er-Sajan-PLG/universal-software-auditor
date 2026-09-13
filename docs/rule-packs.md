@@ -235,6 +235,90 @@ Verdicts stay honest about provenance:
 same resolver as `json_path`. Both `.sarif` and `.json` artifacts are read from
 the audited tree and must be committed for the check to see them.
 
+### Provenance verification
+
+Release provenance answers "was this artifact built by us, from this source?"
+(see `SUP-013` / `SUP-015` / `SUP-016` in
+[supply-chain.yaml](../rules/core/supply-chain.yaml)). Two check kinds compose
+into the full pattern, and both stay offline and deterministic.
+
+**`command` — opt-in signature re-verification.** Re-verify with the project's
+own tooling (typically `cosign verify-blob`). It runs only under
+`usa audit . --allow-commands` — without the flag the rule reports
+❓ NEEDS REVIEW instead of shelling out, and USA never shells out unasked.
+When it does run, a missing binary fails the check: an artifact that cannot
+be verified is never a pass (fail closed, ADR-0009).
+
+```yaml
+- id: SUP-0xx
+  title: Release signatures verify against their cosign bundle
+  section: S3
+  section_title: Supply Chain & Build Provenance
+  severity: HIGH
+  class: supply-chain
+  applies_when: { fact: 'maturity:production' }
+  check:
+    kind: command
+    run: 'cosign verify-blob --bundle dist/app.bundle dist/app.tar.gz'
+    expect_exit: 0
+  remediation: 'Re-sign the release with cosign and commit the bundle beside the artifact.'
+  references: ['SLSA-Build-L2']
+```
+
+**`oracle` — ingesting committed attestation evidence.** The release pipeline
+writes the attestation; the rule only asserts a numeric bound over the
+committed file, never a live probe. Split the bar by lifecycle via maturity
+facts: at beta the attestation must exist; at production the recorded chain
+must meet the bar. Both examples assume the pipeline writes a small numeric
+summary (`statementCount`, `minBuildLevel`) beside the raw attestation — the
+oracle reads numbers, not chains, so summarise the chain at emit time.
+
+```yaml
+- id: SUP-0xx
+  title: Release carries provenance attestation
+  section: S3
+  section_title: Supply Chain & Build Provenance
+  severity: LOW
+  class: supply-chain
+  applies_when: { fact: 'maturity:beta' }
+  check:
+    kind: oracle
+    source: json
+    file: attestations/provenance.json
+    path: statementCount
+    op: at_least
+    value: 1
+  remediation: 'Emit a SLSA provenance statement at release time and commit it under attestations/.'
+  references: ['SLSA-Build-L2']
+```
+
+```yaml
+- id: SUP-0yy
+  title: Provenance chain meets the production bar
+  section: S3
+  section_title: Supply Chain & Build Provenance
+  severity: HIGH
+  class: supply-chain
+  applies_when: { fact: 'maturity:production' }
+  check:
+    kind: oracle
+    source: json
+    file: attestations/provenance.json
+    path: minBuildLevel
+    op: at_least
+    value: 2
+  remediation: 'Build releases on a hosted builder that records SLSA provenance at the required level.'
+  references: ['SLSA-Build-L2']
+```
+
+The artifact states stay honest: absent file → 🚫 MISSING, unparseable file
+or non-numeric path → ❓ UNKNOWN (fail closed — a human looks), bound met →
+✅ PASS, bound violated → 🔴 FAIL.
+
+Cite `SLSA-*` references — the `slsa` catalogue is already pinned in
+`rules/catalogues.yaml`. `cosign` and `sigstore` are tools, not codified
+standards, so they take no catalogue entry (ADR-0021).
+
 ### `info`
 
 Context only, never scored. Useful for explaining a section to a reader.
