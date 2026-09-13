@@ -1,0 +1,20 @@
+rule: TAS-010
+negative:
+  files:
+    tests/auth.test.ts: |
+      import { describe, it, expect } from 'vitest';
+      describe('auth', () => {
+        it('rejects bad tokens', async () => {
+          await expect(verify('nope')).rejects.toThrow('invalid token');
+        });
+      });
+positive:
+  files:
+    tests/auth.test.ts: |
+      import { describe, it, expect } from 'vitest';
+      describe('auth', () => {
+        it('accepts good tokens', () => {
+          expect(verify('fine')).toBe(true);
+        });
+      });
+  expect: MISSING

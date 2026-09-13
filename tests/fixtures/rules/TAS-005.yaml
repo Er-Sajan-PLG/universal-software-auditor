@@ -1,0 +1,16 @@
+rule: TAS-005
+negative:
+  files:
+    codecov.yml: |
+      coverage:
+        status:
+          project:
+            default:
+              target: 80%
+positive:
+  files:
+    README.md: |
+      # Project
+    src/index.ts: |
+      export const x = 1;
+  expect: MISSING

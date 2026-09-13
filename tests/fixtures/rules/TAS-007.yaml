@@ -1,0 +1,12 @@
+rule: TAS-007
+negative:
+  files:
+    stryker.conf.json: |
+      { "mutate": ["src/**/*.ts"], "testRunner": "vitest" }
+positive:
+  files:
+    README.md: |
+      # Project
+    src/index.ts: |
+      export const x = 1;
+  expect: MISSING

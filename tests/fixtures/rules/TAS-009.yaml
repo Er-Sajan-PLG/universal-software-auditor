@@ -1,0 +1,12 @@
+rule: TAS-009
+negative:
+  files:
+    playwright.config.ts: |
+      import { defineConfig } from '@playwright/test';
+      export default defineConfig({ retries: 2 });
+positive:
+  files:
+    playwright.config.ts: |
+      import { defineConfig } from '@playwright/test';
+      export default defineConfig({ retries: 0 });
+  expect: MISSING
