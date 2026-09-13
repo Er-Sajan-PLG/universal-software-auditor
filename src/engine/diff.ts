@@ -110,6 +110,59 @@ function classifyAllRules(
 const PASSING = new Set(['PASS']);
 const OPEN = new Set(['FAIL', 'WRONG', 'MISSING', 'DEPRECATED', 'EXPERIMENTAL']);
 
+/** Whether an after-state counts as "still broken" for gate and diff purposes. */
+export function isOpenStatus(status: string): boolean {
+  return OPEN.has(status as Status);
+}
+
+/**
+ * One rule's movement between two report trailers, without display strings.
+ *
+ * This is the machine-readable twin of the `usa diff` buckets below: the
+ * new-code quality gate (`src/engine/gate.ts`) consumes it so the CLI
+ * producer (`usa diff` text) and the CI judge (pass/fail) cannot disagree
+ * about what counts as new or regressed. UNKNOWN transitions keep diff.ts
+ * semantics: resolving the queue reads as fixed, falling back into it (from
+ * a decided state) reads as regressed.
+ */
+export type RuleMovement =
+  'newly-applicable' | 'regressed' | 'fixed' | 'changed' | 'gone' | 'unchanged';
+
+const MOVEMENT_OF_UNKNOWN: Record<string, (xs: string, ys: string) => RuleMovement> = {
+  resolved: () => 'fixed',
+  needsReview: () => 'regressed',
+  other: () => 'changed',
+};
+
+function unknownMovement(xs: string, ys: string): RuleMovement {
+  // One-check-kind-per-line: each UNKNOWN transition has exactly one bucket.
+  if (xs === 'UNKNOWN' && ys === 'PASS') return MOVEMENT_OF_UNKNOWN.resolved!(xs, ys);
+  if (ys === 'UNKNOWN' && !OPEN.has(xs as Status)) return MOVEMENT_OF_UNKNOWN.needsReview!(xs, ys);
+  return MOVEMENT_OF_UNKNOWN.other!(xs, ys);
+}
+
+function openMovement(xs: string, ys: string): RuleMovement {
+  const wasOpen = OPEN.has(xs as Status);
+  const isOpen = OPEN.has(ys as Status);
+  if (wasOpen && PASSING.has(ys)) return 'fixed';
+  if (!wasOpen && isOpen) return 'regressed';
+  if (wasOpen && isOpen) return 'changed';
+  return 'unchanged';
+}
+
+export function ruleMovement(
+  beforeStatus: string | undefined,
+  afterStatus: string | undefined,
+): RuleMovement {
+  if (beforeStatus === undefined) return 'newly-applicable';
+  if (afterStatus === undefined) return 'gone';
+  if (beforeStatus === afterStatus) return 'unchanged';
+  if (beforeStatus === 'UNKNOWN' || afterStatus === 'UNKNOWN') {
+    return unknownMovement(beforeStatus, afterStatus);
+  }
+  return openMovement(beforeStatus, afterStatus);
+}
+
 function classifyRuleChange(
   id: string,
   x: TrailerRule | undefined,
@@ -124,44 +177,29 @@ function classifyRuleChange(
     buckets.goneRules.push(id);
     return;
   }
-  if (x.status === y.status) return;
-  if (classifyUnknownTransition(id, x.status, y.status, buckets)) return;
-  classifyOpenTransition(id, x.status, y.status, buckets);
+  // Dispatch on the shared movement taxonomy so `usa diff` text and the
+  // new-code gate classify identically. Strings below are byte-identical to
+  // the pre-taxonomy implementation — the diff tests pin them.
+  const movement = ruleMovement(x.status, y.status);
+  const handlers: Record<RuleMovement, () => void> = {
+    'newly-applicable': () => {},
+    regressed: () => buckets.regressed.push(regressedDetail(id, x.status, y.status)),
+    fixed: () => buckets.fixed.push(fixedDetail(id, x.status, y.status)),
+    changed: () => buckets.improved.push(`${id} — ${x.status} → ${y.status}`),
+    gone: () => {},
+    unchanged: () => {},
+  };
+  handlers[movement]();
 }
 
-/**
- * Movements to or from the judgement queue. Previously these were dropped
- * entirely, so resolving the queue (the tool's headline workflow) was
- * invisible in `usa diff` — "No net movement… nothing changed" while a
- * human did the most valuable work.
- */
-function classifyUnknownTransition(
-  id: string,
-  xs: string,
-  ys: string,
-  buckets: DiffBuckets,
-): boolean {
-  if (xs !== 'UNKNOWN' && ys !== 'UNKNOWN') return false;
-  if (xs === 'UNKNOWN' && ys === 'PASS') {
-    buckets.fixed.push(`${id} — UNKNOWN → PASS (resolved by review)`);
-  } else if (ys === 'UNKNOWN' && !OPEN.has(xs as Status)) {
-    buckets.regressed.push(`${id} — ${xs} → UNKNOWN (needs review)`);
-  } else {
-    buckets.improved.push(`${id} — ${xs} → ${ys}`);
-  }
-  return true;
+/** UNKNOWN → PASS carries the review-resolution suffix; plain fixes do not. */
+function fixedDetail(id: string, xs: string, ys: string): string {
+  return xs === 'UNKNOWN' ? `${id} — UNKNOWN → PASS (resolved by review)` : `${id} — ${xs} → ${ys}`;
 }
 
-function classifyOpenTransition(id: string, xs: string, ys: string, buckets: DiffBuckets): void {
-  const wasOpen = OPEN.has(xs as Status);
-  const isOpen = OPEN.has(ys as Status);
-  if (wasOpen && PASSING.has(ys)) {
-    buckets.fixed.push(`${id} — ${xs} → PASS`);
-  } else if (!wasOpen && isOpen) {
-    buckets.regressed.push(`${id} — ${xs} → ${ys}`);
-  } else if (wasOpen && isOpen) {
-    buckets.improved.push(`${id} — ${xs} → ${ys}`);
-  }
+/** Falling back into UNKNOWN carries the needs-review suffix. */
+function regressedDetail(id: string, xs: string, ys: string): string {
+  return ys === 'UNKNOWN' ? `${id} — ${xs} → UNKNOWN (needs review)` : `${id} — ${xs} → ${ys}`;
 }
 
 function renderDiffVerdict(delta: number): string {

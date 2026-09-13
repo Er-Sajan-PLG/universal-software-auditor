@@ -73,6 +73,35 @@ inferred from the `--out` extension, so `--out report.sarif` needs no flag.
 **Roll-out advice:** start with `--fail-on critical`. Move to `high` once the backlog
 is clear. Never start at `medium` — you will teach the team to bypass the check.
 
+### New-code gate (`--baseline`)
+
+The absolute gate above punishes legacy adoption: every pre-existing finding
+fails the build until the backlog is clear. The new-code gate fails only on
+what the change introduced or made worse, compared against a previous report:
+
+```yaml
+- name: Quality gate (new code only)
+  run: |
+    npx --yes @xenos1996/usa@2 audit . --out AUDIT.md --baseline reports/main.md --fail-on high
+```
+
+Gate semantics (shared with `usa diff`, so the diff text and the verdict agree):
+
+- **Newly applicable + open at or above the threshold** fails. A rule absent
+  from the baseline that is now `FAIL`/`WRONG`/`MISSING`/`DEPRECATED`/
+  `EXPERIMENTAL` at `HIGH` or above blocks; legacy findings that were already
+  open pass through at any severity.
+- **Regressed rules** fail at any severity: a rule that passed (or was not
+  applicable) and is now open — or fell back into the judgement queue — is
+  new debt no matter the rung.
+- Fixed rules, suppressions (accepted risk), and `UNKNOWN` findings never block.
+
+The threshold defaults to `high` under `--baseline`; an explicit `--fail-on`
+(including `none`, which disables the gate) still wins. The baseline is any
+previous `AUDIT.md` (or a raw trailer file) — commit one per release or per
+month and diff against it. A missing, unreadable, or malformed baseline exits
+`2` loudly: a gate that cannot read its memory must never silently pass.
+
 ### Comment the score on the PR
 
 ```yaml

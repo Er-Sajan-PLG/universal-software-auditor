@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { diffReports } from '../src/engine/diff.js';
+import { diffReports, isOpenStatus, ruleMovement } from '../src/engine/diff.js';
 import { renderMarkdown, parseTrailer } from '../src/report/markdown.js';
 import { loadProfiles } from '../src/engine/maturity.js';
 import type { AuditReport, Finding } from '../src/types.js';
@@ -134,5 +134,35 @@ describe('judgement-queue transitions are visible', () => {
     const a = md([finding('SEC-015', 'UNKNOWN')], 70);
     const out = diffReports(parseTrailer(b)!, parseTrailer(a)!);
     expect(out).toMatch(/SEC-015 — PASS → UNKNOWN \(needs review\)/);
+  });
+});
+
+describe('rule movement taxonomy (shared with the new-code gate)', () => {
+  it('classifies absence on either side', () => {
+    expect(ruleMovement(undefined, 'FAIL')).toBe('newly-applicable');
+    expect(ruleMovement('FAIL', undefined)).toBe('gone');
+    expect(ruleMovement('FAIL', 'FAIL')).toBe('unchanged');
+  });
+
+  it('classifies open transitions like the diff buckets', () => {
+    expect(ruleMovement('PASS', 'FAIL')).toBe('regressed');
+    expect(ruleMovement('NOT_APPLICABLE', 'MISSING')).toBe('regressed');
+    expect(ruleMovement('FAIL', 'PASS')).toBe('fixed');
+    expect(ruleMovement('MISSING', 'WRONG')).toBe('changed');
+  });
+
+  it('classifies judgement-queue transitions like the diff buckets', () => {
+    expect(ruleMovement('UNKNOWN', 'PASS')).toBe('fixed');
+    expect(ruleMovement('PASS', 'UNKNOWN')).toBe('regressed');
+    expect(ruleMovement('UNKNOWN', 'FAIL')).toBe('changed');
+  });
+
+  it('exposes the open-state predicate used by the gate', () => {
+    for (const s of ['FAIL', 'WRONG', 'MISSING', 'DEPRECATED', 'EXPERIMENTAL']) {
+      expect(isOpenStatus(s)).toBe(true);
+    }
+    for (const s of ['PASS', 'UNKNOWN', 'NOT_APPLICABLE']) {
+      expect(isOpenStatus(s)).toBe(false);
+    }
   });
 });

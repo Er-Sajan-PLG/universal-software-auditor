@@ -50,6 +50,9 @@ audit options
   --fact <ns:value>   Assert a fact detection missed, e.g. --fact has:database
   --allow-commands    Run `command:` checks (shells out; off by default)
   --fail-on <sev>     Exit 1 on findings >= sev: critical|high|medium|low|none
+  --baseline <file>   New-code gate: only fail on findings new or regressed
+                      vs this previous report (default threshold high;
+                      explicit --fail-on overrides it)
   --quiet             Only errors
   --max-files <n>     Index at most n files (overrides config; default 60000)
   --max-bytes <n>     Skip files larger than n bytes (overrides config; default 2 MiB)
@@ -61,6 +64,7 @@ examples
   usa audit . --depth deep
   usa bootstrap ~/code/legacy-php-app --out /tmp/packs
   usa audit ../api --profile production --fail-on high
+  usa audit . --baseline reports/2026-08.md --fail-on high
   usa audit . --out reports/audit-$(date +%F).md
   usa learn AUDIT.md --out swift-suggestions.yaml
 ```
