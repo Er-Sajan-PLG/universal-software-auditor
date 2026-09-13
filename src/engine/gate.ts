@@ -71,7 +71,9 @@ export function parseBaselineTrailer(trailerYaml: string): TrailerData {
   try {
     parsed = parseYaml(trailerYaml);
   } catch (err) {
-    throw new Error(`--baseline trailer is not valid YAML: ${(err as Error).message}`);
+    throw new Error(`--baseline trailer is not valid YAML: ${(err as Error).message}`, {
+      cause: err,
+    });
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('--baseline trailer is malformed: expected a YAML mapping.');
@@ -80,18 +82,21 @@ export function parseBaselineTrailer(trailerYaml: string): TrailerData {
   if (!rules || typeof rules !== 'object' || Array.isArray(rules)) {
     throw new Error('--baseline trailer is malformed: missing or invalid `rules:` section.');
   }
-  for (const [id, r] of Object.entries(rules)) {
-    const entry = r as { status?: unknown; severity?: unknown };
-    if (!entry || typeof entry !== 'object') {
-      throw new Error(`--baseline trailer is malformed: rule ${id} is not a mapping.`);
-    }
-    if (typeof entry.status !== 'string' || typeof entry.severity !== 'string') {
-      throw new Error(
-        `--baseline trailer is malformed: rule ${id} needs string status and severity.`,
-      );
-    }
-  }
+  for (const [id, r] of Object.entries(rules)) assertTrailerRule(id, r);
   return parsed as TrailerData;
+}
+
+/** One baseline rule entry is a mapping with string status and severity. */
+function assertTrailerRule(id: string, r: unknown): void {
+  const entry = r as { status?: unknown; severity?: unknown };
+  if (!entry || typeof entry !== 'object') {
+    throw new Error(`--baseline trailer is malformed: rule ${id} is not a mapping.`);
+  }
+  if (typeof entry.status !== 'string' || typeof entry.severity !== 'string') {
+    throw new Error(
+      `--baseline trailer is malformed: rule ${id} needs string status and severity.`,
+    );
+  }
 }
 
 /**
@@ -125,14 +130,24 @@ export function newCodeBlocking(
   const baselineRules = baseline.rules ?? {};
   const blocking: Finding[] = [];
   for (const [id, f] of [...current.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-    const movement = ruleMovement(baselineRules[id]?.status, f.status);
-    if (movement === 'newly-applicable' && isOpenStatus(f.status) && atOrAbove(f.severity)) {
-      blocking.push(f);
-    } else if (movement === 'regressed') {
-      blocking.push(f);
-    }
+    if (isNewCodeBlocker(f, baselineRules[id]?.status, atOrAbove)) blocking.push(f);
   }
   return blocking;
+}
+
+/**
+ * Whether one current finding blocks the new-code gate: newly-applicable and
+ * open at/above threshold, or regressed at any severity. Pure predicate so
+ * the per-rule decision stays testable without building a whole report.
+ */
+function isNewCodeBlocker(
+  f: Finding,
+  beforeStatus: string | undefined,
+  atOrAbove: (severity: string) => boolean,
+): boolean {
+  const movement = ruleMovement(beforeStatus, f.status);
+  if (movement === 'regressed') return true;
+  return movement === 'newly-applicable' && isOpenStatus(f.status) && atOrAbove(f.severity);
 }
 
 /**
