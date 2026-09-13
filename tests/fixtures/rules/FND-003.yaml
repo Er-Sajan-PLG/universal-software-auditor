@@ -1,0 +1,11 @@
+rule: FND-003
+negative:
+  files:
+    .github/CODEOWNERS: |
+      * @org/core-team
+      /src/auth/ @org/security-team
+positive:
+  files:
+    README.md: |
+      # App
+  expect: MISSING

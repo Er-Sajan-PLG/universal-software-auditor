@@ -1,0 +1,16 @@
+rule: FND-012
+negative:
+  files:
+    .github/workflows/ci.yml: |
+      name: ci
+      on: [push]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo hi
+positive:
+  files:
+    README.md: |
+      # App
+  expect: MISSING

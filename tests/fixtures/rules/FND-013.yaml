@@ -1,0 +1,11 @@
+rule: FND-013
+negative:
+  files:
+    Makefile: |
+      test:
+      	npm test
+positive:
+  files:
+    package.json: |
+      { "name": "app" }
+  expect: MISSING

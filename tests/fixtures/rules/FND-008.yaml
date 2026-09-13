@@ -1,0 +1,10 @@
+rule: FND-008
+negative:
+  files:
+    tests/smoke.test.js: |
+      test('smoke', () => {});
+positive:
+  files:
+    src/index.js: |
+      module.exports = {};
+  expect: MISSING

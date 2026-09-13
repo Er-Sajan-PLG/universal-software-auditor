@@ -1,0 +1,13 @@
+rule: FND-002
+negative:
+  files:
+    LICENSE: |
+      MIT License
+    SECURITY.md: |
+      # Security Policy
+      Report issues to security@example.com.
+positive:
+  files:
+    README.md: |
+      # App
+  expect: MISSING

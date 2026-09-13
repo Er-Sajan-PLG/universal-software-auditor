@@ -1,0 +1,11 @@
+rule: FND-005
+negative:
+  files:
+    docs/adr/0001-record-decisions.md: |
+      # 1. Record architecture decisions
+      We record decisions as ADRs.
+positive:
+  files:
+    README.md: |
+      # App
+  expect: MISSING

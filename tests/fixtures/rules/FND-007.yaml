@@ -1,0 +1,12 @@
+rule: FND-007
+negative:
+  files:
+    README.md: |
+      # App
+      See AGENTS.md for agent instructions and llms.txt for the machine-readable index.
+positive:
+  files:
+    README.md: |
+      # App
+      Just some prose with nothing machine-actionable.
+  expect: MISSING
