@@ -5,6 +5,20 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.1.0...v2.2.0) (2026-09-13)
+
+
+### Features
+
+* **gate:** quality gate on newly-introduced and regressed findings ([07bea0a](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/07bea0ac6ff3bd8530f377ebaf1250d8dbb6208e))
+* **report:** verify-side support for detached report signatures ([6fe124b](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/6fe124b2a01558c78ab0f3e7306c5487148f4c80))
+* triaged judgement queue, dated reviews, generated-docs resync ([#32](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/32)) ([8bc704d](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/8bc704dcf06062efd9d31aaa753e3cd6ada4cba5))
+
+
+### Bug Fixes
+
+* **lint:** split baseline gate helpers to satisfy complexity and error-cause rules ([a7fd8fc](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/a7fd8fcb48eb39ffabdfef861bdc7874316e1283))
+
 ## [2.1.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.0.1...v2.1.0) (2026-09-13)
 
 
