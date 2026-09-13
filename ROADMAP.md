@@ -68,6 +68,12 @@ verify` chain at production (`core/provenance-cosign`, SUP-018–020),
 - [x] **New-code quality gates** — `usa audit --baseline` fails only on
       newly-introduced ≥ HIGH plus regressed rules, sharing the `usa diff`
       movement taxonomy so text and verdict agree. ADR-0024. _(M)_
+- [x] **Foundation readiness** — `usa foundation init` interviews vision,
+      intents, and per-pillar promises into `.usa/foundation.yaml`; intents
+      become audit facts, the `core/foundation` pack (FND-001–014) checks the
+      setup deterministically, and the report grades per pillar. The LLM stays
+      outside the spine: agents interview and judge, the engine verifies.
+      ADR-0029. _(L)_
 
 ## Next: automation and governance
 

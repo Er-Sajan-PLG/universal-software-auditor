@@ -24,6 +24,7 @@ import {
   reviewOverdueDays,
   type ReviewIndex,
 } from './review.js';
+import { loadFoundationFacts } from '../foundation/loader.js';
 import { loadSections } from './sections.js';
 import { loadProfiles, dampen, type MaturityProfile } from './maturity.js';
 import { loadConfig } from '../config.js';
@@ -114,6 +115,13 @@ export function runAudit(options: AuditOptions): AuditOutcome {
 
   // A pack may assert extra facts simply by applying (e.g. "we are a monorepo").
   const facts: Facts = detection.facts;
+  // Declared intent (ADR-0029): `.usa/foundation.yaml` intents[] become
+  // `intent:<value>` facts before pack selection, so intent-gated rules
+  // (e.g. FND-014 on intent:api) apply exactly where promised. A broken
+  // intent file warns loudly and asserts nothing — an audit must never run
+  // half an intent, but it must still run.
+  assertFoundationFacts(opts.target, facts, warnings);
+
   const selection = selectInitialPacks(packs, facts, include, exclude);
 
   // Packs can contribute facts, which can make another pack apply. Resolve to a
@@ -285,6 +293,20 @@ function appendUnusedSuppressionWarnings(
     warnings.push(
       `suppression for ${describeSuppression(s)} matched no finding — remove it or fix the target`,
     );
+  }
+}
+
+/**
+ * Declared intent becomes detection facts. The loader throws on a broken
+ * file (fail closed); the audit converts that into a warning and proceeds
+ * without intent facts — a malformed promise must be loud, but it must not
+ * brick the audit it was meant to guide.
+ */
+function assertFoundationFacts(target: string, facts: Facts, warnings: string[]): void {
+  try {
+    for (const flag of loadFoundationFacts(target)) facts.flags.add(flag);
+  } catch (err) {
+    warnings.push(`foundation intent ignored: ${(err as Error).message}`);
   }
 }
 

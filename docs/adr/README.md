@@ -37,6 +37,7 @@ a changed decision gets a _new_ ADR that supersedes the old one).
 | 0026 | Generated docs resync themselves on PRs                    | Accepted   | —          |
 | 0027 | Provenance is verified: existence, then chain              | Accepted   | —          |
 | 0028 | Signature verification gets a CLI command                  | Accepted   | —          |
+| 0029 | Foundation readiness: declared intent, deterministic check | Accepted   | —          |
 
 ## Coverage map (what has no ADR, and why)
 

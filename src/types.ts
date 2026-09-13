@@ -76,6 +76,12 @@ export interface Finding {
   evidenceHint?: string;
   remediation?: string;
   references?: string[];
+  /**
+   * Free-form rule tags, copied from the rule that produced this finding.
+   * The foundation report groups `FND-*` findings by their `pillar:<id>` tag
+   * (ADR-0029); no other consumer reads them, so they cost nothing to carry.
+   */
+  tags?: string[];
   /** Set when a project-level suppression (`nack:`) hid this finding. */
   suppressedReason?: string;
   /**

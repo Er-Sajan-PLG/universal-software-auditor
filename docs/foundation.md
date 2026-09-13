@@ -45,7 +45,7 @@ of the file.
 | Standards    | Which external bars apply, and where is compliance shown?             |
 
 Each pillar maps to a group of foundation rules (ranges along the lines of
-FND-001…FND-012 for the first pillar, and similar groupings for the rest). The
+FND-001…FND-014, grouped by pillar). The
 rule pack owns the exact mapping — the interview file only records the
 answers, never rule titles.
 
@@ -68,7 +68,7 @@ version: 1
 
 # ── Vision ────────────────────────────────────────────────────────────
 # One paragraph: what the project is for, who it serves, what it is not.
-# Informative grouping along the lines of FND-001…FND-012.
+# Informative grouping along the lines of FND-001…FND-014.
 vision:
   statement: 'A self-hosted checklist app for small teams, fast over fancy.'
   audience: 'Teams of two to twenty who want shared state without accounts.'
