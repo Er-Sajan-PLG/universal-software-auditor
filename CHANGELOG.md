@@ -5,6 +5,16 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.2.0...v2.3.0) (2026-09-13)
+
+
+### Features
+
+* **cli:** verify-report command for detached report signatures ([de0792d](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/de0792d2a509611f1e8feffc2ab2f636ab3b7007))
+* **rules:** attestation and VSA presence checks (SUP-022+) ([b745ee6](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/b745ee6335ed685afd42fffcef5119b05f8de18b))
+* **rules:** cosign chain-verification provenance checks (SUP-018+) ([c864d00](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/c864d009992c82af77a1582c6039c9153047adc6))
+* **rules:** register provenance packs, sync generated docs, record ADRs 0024-0027 ([9d24aae](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/9d24aae6c1430945f0d4edbe26435bbd6347f59d))
+
 ## [2.2.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.1.0...v2.2.0) (2026-09-13)
 
 
