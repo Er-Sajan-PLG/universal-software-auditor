@@ -17,11 +17,11 @@
 
 ## 📊 Executive Summary
 
-### Overall Health Score: **45.2/100**
+### Overall Health Score: **40.4/100**
 
-`███████████░░░░░░░░░░░░░`
+`██████████░░░░░░░░░░░░░░`
 
-Verified automatically: **65.8%** of applicable checks. 27 checks need a human — see the judgement queue.
+Verified automatically: **70.7%** of applicable checks. 27 checks need a human — see the judgement queue.
 
 Expected band for **Prototype / Spike**: 30–65 — **within the expected band** 👍
 
@@ -31,7 +31,7 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 |---|---|---|---|
 | S1 · Repository & Project Structure | 7.2/10 | 83.3% | 0/2 recorded |
 | S2 · Security | 4.9/10 | 92.9% | 0/1 recorded |
-| S3 · Supply Chain & Build Provenance | 0/10 | 100% | — |
+| S3 · Supply Chain & Build Provenance | 0.7/10 | 100% | — |
 | S4 · Architecture & Design | 8/10 | 60% | 0/2 recorded |
 | S5 · Code Quality | 3.5/10 | 87.5% | 0/1 recorded |
 | S6 · Data & Database | 1.3/10 | 66.7% | 0/3 recorded |
@@ -43,17 +43,17 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 | S15 · Platform-Specific | 5.1/10 | 50% | 0/5 recorded |
 | S16 · Future Readiness | — not verified | 0% | 0/2 recorded |
 
-*Confidence = share of applicable rules the engine could verify automatically; unverified checks are excluded from the score rather than counted as passes. **†** = fewer than half of that section's applicable checks could be verified. **Review** = judgement checks with a dated human review on record (`⏳` marks an overdue review). Automation coverage: **65.8%**. The rest is in the judgement queue below.*
+*Confidence = share of applicable rules the engine could verify automatically; unverified checks are excluded from the score rather than counted as passes. **†** = fewer than half of that section's applicable checks could be verified. **Review** = judgement checks with a dated human review on record (`⏳` marks an overdue review). Automation coverage: **70.7%**. The rest is in the judgement queue below.*
 
 ## 🏷️ Findings Summary
 
 | Status | Count | | Severity (open findings) | Count |
 |---|--:|-|---|--:|
-| ✅ GOOD | 20 | : | 🔴 CRITICAL | 2 |
+| ✅ GOOD | 21 | : | 🔴 CRITICAL | 2 |
 | 🔴 FAIL | 4 | : | 🟠 HIGH | 0 |
 | ⚠️ WRONG | 5 | : | 🟡 MEDIUM | 7 |
-| 🚫 MISSING | 22 | : | 🟢 LOW | 12 |
-| 💀 DEPRECATED | 1 | : | 🔵 FUTURE | 11 |
+| 🚫 MISSING | 34 | : | 🟢 LOW | 13 |
+| 💀 DEPRECATED | 1 | : | 🔵 FUTURE | 22 |
 | 🧪 EXPERIMENTAL | 0 | : |   |  |
 | ❓ NEEDS REVIEW | 27 | : |   |  |
 
@@ -150,12 +150,16 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 
 ### S3 · Supply Chain & Build Provenance
 
-**Score 0/10** · `░░░░░░░░░░░░░░░░░░░░░░░░` · 0 passed / 3 open / 0 to review
+**Score 0.7/10** · `██░░░░░░░░░░░░░░░░░░░░░░` · 1 passed / 15 open / 0 to review
 
 - 🚫 **A lockfile is committed** `SUP-001` — Not detected — no files matching package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock, poetry.lock, uv.lock, pdm.lock, Pipfile.lock, Cargo.lock, go.sum, composer.lock, Gemfile.lock, flake.lock.
   - 🪶 Downgraded HIGH → MEDIUM by the Prototype / Spike profile
   - 🛠️ Commit the lockfile for your package manager and install with the frozen/immutable flag in CI.
   - 📚 SLSA-Source · OpenSSF-Scorecard:Pinned-Dependencies · NIST-SSDF-PS.3.2
+- 🚫 **A test directory exists** `FND-008` — Not detected — no files matching tests/**, test/**, __tests__/**, spec/**, e2e/**.
+  - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
+  - 🛠️ Create a tests (or test/__tests__/spec) directory and put the first happy-path test there.
+  - 📚 OpenSSF-Scorecard:CI-Tests · NIST-SSDF-RV.1.1
 - 🔴 **Dependency versions are pinned, not floating** `SUP-003` — 1 occurrence(s): `"express": "*",` at package.json:10.
   - 📍 `package.json:10`
   - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
@@ -165,6 +169,56 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
   - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
   - 🛠️ Enable Dependabot or Renovate with grouped PRs and a weekly schedule.
   - 📚 OpenSSF-Scorecard:Dependency-Update-Tool · NIST-SSDF-PW.4
+- 🚫 **License, contribution, and security docs are present** `FND-002` — Not detected — Found 0 file(s) matching **/LICENSE*, **/LICENCE*, **/COPYING*, **/CONTRIBUTING*, **/SECURITY*, **/CODE_OF_CONDUCT* — expected at least 2..
+  - 🪶 Downgraded MEDIUM → FUTURE by the Prototype / Spike profile
+  - 🛠️ Commit a LICENSE plus at least one of CONTRIBUTING, SECURITY, or CODE_OF_CONDUCT.
+  - 📚 OpenSSF-Scorecard:License · OpenSSF-Scorecard:Security-Policy · SPDX
+- 🚫 **A CODEOWNERS file assigns review ownership** `FND-003` — Not detected — no files matching **/CODEOWNERS.
+  - 🪶 Downgraded MEDIUM → FUTURE by the Prototype / Spike profile
+  - 🛠️ Add a CODEOWNERS file mapping critical paths to the teams that must review them.
+  - 📚 OpenSSF-Scorecard:Code-Review
+- 🚫 **Branch-protection evidence lives in .github** `FND-004` — Not detected — pattern not found in .github/**/*.
+  - 🪶 Downgraded MEDIUM → FUTURE by the Prototype / Spike profile
+  - 🛠️ Check in branch-protection evidence (e.g. a settings or policy file under .github) requiring reviews and status checks.
+  - 📚 OpenSSF-Scorecard:Branch-Protection · SLSA-Source
+- 🚫 **Architecture decisions are recorded as ADRs** `FND-005` — Not detected — no files matching docs/adr/**, docs/adrs/**, doc/adr/**, adr/**, adrs/**, docs/decisions/**.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Record significant decisions as ADRs under docs/adr.
+  - 📚 ADR-Nygard
+- 🚫 **Agent instructions (AGENTS.md or llms.txt) exist** `FND-006` — Not detected — no files matching AGENTS.md, agents.md, llms.txt.
+  - 🪶 Downgraded MEDIUM → FUTURE by the Prototype / Spike profile
+  - 🛠️ Add an AGENTS.md (or llms.txt) with build, test, and contribution instructions for agents.
+  - 📚 Agent-Skills · Docs-as-Code
+- 🚫 **Docs carry machine-readable markers** `FND-007` — Not detected — pattern not found in **/*.md, **/*.txt.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Reference AGENTS.md/llms.txt from the README and tag machine-actionable facts with usa: markers.
+  - 📚 Agent-Skills · Docs-as-Code
+- 🚫 **A coverage configuration exists** `FND-009` — Not detected — no files matching .codecov.yml, .codecov.yaml, codecov.yml, codecov.yaml, **/vitest.config.*, **/jest.config.*, **/vitest.coverage.*, **/.nycrc*, **/coveragerc, **/.coveragerc, **/coverage.config.*.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Add a coverage config (e.g. codecov.yml or coverage settings in your test runner config).
+  - 📚 NIST-SSDF-RV.1.1
+- 🚫 **The runtime version is pinned** `FND-010` — Not detected — no files matching .nvmrc, .node-version, .tool-versions, .python-version, .ruby-version, .go-version, runtime.txt, go.mod, Cargo.toml, pom.xml, Package.swift, .java-version.
+  - 🪶 Downgraded MEDIUM → FUTURE by the Prototype / Spike profile
+  - 🛠️ Pin the runtime with .nvmrc, .tool-versions, .python-version, or the ecosystem equivalent.
+  - 📚 NIST-SSDF-PS.3.2 · Reproducible-Builds
+- 🚫 **The environment is reproducible from checked-in files** `FND-011` — Not detected — Found 0 file(s) matching .env.example, .env.sample, .env.template, Dockerfile, Dockerfile.*, Containerfile, compose.yml, compose.yaml, docker-compose.yml, docker-compose.yaml, .devcontainer/devcontainer.json, Vagrantfile — expected at least 2..
+  - 🪶 Downgraded MEDIUM → FUTURE by the Prototype / Spike profile
+  - 🛠️ Commit a .env.example and a Dockerfile (or compose/devcontainer definition) so setup is declarative.
+  - 📚 12-Factor:Config · 12-Factor:Dev-Prod-Parity
+- 🚫 **A CI workflow exists** `FND-012` — Not detected — no files matching .github/workflows/*.yml, .github/workflows/*.yaml, .gitlab-ci.yml, Jenkinsfile, .circleci/config.yml, azure-pipelines.yml, .buildkite/**, bitbucket-pipelines.yml.
+  - 🪶 Downgraded MEDIUM → FUTURE by the Prototype / Spike profile
+  - 🛠️ Add a CI workflow that runs build, tests, and lint on every pull request.
+  - 📚 OpenSSF-Scorecard:CI-Tests · DORA
+- 🚫 **A local task runner captures common workflows** `FND-013` — Not detected — no files matching Makefile, makefile, GNUmakefile, justfile, Justfile, .justfile, Taskfile.yml, Taskfile.yaml, Taskfile.dist.yml, tasks.py.
+  - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
+  - 🛠️ Add a Makefile or justfile with setup, test, and lint targets.
+  - 📚 DORA
+
+<details><summary>1 check(s) passing in S3</summary>
+
+- ✅ A README exists at the top level `FND-001`
+
+</details>
 
 ### S4 · Architecture & Design
 
@@ -326,6 +380,60 @@ No open findings in this section. ✅
 
 No open findings in this section. ✅
 
+## 🏛️ Foundation Readiness
+
+How ready the project foundations are — vision, intents, and per-pillar evidence from `.usa/foundation.yaml`. Grades: **READY** (every applicable check passing), **PARTIAL** (some open), **MISSING** (none passing).
+
+**Readiness: 0 of 6 pillars ready** · Docs PARTIAL · Governance MISSING · AI readiness MISSING · Testing MISSING · Environment MISSING · Pipelines MISSING
+
+### 📚 Docs — **PARTIAL** · 1 passed / 2 applicable
+
+- 🚫 **License, contribution, and security docs are present** `FND-002` — Not detected — Found 0 file(s) matching **/LICENSE*, **/LICENCE*, **/COPYING*, **/CONTRIBUTING*, **/SECURITY*, **/CODE_OF_CONDUCT* — expected at least 2..
+  - 🛠️ Commit a LICENSE plus at least one of CONTRIBUTING, SECURITY, or CODE_OF_CONDUCT.
+
+<details><summary>1 check(s) passing in Docs</summary>
+
+- ✅ A README exists at the top level `FND-001`
+
+</details>
+
+### 🏛️ Governance — **MISSING** · 0 passed / 3 applicable
+
+- 🚫 **A CODEOWNERS file assigns review ownership** `FND-003` — Not detected — no files matching **/CODEOWNERS.
+  - 🛠️ Add a CODEOWNERS file mapping critical paths to the teams that must review them.
+- 🚫 **Branch-protection evidence lives in .github** `FND-004` — Not detected — pattern not found in .github/**/*.
+  - 🛠️ Check in branch-protection evidence (e.g. a settings or policy file under .github) requiring reviews and status checks.
+- 🚫 **Architecture decisions are recorded as ADRs** `FND-005` — Not detected — no files matching docs/adr/**, docs/adrs/**, doc/adr/**, adr/**, adrs/**, docs/decisions/**.
+  - 🛠️ Record significant decisions as ADRs under docs/adr.
+
+### 🤖 AI readiness — **MISSING** · 0 passed / 2 applicable
+
+- 🚫 **Agent instructions (AGENTS.md or llms.txt) exist** `FND-006` — Not detected — no files matching AGENTS.md, agents.md, llms.txt.
+  - 🛠️ Add an AGENTS.md (or llms.txt) with build, test, and contribution instructions for agents.
+- 🚫 **Docs carry machine-readable markers** `FND-007` — Not detected — pattern not found in **/*.md, **/*.txt.
+  - 🛠️ Reference AGENTS.md/llms.txt from the README and tag machine-actionable facts with usa: markers.
+
+### 🧪 Testing — **MISSING** · 0 passed / 2 applicable
+
+- 🚫 **A test directory exists** `FND-008` — Not detected — no files matching tests/**, test/**, __tests__/**, spec/**, e2e/**.
+  - 🛠️ Create a tests (or test/__tests__/spec) directory and put the first happy-path test there.
+- 🚫 **A coverage configuration exists** `FND-009` — Not detected — no files matching .codecov.yml, .codecov.yaml, codecov.yml, codecov.yaml, **/vitest.config.*, **/jest.config.*, **/vitest.coverage.*, **/.nycrc*, **/coveragerc, **/.coveragerc, **/coverage.config.*.
+  - 🛠️ Add a coverage config (e.g. codecov.yml or coverage settings in your test runner config).
+
+### 🌍 Environment — **MISSING** · 0 passed / 2 applicable
+
+- 🚫 **The runtime version is pinned** `FND-010` — Not detected — no files matching .nvmrc, .node-version, .tool-versions, .python-version, .ruby-version, .go-version, runtime.txt, go.mod, Cargo.toml, pom.xml, Package.swift, .java-version.
+  - 🛠️ Pin the runtime with .nvmrc, .tool-versions, .python-version, or the ecosystem equivalent.
+- 🚫 **The environment is reproducible from checked-in files** `FND-011` — Not detected — Found 0 file(s) matching .env.example, .env.sample, .env.template, Dockerfile, Dockerfile.*, Containerfile, compose.yml, compose.yaml, docker-compose.yml, docker-compose.yaml, .devcontainer/devcontainer.json, Vagrantfile — expected at least 2..
+  - 🛠️ Commit a .env.example and a Dockerfile (or compose/devcontainer definition) so setup is declarative.
+
+### 🔁 Pipelines — **MISSING** · 0 passed / 2 applicable
+
+- 🚫 **A CI workflow exists** `FND-012` — Not detected — no files matching .github/workflows/*.yml, .github/workflows/*.yaml, .gitlab-ci.yml, Jenkinsfile, .circleci/config.yml, azure-pipelines.yml, .buildkite/**, bitbucket-pipelines.yml.
+  - 🛠️ Add a CI workflow that runs build, tests, and lint on every pull request.
+- 🚫 **A local task runner captures common workflows** `FND-013` — Not detected — no files matching Makefile, makefile, GNUmakefile, justfile, Justfile, .justfile, Taskfile.yml, Taskfile.yaml, Taskfile.dist.yml, tasks.py.
+  - 🛠️ Add a Makefile or justfile with setup, test, and lint targets.
+
 ## 🧠 Judgement Queue (agent / human review)
 
 These checks cannot be settled by grep. Work through them with an agent or a reviewer;
@@ -407,6 +515,7 @@ Nothing here. ✅
 - 🟢 `REPO-006` .env.example documents required configuration → Add .env.example listing every variable the app reads, with safe placeholder values and a comment per var.
 - 🟢 `SEC-018` Security headers are set → Use helmet (Node) or equivalent; add HSTS (max-age ≥31536000; includeSubDomains), X-Content-Type-Options: nosniff, Referrer-Policy, and a CSP.
 - 🟢 `SEC-020` Errors do not leak internals to clients → Return a generic error plus a correlation ID; log the detail server-side only.
+- 🟢 `FND-008` A test directory exists → Create a tests (or test/__tests__/spec) directory and put the first happy-path test there.
 - 🟢 `SUP-003` Dependency versions are pinned, not floating → Pin exact versions for applications. Ranges are acceptable for published libraries with a lockfile.
 - 🟢 `SUP-004` Automated dependency updates are configured → Enable Dependabot or Renovate with grouped PRs and a weekly schedule.
 - 🟢 `CQ-006` There is a central error handler → Add a framework-level error handler and an ErrorBoundary (React); report to your error tracker.
@@ -417,15 +526,17 @@ Nothing here. ✅
 - 🟢 `NODE-006` Environment variables are validated at startup → Parse process.env against a schema at boot and exit with a clear message on failure.
 - 🔵 `REPO-013` .editorconfig present → Add a 6-line .editorconfig (charset, EOL, indent style/size, trailing whitespace, final newline).
 - 🔵 `REPO-018` Agent instruction file present (AGENTS.md / CLAUDE.md) → Add AGENTS.md: setup, build/test/lint commands, conventions, and explicit no-go areas.
-- 🔵 `ARCH-010` Async work is offloaded to a queue → Move email, image processing, webhooks, and report generation onto a queue with retries and a DLQ.
-- 🔵 `CQ-001` A linter is configured → Add the standard linter for your stack, start with its recommended config, fix what it finds.
-- 🔵 `CQ-002` A formatter is configured → Prettier/Black/gofmt/rustfmt — pick the default config and stop discussing it.
-- 🔵 `CQ-008` Requests carry a correlation/trace ID → Generate an ID per request, put it in every log line and in the response header.
-- 🔵 `CQ-009` Debug statements are not left in production paths → Use the project logger, or delete the line. Add a lint rule to keep it out.
-- 🔵 `CQ-010` TODO/FIXME debt is tracked, not just annotated → Convert each one to a tracked issue with a link in the comment, or delete it if it no longer applies.
-- 🔵 `DATA-008` No SELECT * in hot paths → Select the columns you use.
-- 🔵 `NODE-001` Node runtime version is pinned → Add .nvmrc plus "engines": { "node": ">=20" } and node-version-file: .nvmrc in CI.
-- 🔵 `NODE-005` No deprecated Node APIs in use → Buffer.from/alloc, new URL(), crypto.createCipheriv, punycode/. Replace as you touch the file.
+- 🔵 `FND-002` License, contribution, and security docs are present → Commit a LICENSE plus at least one of CONTRIBUTING, SECURITY, or CODE_OF_CONDUCT.
+- 🔵 `FND-003` A CODEOWNERS file assigns review ownership → Add a CODEOWNERS file mapping critical paths to the teams that must review them.
+- 🔵 `FND-004` Branch-protection evidence lives in .github → Check in branch-protection evidence (e.g. a settings or policy file under .github) requiring reviews and status checks.
+- 🔵 `FND-005` Architecture decisions are recorded as ADRs → Record significant decisions as ADRs under docs/adr.
+- 🔵 `FND-006` Agent instructions (AGENTS.md or llms.txt) exist → Add an AGENTS.md (or llms.txt) with build, test, and contribution instructions for agents.
+- 🔵 `FND-007` Docs carry machine-readable markers → Reference AGENTS.md/llms.txt from the README and tag machine-actionable facts with usa: markers.
+- 🔵 `FND-009` A coverage configuration exists → Add a coverage config (e.g. codecov.yml or coverage settings in your test runner config).
+- 🔵 `FND-010` The runtime version is pinned → Pin the runtime with .nvmrc, .tool-versions, .python-version, or the ecosystem equivalent.
+- 🔵 `FND-011` The environment is reproducible from checked-in files → Commit a .env.example and a Dockerfile (or compose/devcontainer definition) so setup is declarative.
+- 🔵 `FND-012` A CI workflow exists → Add a CI workflow that runs build, tests, and lint on every pull request.
+- …and 10 more
 
 ### 🎯 What actually matters at **Prototype / Spike**
 
@@ -472,7 +583,7 @@ Maturity signals:
 - +0 contributing guide (absent)
 - maturity score 0.0/7.5 → prototype
 
-Rule packs loaded (15): core/repo, core/security, core/supply-chain, core/provenance-cosign, core/architecture, core/code-quality, core/testing, core/cicd, core/release, core/dependencies, core/documentation, core/future-readiness, stacks/node-typescript, stacks/data, stacks/api-backend
+Rule packs loaded (16): core/repo, core/security, core/supply-chain, core/foundation, core/provenance-cosign, core/architecture, core/code-quality, core/testing, core/cicd, core/release, core/dependencies, core/documentation, core/future-readiness, stacks/node-typescript, stacks/data, stacks/api-backend
 
 Rule packs skipped as not applicable (15): core/provenance-attestation, stacks/python, stacks/go, stacks/rust, stacks/jvm, stacks/web-frontend, stacks/mobile, stacks/containers, stacks/iac, stacks/solidity, stacks/ml-ai, stacks/cli, stacks/compliance, stacks/ai-era, stacks/swift
 
@@ -487,11 +598,11 @@ Rule packs skipped as not applicable (15): core/provenance-attestation, stacks/p
 schema: usa-report-v1
 generated_at: 2026-01-01T00:00:00.000Z
 usa_version: 2.3.4
-overall: 45.2
+overall: 40.4
 sections:
   S1: {score: 7.2, open: 4, review: 2}
   S2: {score: 4.9, open: 7, review: 1}
-  S3: {score: 0, open: 3, review: 0}
+  S3: {score: 0.7, open: 15, review: 0}
   S4: {score: 8, open: 1, review: 2}
   S5: {score: 3.5, open: 6, review: 1}
   S6: {score: 1.3, open: 5, review: 3}
@@ -506,8 +617,8 @@ severity_totals:
   CRITICAL: 2
   HIGH: 0
   MEDIUM: 7
-  LOW: 12
-  FUTURE: 11
+  LOW: 13
+  FUTURE: 22
 rules:
   "REPO-001": {status: PASS, severity: CRITICAL, section: S1}
   "REPO-002": {status: PASS, severity: CRITICAL, section: S1}
@@ -530,6 +641,7 @@ rules:
   "SEC-008": {status: MISSING, severity: MEDIUM, section: S2}
   "SEC-015": {status: UNKNOWN, severity: MEDIUM, section: S2}
   "SEC-021": {status: PASS, severity: MEDIUM, section: S2}
+  "FND-001": {status: PASS, severity: MEDIUM, section: S3}
   "SUP-001": {status: MISSING, severity: MEDIUM, section: S3}
   "ARCH-003": {status: PASS, severity: MEDIUM, section: S4}
   "ARCH-007": {status: PASS, severity: MEDIUM, section: S4}
@@ -545,6 +657,7 @@ rules:
   "REPO-006": {status: MISSING, severity: LOW, section: S1}
   "SEC-018": {status: MISSING, severity: LOW, section: S2}
   "SEC-020": {status: WRONG, severity: LOW, section: S2}
+  "FND-008": {status: MISSING, severity: LOW, section: S3}
   "SUP-003": {status: FAIL, severity: LOW, section: S3}
   "SUP-004": {status: MISSING, severity: LOW, section: S3}
   "CQ-006": {status: MISSING, severity: LOW, section: S5}
@@ -564,6 +677,17 @@ rules:
   "REPO-013": {status: MISSING, severity: FUTURE, section: S1}
   "REPO-015": {status: UNKNOWN, severity: FUTURE, section: S1}
   "REPO-018": {status: MISSING, severity: FUTURE, section: S1}
+  "FND-002": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-003": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-004": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-005": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-006": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-007": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-009": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-010": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-011": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-012": {status: MISSING, severity: FUTURE, section: S3}
+  "FND-013": {status: MISSING, severity: FUTURE, section: S3}
   "ARCH-004": {status: UNKNOWN, severity: FUTURE, section: S4}
   "ARCH-008": {status: UNKNOWN, severity: FUTURE, section: S4}
   "ARCH-010": {status: MISSING, severity: FUTURE, section: S4}

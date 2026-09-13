@@ -20,6 +20,8 @@ usa — Universal Software Auditor
   usa learn <report.md>         Generate suggested rules from audit findings
   usa evolve [path]             Run the audit → gap → candidate → release loop
   usa standards                 Report catalogue coverage and automatability
+  usa foundation init [path]    Capture project intent into .usa/foundation.yaml
+  usa foundation show [path]    Print the effective intent and asserted facts
 
 evolve options
   --store <dir>        Persist audit runs/results (content-addressed store)
@@ -38,6 +40,10 @@ learn options
 standards options
   --format <fmt>      md | json                       (default md)
   --rules-dir <dir>   Rule pack directory             (default bundled rules/)
+
+foundation options
+  --dir <path>        Project directory (default .; a positional path works too)
+  --non-interactive   Write the defaults file without prompting (init only)
 
 audit options
   --out <file>        Report path (default AUDIT.md)
@@ -152,6 +158,24 @@ examples
    SUP-015    FUTURE   supply-chain     Release artifacts carry provenance attestation
    SUP-016    MEDIUM   supply-chain     Container images are scanned before publish
    SUP-017    FUTURE   supply-chain     Build pipeline is reproducible from source
+
+## core/foundation — Foundation Readiness (14 rules)
+   Deterministic repo-setup readiness checks across seven pillars — docs, governance, AI-readiness, testing, environment, pipelines, and standards — so a project can be audited, built, and extended by humans and agents alike. Intent-gated rules apply only when the interview declares a matching intent; without the foundation file those rules skip and the generic ones still apply.
+
+   FND-001    MEDIUM   documentation    A README exists at the top level
+   FND-002    MEDIUM   compliance       License, contribution, and security docs are present
+   FND-003    MEDIUM   compliance       A CODEOWNERS file assigns review ownership
+   FND-004    MEDIUM   compliance       Branch-protection evidence lives in .github
+   FND-005    LOW      documentation    Architecture decisions are recorded as ADRs
+   FND-006    MEDIUM   documentation    Agent instructions (AGENTS.md or llms.txt) exist
+   FND-007    LOW      documentation    Docs carry machine-readable markers
+   FND-008    MEDIUM   correctness      A test directory exists
+   FND-009    LOW      correctness      A coverage configuration exists
+   FND-010    MEDIUM   operations       The runtime version is pinned
+   FND-011    MEDIUM   operations       The environment is reproducible from checked-in files
+   FND-012    MEDIUM   operations       A CI workflow exists
+   FND-013    LOW      operations       A local task runner captures common workflows
+   FND-014    MEDIUM   compliance       A machine-readable API contract is checked in
 
 ## core/provenance-cosign — Provenance Chain Verification (cosign) (3 rules)
    Production-half chain verification for release provenance: these controls cryptographically verify release artifacts against committed Sigstore bundles and keys with a local `cosign` binary. They complement the beta-level existence checks (SUP-013 commit signing, SUP-014 SBOM, SUP-015 attestation): beta proves the material exists, production proves the chain verifies. Aligned with SLSA v1.2. Verify, never mint (ADR-0011): USA checks signatures, it never signs. Command checks are UNKNOWN without --allow-commands — that is the honest assist posture — and every command fails closed on a missing binary, key, or bundle (FAIL or UNKNOWN with a loud message, never PASS).
@@ -473,5 +497,5 @@ examples
    SW-005     HIGH     security         Request validation uses Validatable or a validation library
    SW-006     MEDIUM   security         Security headers middleware is configured
 
-287 rule(s) across 30 pack(s).
+301 rule(s) across 31 pack(s).
 ```

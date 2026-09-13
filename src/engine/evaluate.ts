@@ -128,6 +128,7 @@ export function evaluateRule(rule: Rule, ctx: EvalContext): Finding {
     remediation: rule.remediation,
     references: rule.references,
     automatability: ruleAutomatability(rule),
+    tags: rule.tags,
   };
 
   if (ctx.disabled.has(rule.id)) {

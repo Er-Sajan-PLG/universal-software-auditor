@@ -181,6 +181,9 @@ function splitList(raw: string): string[] {
  * Applies one raw answer to a copy of `config` and returns it. An empty
  * answer keeps the current value. Unknown question ids and invalid values
  * throw (the driver catches per-question and re-prompts).
+ *
+ * One handler per answer kind — adding a kind means adding a line, not a
+ * branch (the dispatch-table ethos the engine itself follows).
  */
 export function applyInterviewAnswer(
   config: FoundationConfig,
@@ -190,116 +193,77 @@ export function applyInterviewAnswer(
   const question = INTERVIEW_QUESTIONS.find((q) => q.id === id);
   if (!question) throw new Error(`unknown interview question: ${JSON.stringify(id)}`);
   if (raw.trim() === '') return clone(config);
-  const next = clone(config);
-  switch (question.kind) {
-    case 'text': {
-      setPath(next, id, raw.trim());
-      return next;
-    }
-    case 'multi-select': {
-      const values = splitList(raw).map((s) => s.toLowerCase());
-      if (values.length === 0) return clone(config);
-      const options = question.options ?? [];
-      for (const v of values) {
-        if (!options.includes(v)) {
-          throw new Error(
-            `"${id}": unknown value ${JSON.stringify(v)} (expected one of ${options.join(', ')})`,
-          );
-        }
-      }
-      setPath(next, id, values);
-      return next;
-    }
-    case 'select': {
-      const v = raw.trim().toLowerCase();
-      const options = question.options ?? [];
-      if (!options.includes(v)) {
-        throw new Error(
-          `"${id}": unknown value ${JSON.stringify(raw.trim())} (expected one of ${options.join(', ')})`,
-        );
-      }
-      setPath(next, id, v);
-      return next;
-    }
-    case 'boolean': {
-      setPath(next, id, parseBool(raw, id));
-      return next;
-    }
-    case 'number': {
-      const n = Number(raw.trim());
-      if (!Number.isFinite(n) || n < 0 || n > 100) {
-        throw new Error(`"${id}": expected a number from 0 to 100, got ${JSON.stringify(raw)}`);
-      }
-      setPath(next, id, n);
-      return next;
-    }
-    case 'list': {
-      setPath(next, id, splitList(raw));
-      return next;
-    }
+  return ANSWER_HANDLERS[question.kind](clone(config), id, raw, question);
+}
+
+type AnswerHandler = (
+  next: FoundationConfig,
+  id: string,
+  raw: string,
+  question: InterviewQuestion,
+) => FoundationConfig;
+
+function checkOption(id: string, raw: string, value: string, options: readonly string[]): void {
+  if (!options.includes(value)) {
+    throw new Error(
+      `"${id}": unknown value ${JSON.stringify(raw)} (expected one of ${options.join(', ')})`,
+    );
   }
 }
 
+/** One check kind per entry — adding a kind means adding a line, not a branch. */
+const ANSWER_HANDLERS: Record<QuestionKind, AnswerHandler> = {
+  text: (next, id, raw) => {
+    setPath(next, id, raw.trim());
+    return next;
+  },
+  'multi-select': (next, id, raw, question) => {
+    const values = splitList(raw).map((s) => s.toLowerCase());
+    if (values.length === 0) return next;
+    const options = question.options ?? [];
+    for (const v of values) checkOption(id, v, v, options);
+    setPath(next, id, values);
+    return next;
+  },
+  select: (next, id, raw, question) => {
+    const v = raw.trim().toLowerCase();
+    checkOption(id, raw.trim(), v, question.options ?? []);
+    setPath(next, id, v);
+    return next;
+  },
+  boolean: (next, id, raw) => {
+    setPath(next, id, parseBool(raw, id));
+    return next;
+  },
+  number: (next, id, raw) => {
+    const n = Number(raw.trim());
+    if (!Number.isFinite(n) || n < 0 || n > 100) {
+      throw new Error(`"${id}": expected a number from 0 to 100, got ${JSON.stringify(raw)}`);
+    }
+    setPath(next, id, n);
+    return next;
+  },
+  list: (next, id, raw) => {
+    setPath(next, id, splitList(raw));
+    return next;
+  },
+};
+
+/**
+ * Question ids are the schema: only ids the interview asks may be written.
+ * The allowlist keeps a typo'd id loud (same message as before) while the
+ * setter itself stays a dumb path walk with no per-field branches.
+ */
+const KNOWN_IDS = new Set(INTERVIEW_QUESTIONS.map((q) => q.id));
+
 function setPath(config: FoundationConfig, id: string, value: unknown): void {
-  const p = config.pillars;
-  switch (id) {
-    case 'project.name':
-      config.project.name = value as string;
-      return;
-    case 'project.vision':
-      config.project.vision = value as string;
-      return;
-    case 'project.intents':
-      config.project.intents = value as string[];
-      return;
-    case 'stage':
-      config.stage = value as string;
-      return;
-    case 'pillars.docs.required':
-      p.docs.required = value as string[];
-      return;
-    case 'pillars.governance.codeOfConduct':
-      p.governance.codeOfConduct = value as boolean;
-      return;
-    case 'pillars.governance.contributing':
-      p.governance.contributing = value as boolean;
-      return;
-    case 'pillars.governance.securityPolicy':
-      p.governance.securityPolicy = value as boolean;
-      return;
-    case 'pillars.governance.license':
-      p.governance.license = value as boolean;
-      return;
-    case 'pillars.ai.readable':
-      p.ai.readable = value as boolean;
-      return;
-    case 'pillars.ai.writable':
-      p.ai.writable = value as boolean;
-      return;
-    case 'pillars.testing.dirs':
-      p.testing.dirs = value as string[];
-      return;
-    case 'pillars.testing.minCoverage':
-      p.testing.minCoverage = value as number;
-      return;
-    case 'pillars.environment.files':
-      p.environment.files = value as string[];
-      return;
-    case 'pillars.pipelines.local':
-      p.pipelines.local = value as string[];
-      return;
-    case 'pillars.pipelines.ci':
-      p.pipelines.ci = value as string[];
-      return;
-    case 'pillars.standards':
-      p.standards = value as string[];
-      return;
-    case 'pillars.specs':
-      p.specs = value as string[];
-      return;
-    default:
-      throw new Error(`unknown interview question: ${JSON.stringify(id)}`);
+  if (!KNOWN_IDS.has(id)) throw new Error(`unknown interview question: ${JSON.stringify(id)}`);
+  const keys = id.split('.');
+  let node = config as unknown as Record<string, unknown>;
+  for (const key of keys.slice(0, -1)) {
+    node = node[key] as Record<string, unknown>;
   }
+  node[keys[keys.length - 1]!] = value;
 }
 
 /**
@@ -407,39 +371,57 @@ export function renderFoundationYaml(config: FoundationConfig): string {
  * would assert. Used by `usa foundation show`. Pure.
  */
 export function summarizeFoundation(config: FoundationConfig): string {
-  const p = config.pillars;
+  return [...summarizeHead(config), ...summarizePillars(config.pillars)].join('\n');
+}
+
+/** Identity block: who this project is and which facts that asserts. */
+function summarizeHead(config: FoundationConfig): string[] {
   const facts = config.project.intents
     .map((entry) => sanitizeIntent(entry))
     .filter((f): f is string => f !== undefined);
-  const gov = (
-    [
-      ['code-of-conduct', p.governance.codeOfConduct],
-      ['contributing', p.governance.contributing],
-      ['security-policy', p.governance.securityPolicy],
-      ['license', p.governance.license],
-    ] as const
-  )
-    .filter(([, on]) => on)
-    .map(([name]) => name);
-  const out = [
+  return [
     `# Foundation: ${config.project.name || '(unnamed)'}`,
     `vision: ${config.project.vision || '(none)'}`,
     `stage: ${config.stage ?? '(none)'}`,
     `intents: ${config.project.intents.length ? config.project.intents.join(', ') : '(none)'}`,
     'facts this intent would assert:',
     ...(facts.length ? facts.map((f) => `  ${f}`) : ['  (none — no usable intents)']),
-    'pillars:',
-    `  docs.required: ${p.docs.required.length ? p.docs.required.join(', ') : '(none)'}`,
-    `  governance: ${gov.length ? gov.join(', ') : '(none)'}`,
-    `  ai: ${p.ai.readable ? 'readable' : 'not readable'}, ${p.ai.writable ? 'writable' : 'not writable'}`,
-    `  testing: ${p.testing.dirs.length ? p.testing.dirs.join(', ') : '(none)'}${p.testing.minCoverage === undefined ? '' : ` @ >=${p.testing.minCoverage}%`}`,
-    `  environment: ${p.environment.files.length ? p.environment.files.join(', ') : '(none)'}`,
-    `  pipelines.local: ${p.pipelines.local.length ? p.pipelines.local.join(', ') : '(none)'}`,
-    `  pipelines.ci: ${p.pipelines.ci.length ? p.pipelines.ci.join(', ') : '(none)'}`,
-    `  standards: ${p.standards.length ? p.standards.join(', ') : '(none)'}`,
-    `  specs: ${p.specs.length ? p.specs.join(', ') : '(none)'}`,
   ];
-  return out.join('\n');
+}
+
+/** An empty list reads as `(none)` rather than an empty stare. */
+function joinOrNone(items: string[]): string {
+  return items.length ? items.join(', ') : '(none)';
+}
+
+/** Names of the governance promises switched on, in questionnaire order. */
+function enabledGovernanceNames(gov: FoundationConfig['pillars']['governance']): string[] {
+  return (
+    [
+      ['code-of-conduct', gov.codeOfConduct],
+      ['contributing', gov.contributing],
+      ['security-policy', gov.securityPolicy],
+      ['license', gov.license],
+    ] as const
+  )
+    .filter(([, on]) => on)
+    .map(([name]) => name);
+}
+
+/** One line per pillar promise, in pillar order. */
+function summarizePillars(p: FoundationConfig['pillars']): string[] {
+  return [
+    'pillars:',
+    `  docs.required: ${joinOrNone(p.docs.required)}`,
+    `  governance: ${joinOrNone(enabledGovernanceNames(p.governance))}`,
+    `  ai: ${p.ai.readable ? 'readable' : 'not readable'}, ${p.ai.writable ? 'writable' : 'not writable'}`,
+    `  testing: ${joinOrNone(p.testing.dirs)}${p.testing.minCoverage === undefined ? '' : ` @ >=${p.testing.minCoverage}%`}`,
+    `  environment: ${joinOrNone(p.environment.files)}`,
+    `  pipelines.local: ${joinOrNone(p.pipelines.local)}`,
+    `  pipelines.ci: ${joinOrNone(p.pipelines.ci)}`,
+    `  standards: ${joinOrNone(p.standards)}`,
+    `  specs: ${joinOrNone(p.specs)}`,
+  ];
 }
 
 /* ---------------------------------------------------------------- driver -- */
@@ -489,6 +471,28 @@ export interface FoundationShowOptions {
   error?: PrintFn;
 }
 
+/** Ask one question until it validates (EOF keeps the default). Sync. */
+function askInterviewQuestion(
+  question: InterviewQuestion,
+  config: FoundationConfig,
+  ask: AskFn,
+  print: PrintFn,
+  error: PrintFn,
+): FoundationConfig {
+  for (;;) {
+    const raw = ask(formatQuestionPrompt(question, config));
+    if (raw === null) {
+      print('(EOF — keeping defaults for the remaining questions.)');
+      return config;
+    }
+    try {
+      return applyInterviewAnswer(config, question.id, raw);
+    } catch (err) {
+      error((err as Error).message);
+    }
+  }
+}
+
 /** `usa foundation init`: interview (or defaults) → commented YAML. Sync. */
 export function runFoundationInit(opts: FoundationInitOptions): number {
   const print = opts.print ?? ((line: string) => console.log(line));
@@ -506,19 +510,7 @@ export function runFoundationInit(opts: FoundationInitOptions): number {
       const ask = opts.ask ?? createStdinAsk();
       print(`Capturing foundation intent for ${projectName} (empty answers keep defaults).`);
       for (const question of INTERVIEW_QUESTIONS) {
-        for (;;) {
-          const raw = ask(formatQuestionPrompt(question, config));
-          if (raw === null) {
-            print('(EOF — keeping defaults for the remaining questions.)');
-            break;
-          }
-          try {
-            config = applyInterviewAnswer(config, question.id, raw);
-            break;
-          } catch (err) {
-            error((err as Error).message);
-          }
-        }
+        config = askInterviewQuestion(question, config, ask, print, error);
       }
     }
     fs.mkdirSync(path.dirname(file), { recursive: true });

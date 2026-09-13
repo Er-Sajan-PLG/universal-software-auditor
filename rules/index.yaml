@@ -13,6 +13,7 @@ packs:
   - core/repo.yaml
   - core/security.yaml
   - core/supply-chain.yaml
+  - core/foundation.yaml
   - core/provenance-cosign.yaml
   - core/provenance-attestation.yaml
   - core/architecture.yaml

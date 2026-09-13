@@ -71,8 +71,24 @@ function reqBool(file: string, where: string, value: unknown): boolean {
  * Strictly parses foundation YAML text into a FoundationConfig. Unknown
  * shapes throw; absent pillar sections backfill from defaults so the result
  * always satisfies the schema. Exported for `foundation show` and tests.
+ *
+ * One section per helper — adding a pillar section means adding a function,
+ * not growing this one (see docs; the complexity budget is enforced by lint).
  */
 export function parseFoundationYamlText(text: string, file: string): FoundationConfig {
+  const doc = readYamlDoc(text, file);
+  const project = parseProjectSection(doc, file);
+  const stage = parseStageValue(doc, file);
+  return {
+    version: FOUNDATION_VERSION,
+    project,
+    ...(stage === undefined ? {} : { stage }),
+    pillars: parsePillarsSection(doc, project.name, file),
+  };
+}
+
+/** Parse + top-level shape checks, in the order a human debugs them. */
+function readYamlDoc(text: string, file: string): Record<string, unknown> {
   let raw: unknown;
   try {
     raw = parseYaml(text);
@@ -82,10 +98,21 @@ export function parseFoundationYamlText(text: string, file: string): FoundationC
   if (!isMap(raw)) fail(file, 'expected a YAML mapping at the top level');
   if (hasDate(raw)) fail(file, 'unparseable date value (quote date-like strings)');
   const doc = raw as Record<string, unknown>;
-
   if (doc.version !== FOUNDATION_VERSION) {
     fail(file, `unsupported version ${JSON.stringify(doc.version)} (expected 1)`);
   }
+  return doc;
+}
+
+/** Defaults carrier: the project name seeds backfill for absent sections. */
+function baseFor(name: unknown): FoundationConfig {
+  return defaultFoundation(typeof name === 'string' && name ? name : 'project');
+}
+
+function parseProjectSection(
+  doc: Record<string, unknown>,
+  file: string,
+): FoundationConfig['project'] {
   if (!isMap(doc.project)) fail(file, 'missing or invalid "project" mapping');
   const project = doc.project as Record<string, unknown>;
   if (project.name !== undefined && typeof project.name !== 'string') {
@@ -97,140 +124,245 @@ export function parseFoundationYamlText(text: string, file: string): FoundationC
   if (project.intents !== undefined && !Array.isArray(project.intents)) {
     fail(file, 'expected "project.intents" to be a YAML list');
   }
-  // Non-string entries are not intents at all: they skip silently (no throw)
-  // at the fact boundary via sanitizeIntent. Pillars stay lenient (String())
-  // because a stray number in a file list is harmless; a stray non-string in
-  // intents[] asserts nothing.
-  const intents =
-    project.intents === undefined
-      ? []
-      : (project.intents as unknown[]).filter((entry) => typeof entry === 'string');
+  const base = baseFor(project.name);
+  return {
+    name: typeof project.name === 'string' ? project.name : base.project.name,
+    vision: typeof project.vision === 'string' ? project.vision : '',
+    intents: parseIntentsList(project, file),
+  };
+}
 
-  let stage: string | undefined;
-  if (doc.stage !== undefined) {
-    if (typeof doc.stage !== 'string') fail(file, 'expected "stage" to be a string');
-    stage = doc.stage as string;
-    if (!(STAGE_OPTIONS as readonly string[]).includes(stage)) {
-      fail(
-        file,
-        `unknown stage ${JSON.stringify(stage)} (expected one of ${STAGE_OPTIONS.join('|')})`,
-      );
-    }
+/**
+ * A missing list means no intents. Non-string entries are not intents at
+ * all: they skip silently (no throw) at the fact boundary via
+ * sanitizeIntent. A stray non-string in intents[] asserts nothing.
+ */
+function parseIntentsList(project: Record<string, unknown>, file: string): string[] {
+  if (project.intents === undefined) return [];
+  if (!Array.isArray(project.intents)) {
+    fail(file, 'expected "project.intents" to be a YAML list');
   }
+  return (project.intents as unknown[]).filter((entry) => typeof entry === 'string');
+}
 
+function parseStageValue(doc: Record<string, unknown>, file: string): string | undefined {
+  if (doc.stage === undefined) return undefined;
+  if (typeof doc.stage !== 'string') fail(file, 'expected "stage" to be a string');
+  const stage = doc.stage as string;
+  if (!(STAGE_OPTIONS as readonly string[]).includes(stage)) {
+    fail(
+      file,
+      `unknown stage ${JSON.stringify(stage)} (expected one of ${STAGE_OPTIONS.join('|')})`,
+    );
+  }
+  return stage;
+}
+
+/**
+ * A present field is parsed, an absent one backfills — one generic shape for
+ * every leaf, so a new leaf is one call, not one branch.
+ */
+function fieldOr<T>(
+  raw: Record<string, unknown>,
+  key: string,
+  fallback: T,
+  file: string,
+  where: string,
+  parse: (file: string, where: string, value: unknown) => T,
+): T {
+  const value = raw[key];
+  return value === undefined ? fallback : parse(file, where, value);
+}
+
+/** A present section must be a mapping; an absent one backfills wholesale. */
+function sectionOr(
+  pillars: Record<string, unknown>,
+  key: string,
+  fallback: Record<string, unknown>,
+  file: string,
+  where: string,
+): Record<string, unknown> {
+  const value = pillars[key];
+  return value === undefined ? fallback : reqMap(file, where, value);
+}
+
+function parsePillarsSection(
+  doc: Record<string, unknown>,
+  name: string,
+  file: string,
+): FoundationConfig['pillars'] {
   if (doc.pillars !== undefined && !isMap(doc.pillars)) {
     fail(file, 'expected "pillars" to be a YAML mapping');
   }
-
-  // Absent sections backfill from defaults; present-but-misshapen throws.
-  const base = defaultFoundation(
-    typeof project.name === 'string' && project.name ? project.name : 'project',
-  );
+  const base = baseFor(name);
   const pillars = asMap(doc.pillars);
-
-  const docsRaw =
-    pillars.docs === undefined ? base.pillars.docs : reqMap(file, 'pillars.docs', pillars.docs);
-  const govRaw =
-    pillars.governance === undefined
-      ? { ...base.pillars.governance }
-      : reqMap(file, 'pillars.governance', pillars.governance);
-  const aiRaw =
-    pillars.ai === undefined ? { ...base.pillars.ai } : reqMap(file, 'pillars.ai', pillars.ai);
-  const testingRaw =
-    pillars.testing === undefined
-      ? { ...base.pillars.testing }
-      : reqMap(file, 'pillars.testing', pillars.testing);
-  const envRaw =
-    pillars.environment === undefined
-      ? { ...base.pillars.environment }
-      : reqMap(file, 'pillars.environment', pillars.environment);
-  const pipeRaw =
-    pillars.pipelines === undefined
-      ? { ...base.pillars.pipelines }
-      : reqMap(file, 'pillars.pipelines', pillars.pipelines);
-
-  const testingDirs =
-    testingRaw.dirs === undefined
-      ? [...base.pillars.testing.dirs]
-      : reqStrList(file, 'pillars.testing.dirs', testingRaw.dirs);
-  let minCoverage = base.pillars.testing.minCoverage;
-  // `null` is how the renderer writes a cleared threshold; both mean "no bar".
-  if (testingRaw.minCoverage !== undefined && testingRaw.minCoverage !== null) {
-    const n = testingRaw.minCoverage;
-    if (typeof n !== 'number' || !Number.isFinite(n) || n < 0 || n > 100) {
-      fail(file, 'expected "pillars.testing.minCoverage" to be a number from 0 to 100');
-    }
-    minCoverage = n as number;
-  }
-
-  const config: FoundationConfig = {
-    version: FOUNDATION_VERSION,
-    project: {
-      name: typeof project.name === 'string' ? project.name : base.project.name,
-      vision: typeof project.vision === 'string' ? project.vision : '',
-      intents,
+  return {
+    docs: {
+      required: fieldOr(
+        sectionOr(pillars, 'docs', { ...base.pillars.docs }, file, 'pillars.docs'),
+        'required',
+        [...base.pillars.docs.required],
+        file,
+        'pillars.docs.required',
+        reqStrList,
+      ),
     },
-    pillars: {
-      docs: {
-        required:
-          docsRaw.required === undefined
-            ? [...base.pillars.docs.required]
-            : reqStrList(file, 'pillars.docs.required', docsRaw.required),
-      },
-      governance: {
-        codeOfConduct:
-          govRaw.codeOfConduct === undefined
-            ? base.pillars.governance.codeOfConduct
-            : reqBool(file, 'pillars.governance.codeOfConduct', govRaw.codeOfConduct),
-        contributing:
-          govRaw.contributing === undefined
-            ? base.pillars.governance.contributing
-            : reqBool(file, 'pillars.governance.contributing', govRaw.contributing),
-        securityPolicy:
-          govRaw.securityPolicy === undefined
-            ? base.pillars.governance.securityPolicy
-            : reqBool(file, 'pillars.governance.securityPolicy', govRaw.securityPolicy),
-        license:
-          govRaw.license === undefined
-            ? base.pillars.governance.license
-            : reqBool(file, 'pillars.governance.license', govRaw.license),
-      },
-      ai: {
-        readable:
-          aiRaw.readable === undefined
-            ? base.pillars.ai.readable
-            : reqBool(file, 'pillars.ai.readable', aiRaw.readable),
-        writable:
-          aiRaw.writable === undefined
-            ? base.pillars.ai.writable
-            : reqBool(file, 'pillars.ai.writable', aiRaw.writable),
-      },
-      testing: { dirs: testingDirs, ...(minCoverage === undefined ? {} : { minCoverage }) },
-      environment: {
-        files:
-          envRaw.files === undefined
-            ? [...base.pillars.environment.files]
-            : reqStrList(file, 'pillars.environment.files', envRaw.files),
-      },
-      pipelines: {
-        ci:
-          pipeRaw.ci === undefined
-            ? [...base.pillars.pipelines.ci]
-            : reqStrList(file, 'pillars.pipelines.ci', pipeRaw.ci),
-        local:
-          pipeRaw.local === undefined
-            ? [...base.pillars.pipelines.local]
-            : reqStrList(file, 'pillars.pipelines.local', pipeRaw.local),
-      },
-      standards:
-        pillars.standards === undefined
-          ? []
-          : reqStrList(file, 'pillars.standards', pillars.standards),
-      specs: pillars.specs === undefined ? [] : reqStrList(file, 'pillars.specs', pillars.specs),
+    governance: parseGovernancePillar(pillars, base, file),
+    ai: parseAiPillar(pillars, base, file),
+    testing: parseTestingPillar(pillars, base, file),
+    environment: {
+      files: fieldOr(
+        sectionOr(
+          pillars,
+          'environment',
+          { ...base.pillars.environment },
+          file,
+          'pillars.environment',
+        ),
+        'files',
+        [...base.pillars.environment.files],
+        file,
+        'pillars.environment.files',
+        reqStrList,
+      ),
     },
+    pipelines: parsePipelinesPillar(pillars, base, file),
+    standards: fieldOr(pillars, 'standards', [] as string[], file, 'pillars.standards', reqStrList),
+    specs: fieldOr(pillars, 'specs', [] as string[], file, 'pillars.specs', reqStrList),
   };
-  if (stage !== undefined) config.stage = stage;
-  return config;
+}
+
+/** One boolean leaf per call — a new governance promise is one line. */
+function parseGovernancePillar(
+  pillars: Record<string, unknown>,
+  base: FoundationConfig,
+  file: string,
+): FoundationConfig['pillars']['governance'] {
+  const raw = sectionOr(
+    pillars,
+    'governance',
+    { ...base.pillars.governance },
+    file,
+    'pillars.governance',
+  );
+  const fallback = base.pillars.governance;
+  return {
+    codeOfConduct: fieldOr(
+      raw,
+      'codeOfConduct',
+      fallback.codeOfConduct,
+      file,
+      'pillars.governance.codeOfConduct',
+      reqBool,
+    ),
+    contributing: fieldOr(
+      raw,
+      'contributing',
+      fallback.contributing,
+      file,
+      'pillars.governance.contributing',
+      reqBool,
+    ),
+    securityPolicy: fieldOr(
+      raw,
+      'securityPolicy',
+      fallback.securityPolicy,
+      file,
+      'pillars.governance.securityPolicy',
+      reqBool,
+    ),
+    license: fieldOr(raw, 'license', fallback.license, file, 'pillars.governance.license', reqBool),
+  };
+}
+
+function parseAiPillar(
+  pillars: Record<string, unknown>,
+  base: FoundationConfig,
+  file: string,
+): FoundationConfig['pillars']['ai'] {
+  const raw = sectionOr(pillars, 'ai', { ...base.pillars.ai }, file, 'pillars.ai');
+  return {
+    readable: fieldOr(
+      raw,
+      'readable',
+      base.pillars.ai.readable,
+      file,
+      'pillars.ai.readable',
+      reqBool,
+    ),
+    writable: fieldOr(
+      raw,
+      'writable',
+      base.pillars.ai.writable,
+      file,
+      'pillars.ai.writable',
+      reqBool,
+    ),
+  };
+}
+
+function parseTestingPillar(
+  pillars: Record<string, unknown>,
+  base: FoundationConfig,
+  file: string,
+): FoundationConfig['pillars']['testing'] {
+  const raw = sectionOr(pillars, 'testing', { ...base.pillars.testing }, file, 'pillars.testing');
+  const dirs = fieldOr(
+    raw,
+    'dirs',
+    [...base.pillars.testing.dirs],
+    file,
+    'pillars.testing.dirs',
+    reqStrList,
+  );
+  const minCoverage = parseCoverageBar(raw, base, file);
+  return { dirs, ...(minCoverage === undefined ? {} : { minCoverage }) };
+}
+
+/** `null` is how the renderer writes a cleared threshold; both mean "no bar". */
+function parseCoverageBar(
+  raw: Record<string, unknown>,
+  base: FoundationConfig,
+  file: string,
+): number | undefined {
+  const value = raw['minCoverage'];
+  if (value === undefined || value === null) return base.pillars.testing.minCoverage;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 100) {
+    fail(file, 'expected "pillars.testing.minCoverage" to be a number from 0 to 100');
+  }
+  return value as number;
+}
+
+function parsePipelinesPillar(
+  pillars: Record<string, unknown>,
+  base: FoundationConfig,
+  file: string,
+): FoundationConfig['pillars']['pipelines'] {
+  const raw = sectionOr(
+    pillars,
+    'pipelines',
+    { ...base.pillars.pipelines },
+    file,
+    'pillars.pipelines',
+  );
+  return {
+    ci: fieldOr(
+      raw,
+      'ci',
+      [...base.pillars.pipelines.ci],
+      file,
+      'pillars.pipelines.ci',
+      reqStrList,
+    ),
+    local: fieldOr(
+      raw,
+      'local',
+      [...base.pillars.pipelines.local],
+      file,
+      'pillars.pipelines.local',
+      reqStrList,
+    ),
+  };
 }
 
 /**
