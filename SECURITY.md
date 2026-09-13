@@ -54,3 +54,21 @@ clean USA report is **not** evidence that an application is secure.
 
 If you are reporting a vulnerability in a project that uses USA, report it to that
 project — not here.
+
+## OpenSSF Best Practices status
+
+**In progress** — this project has no OpenSSF Best Practices entry yet, so
+nothing is certified and no passing grade is claimed.
+
+Already in place:
+
+- OpenSSF Scorecard workflow
+  ([`.github/workflows/scorecard.yml`](.github/workflows/scorecard.yml))
+  publishing SARIF results.
+- Branch protection on the default branch (a platform setting, not visible in
+  this tree).
+
+Concrete next step: register this repository at
+<https://www.bestpractices.dev/en> and work through the baseline
+self-certification questionnaire; only then may the README badge claim a
+passing grade.
