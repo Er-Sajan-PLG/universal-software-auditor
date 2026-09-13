@@ -1,0 +1,8 @@
+rule: SUP-018
+# command-kind rule: without --allow-commands the engine reports UNKNOWN
+# (the honest assist posture), so only the fail-closed path is asserted.
+positive:
+  files:
+    README.md: |
+      # Fixture project
+  expect: UNKNOWN

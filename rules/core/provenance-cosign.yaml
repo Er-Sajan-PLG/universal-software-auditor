@@ -1,0 +1,110 @@
+id: core/provenance-cosign
+title: Provenance Chain Verification (cosign)
+section: S3
+section_title: Supply Chain & Build Provenance
+description: >
+  Production-half chain verification for release provenance: these controls
+  cryptographically verify release artifacts against committed Sigstore
+  bundles and keys with a local `cosign` binary. They complement the
+  beta-level existence checks (SUP-013 commit signing, SUP-014 SBOM,
+  SUP-015 attestation): beta proves the material exists, production proves
+  the chain verifies. Aligned with SLSA v1.2.
+  Verify, never mint (ADR-0011): USA checks signatures, it never signs.
+  Command checks are UNKNOWN without --allow-commands — that is the honest
+  assist posture — and every command fails closed on a missing binary, key,
+  or bundle (FAIL or UNKNOWN with a loud message, never PASS).
+version: '1.0'
+
+rules:
+  - id: SUP-018
+    title: Release blob signatures verify with cosign (chain verification)
+    section: S3
+    section_title: Supply Chain & Build Provenance
+    severity: HIGH
+    class: supply-chain
+    applies_when: { fact: 'maturity:production' }
+    check:
+      kind: command
+      run: >-
+        command -v cosign >/dev/null 2>&1 || { echo "FAIL-CLOSED SUP-018: cosign binary not found in PATH, so release blob signatures cannot be verified. Install sigstore/cosign and re-run with --allow-commands."; exit 1; };
+        key="";
+        for k in cosign.pub .cosign/cosign.pub keys/cosign.pub; do if [ -f "$k" ]; then key="$k"; break; fi; done;
+        [ -n "$key" ] || { echo "FAIL-CLOSED SUP-018: no cosign public key committed (looked for cosign.pub, .cosign/cosign.pub, keys/cosign.pub), so there is nothing trustworthy to verify against."; exit 1; };
+        bundles=$(find . \( -path "*/node_modules*" -o -path "./.git*" \) -prune -o \( -name "*.sigstore.json" -o -name "*.bundle" \) -print 2>/dev/null);
+        [ -n "$bundles" ] || { echo "FAIL-CLOSED SUP-018: no Sigstore bundles (*.sigstore.json, *.bundle) committed, so no release signature chain exists to verify."; exit 1; };
+        echo "$bundles" | while IFS= read -r bundle; do
+        [ -n "$bundle" ] || continue;
+        case "$bundle" in
+        *.sigstore.json) blob="${bundle%.sigstore.json}";;
+        *.bundle) blob="${bundle%.bundle}";;
+        *) blob="$bundle";;
+        esac;
+        [ -f "$blob" ] || { echo "FAIL SUP-018: bundle $bundle has no matching artifact blob (expected $blob). The signature chain is incomplete."; exit 1; };
+        cosign verify-blob --key "$key" --bundle "$bundle" "$blob" >/dev/null 2>&1 || { echo "FAIL SUP-018: cosign verify-blob failed for artifact $blob (bundle $bundle, key $key)."; exit 1; };
+        done || exit 1;
+        echo "SUP-018: cosign verify-blob succeeded for every committed bundle against $key.";
+      expect_exit: 0
+    evidence: 'cosign verify-blob success output for every committed bundle, or the fail-closed reason above.'
+    why: 'A signature nobody verifies is decoration. At production, every release blob must verify against a committed key and bundle — otherwise anyone with publish access ships anything.'
+    remediation: 'Commit cosign.pub and a Sigstore bundle per release blob, then run with --allow-commands so `cosign verify-blob --key <key> --bundle <bundle> <blob>` succeeds for each pair.'
+    references: ['SLSA-v1.2', 'SLSA-Build-L2', 'OpenSSF-Scorecard:Signed-Releases']
+
+  - id: SUP-019
+    title: SLSA attestation bundles verify with cosign (chain verification)
+    section: S3
+    section_title: Supply Chain & Build Provenance
+    severity: MEDIUM
+    class: supply-chain
+    applies_when: { fact: 'maturity:production' }
+    check:
+      kind: command
+      run: >-
+        command -v cosign >/dev/null 2>&1 || { echo "FAIL-CLOSED SUP-019: cosign binary not found in PATH, so SLSA attestation bundles cannot be verified. Install sigstore/cosign and re-run with --allow-commands."; exit 1; };
+        key="";
+        for k in cosign.pub .cosign/cosign.pub keys/cosign.pub; do if [ -f "$k" ]; then key="$k"; break; fi; done;
+        [ -n "$key" ] || { echo "FAIL-CLOSED SUP-019: no cosign public key committed (looked for cosign.pub, .cosign/cosign.pub, keys/cosign.pub), so there is nothing trustworthy to verify against."; exit 1; };
+        atts=$(find . \( -path "*/node_modules*" -o -path "./.git*" \) -prune -o \( -name "*.intoto.jsonl" -o -name "*.intoto.json" -o -name "*provenance*.json" \) ! -name "*.sigstore.json" ! -name "*.bundle" -print 2>/dev/null);
+        [ -n "$atts" ] || { echo "FAIL-CLOSED SUP-019: no SLSA provenance or in-toto attestation files (*.intoto.jsonl, *.intoto.json, *provenance*.json) committed, so no attestation chain exists to verify."; exit 1; };
+        echo "$atts" | while IFS= read -r att; do
+        [ -n "$att" ] || continue;
+        bundle="";
+        for cand in "$att.sigstore.json" "$att.bundle"; do if [ -f "$cand" ]; then bundle="$cand"; break; fi; done;
+        [ -n "$bundle" ] || { echo "FAIL SUP-019: attestation $att has no Sigstore bundle ($att.sigstore.json or $att.bundle missing). The attestation chain is incomplete."; exit 1; };
+        cosign verify-blob --key "$key" --bundle "$bundle" "$att" >/dev/null 2>&1 || { echo "FAIL SUP-019: cosign verify-blob failed for attestation $att (bundle $bundle, key $key)."; exit 1; };
+        done || exit 1;
+        echo "SUP-019: cosign verify-blob succeeded for every committed attestation against $key.";
+      expect_exit: 0
+    evidence: 'cosign verify-blob success output for every committed attestation, or the fail-closed reason above.'
+    why: 'Provenance that does not verify answers nothing when an artifact is compromised. At production, each committed attestation must carry a bundle that verifies — otherwise "built by us, from this source" is a claim, not evidence.'
+    remediation: 'Commit SLSA/in-toto attestations with a Sigstore bundle per file (<attestation>.sigstore.json), then run with --allow-commands so each pair verifies.'
+    references: ['SLSA-v1.2', 'SLSA-Build-L2', 'OpenSSF-Scorecard:Signed-Releases']
+
+  - id: SUP-020
+    title: Every release artifact ships a Sigstore bundle (chain completeness)
+    section: S3
+    section_title: Supply Chain & Build Provenance
+    severity: MEDIUM
+    class: supply-chain
+    applies_when: { fact: 'maturity:production' }
+    check:
+      kind: command
+      run: >-
+        command -v cosign >/dev/null 2>&1 || { echo "FAIL-CLOSED SUP-020: cosign binary not found in PATH, so the release signature chain cannot be checked. Install sigstore/cosign and re-run with --allow-commands."; exit 1; };
+        n=0;
+        for dir in dist artifacts releases; do
+        [ -d "$dir" ] || continue;
+        for art in "$dir"/*; do
+        [ -f "$art" ] || continue;
+        case "$art" in
+        *.sigstore.json|*.bundle|*.sig|*.pem|*.pub|SHA256SUMS*|*.sbom.*|*.spdx*|*.intoto.*) continue;;
+        esac;
+        if [ -f "$art.sigstore.json" ] || [ -f "$art.bundle" ]; then n=$((n + 1)); else echo "FAIL SUP-020: release artifact $art has no Sigstore bundle ($art.sigstore.json or $art.bundle missing). Every release artifact must ship a verifiable signature."; exit 1; fi;
+        done;
+        done;
+        [ "$n" -gt 0 ] || { echo "FAIL-CLOSED SUP-020: no release artifacts found under dist/, artifacts/ or releases/, so there is no signature chain to judge. Publish artifacts with Sigstore bundles."; exit 1; };
+        echo "SUP-020: every release artifact under dist/, artifacts/ or releases/ has a Sigstore bundle.";
+      expect_exit: 0
+    evidence: 'The per-artifact bundle listing above, or the fail-closed reason.'
+    why: 'One unverified artifact is the one the attacker picks. SUP-018 proves the signatures that exist; this rule proves none are missing — coverage of the chain, not just its links.'
+    remediation: 'Add a Sigstore bundle (<artifact>.sigstore.json) beside every file published from dist/, artifacts/ or releases/, then run with --allow-commands.'
+    references: ['SLSA-Build-L2', 'SLSA-v1.2', 'OpenSSF-Scorecard:Signed-Releases']
