@@ -1,0 +1,65 @@
+id: core/provenance-attestation
+title: Provenance Attestation Presence
+section: S3
+section_title: Supply Chain & Build Provenance
+description: >
+  Beta-level existence checks for build provenance evidence. Writing perfect
+  code is not enough if nobody can answer "was this artifact built by us, from
+  this source?" — these controls assert the attestation and verification
+  summary files are present in the tree. Chain verification at production
+  belongs to the cosign pack; this pack only checks presence.
+  Aligned with SLSA v1.2 and Sigstore.
+version: '1.0'
+skip_when: { fact: 'maturity:prototype' }
+
+rules:
+  - id: SUP-022
+    title: SLSA provenance attestation file present
+    section: S3
+    section_title: Supply Chain & Build Provenance
+    severity: HIGH
+    class: supply-chain
+    check:
+      kind: any_file
+      patterns:
+        - '**/*.intoto.jsonl'
+        - '**/*.intoto.json'
+        - '**/*.sigstore.json'
+        - '**/*slsa-provenance*.json'
+        - '**/*provenance*.json'
+    why: 'Without a provenance attestation nobody can tell your release from a repackaged implant — presence is the precondition for any later verification.'
+    remediation: 'Emit SLSA provenance with every release (e.g. GitHub Artifact Attestations) and commit or publish the *.intoto.jsonl / *.sigstore.json bundle alongside the artifact.'
+    references: ['SLSA-Provenance-v1', 'SLSA-Build-L2', 'NIST-SSDF-PS.3.2']
+
+  - id: SUP-023
+    title: Verification Summary Attestation present
+    section: S3
+    section_title: Supply Chain & Build Provenance
+    severity: MEDIUM
+    class: supply-chain
+    check:
+      kind: any_file
+      patterns:
+        - '**/*.vsa.json'
+        - '**/*vsa*.json'
+        - '**/*verification-summary*.json'
+    why: 'Provenance says how it was built; the Verification Summary says someone actually checked. A VSA records the verification verdict so consumers do not re-derive it by hand.'
+    remediation: 'Run slsa-verifier (or your policy engine) over release provenance and store the resulting Verification Summary Attestation with the release.'
+    references: ['SLSA-VSA', 'SLSA-v1.2']
+
+  - id: SUP-024
+    title: Detached signature or transparency bundle present
+    section: S3
+    section_title: Supply Chain & Build Provenance
+    severity: MEDIUM
+    class: supply-chain
+    check:
+      kind: file_exists
+      files:
+        - '**/*.sigstore'
+        - '**/*.bundle'
+        - '**/*.sig'
+        - '**/*.asc'
+    why: 'A detached signature or transparency bundle is the portable half of signing — without it there is nothing for a consumer (or a transparency log) to check.'
+    remediation: 'Sign release artifacts with Sigstore (cosign sign-bundle) or GPG and ship the resulting bundle / detached signature next to each artifact.'
+    references: ['Sigstore', 'SLSA-Build-L2']

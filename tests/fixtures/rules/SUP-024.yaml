@@ -1,0 +1,10 @@
+rule: SUP-024
+negative:
+  files:
+    attestations/app.tar.gz.asc: |
+      -----BEGIN PGP SIGNATURE-----
+positive:
+  files:
+    package.json: |
+      { "name": "app" }
+  expect: MISSING
