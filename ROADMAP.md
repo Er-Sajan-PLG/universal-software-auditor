@@ -75,8 +75,9 @@ verify` chain at production (`core/provenance-cosign`, SUP-018–020),
       section (Scorecard action and branch protection already in place;
       registration at bestpractices.dev is the remaining step). _(S)_
 - [x] **Signed reports, verify side (Sigstore)** — detached-signature
-      verification via local cosign (`src/report/signature.ts`); minting stays
-      blocked pending an ADR-0011 amendment. ADR-0025. _(M)_
+      verification via local cosign (`src/report/signature.ts`) plus a
+      `usa verify-report` CLI command; minting stays blocked pending an
+      ADR-0011 amendment. ADR-0025, ADR-0028. _(M)_
 - [x] **Generated docs resync** — the `resync` CI job regenerates and pushes
       `cli.md`/`sample-report.md` on PRs instead of merely failing. ADR-0026.
 - [ ] **MADR/log4brains** — only when the ADR corpus triples or decisions
