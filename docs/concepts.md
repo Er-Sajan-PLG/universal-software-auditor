@@ -110,6 +110,13 @@ DEPRECATED, EXPERIMENTAL). `applicable` counts everything `applies_when` let thr
   excluded from the overall score. You cannot earn points for questions nobody answered.
 - A high score at low confidence is the single most misleading thing an audit tool
   can produce, which is why confidence sits next to every score in the report.
+- Next to confidence sits a **Review** column: how many of the section's
+  judgement checks (`UNKNOWN`) carry a dated human review from `.usa.yaml`
+  `reviews:` (ADR-0023). Confidence says what the tool verified; Review says
+  what a person has looked at, and `⏳N overdue` marks re-reviews past their
+  `until` deadline. The judgement queue itself is split by automatability —
+  `assist` checks the tool settles once allowed, `manual` checks that need
+  reasoning — so attention goes where only a human helps.
 
 ---
 

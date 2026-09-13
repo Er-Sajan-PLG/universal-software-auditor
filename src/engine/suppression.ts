@@ -1,5 +1,5 @@
 import type { Finding, Location, Suppression } from '../types.js';
-import { globToRegExp } from '../util/glob.js';
+import { matchesSite, siteMatcher } from '../util/site.js';
 
 /**
  * Site-level suppressions (ADR-0022).
@@ -29,7 +29,7 @@ export function buildSuppressionIndex(suppressions: Suppression[] | undefined): 
     if (!s.rule) continue;
     const entry: SuppressionEntry = {
       suppression: s,
-      matcher: s.file ? globToRegExp(normalizeGlob(s.file)) : null,
+      matcher: siteMatcher(s.file),
       used: false,
     };
     const list = index.get(s.rule);
@@ -39,22 +39,8 @@ export function buildSuppressionIndex(suppressions: Suppression[] | undefined): 
   return index;
 }
 
-/**
- * `scripts/legacy/*` should match `scripts/legacy/a.js`; a bare `a.js` should
- * match the file anywhere. Without a slash we prefix a leading segment so
- * author intent ("this file") works regardless of directory depth.
- */
-function normalizeGlob(file: string): string {
-  return file.includes('/') ? file : `**/${file}`;
-}
-
 function matchesLocation(entry: SuppressionEntry, loc: Location): boolean {
-  const s = entry.suppression;
-  if (entry.matcher && loc.file && !entry.matcher.test(loc.file)) return false;
-  // A `line` only meaningfully narrows when the finding has that line. A waiver
-  // naming a line should not silently suppress a whole file, so require a match.
-  if (s.line !== undefined && loc.line !== s.line) return false;
-  return true;
+  return matchesSite(entry.matcher, entry.suppression.line, loc);
 }
 
 export interface SuppressionOutcome {

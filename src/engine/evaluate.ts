@@ -13,6 +13,7 @@ import type {
 } from '../types.js';
 import { Project } from '../util/project.js';
 import { DEFAULT_WEIGHT } from './loader.js';
+import { ruleAutomatability } from './automatability.js';
 import { applySuppressions, type SuppressionIndex } from './suppression.js';
 
 export interface EvalContext {
@@ -126,6 +127,7 @@ export function evaluateRule(rule: Rule, ctx: EvalContext): Finding {
     evidenceHint: rule.evidence,
     remediation: rule.remediation,
     references: rule.references,
+    automatability: ruleAutomatability(rule),
   };
 
   if (ctx.disabled.has(rule.id)) {

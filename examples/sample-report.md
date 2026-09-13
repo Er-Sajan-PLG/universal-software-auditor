@@ -27,23 +27,23 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 
 > Proving an idea. Optimise for learning speed, but never for leaking secrets or shipping unrecoverable data loss.
 
-| Dimension | Score | Confidence |
-|---|---|---|
-| S1 · Repository & Project Structure | 7.2/10 | 83.3% |
-| S2 · Security | 4.9/10 | 92.9% |
-| S3 · Supply Chain & Build Provenance | 0/10 | 100% |
-| S4 · Architecture & Design | 8/10 | 60% |
-| S5 · Code Quality | 3.5/10 | 87.5% |
-| S6 · Data & Database | 1.3/10 | 66.7% |
-| S7 · Testing & Quality Assurance | 0/10 † | 33.3% |
-| S8 · CI/CD, Infrastructure & Observability | 3.3/10 | 66.7% |
-| S9 · Release & Change Management | — not verified | 0% |
-| S10 · Dependencies & Third-Party | 10/10 † | 25% |
-| S12 · Documentation & Knowledge | 10/10 † | 25% |
-| S15 · Platform-Specific | 5.1/10 | 50% |
-| S16 · Future Readiness | — not verified | 0% |
+| Dimension | Score | Confidence | Review |
+|---|---|---|---|
+| S1 · Repository & Project Structure | 7.2/10 | 83.3% | 0/2 recorded |
+| S2 · Security | 4.9/10 | 92.9% | 0/1 recorded |
+| S3 · Supply Chain & Build Provenance | 0/10 | 100% | — |
+| S4 · Architecture & Design | 8/10 | 60% | 0/2 recorded |
+| S5 · Code Quality | 3.5/10 | 87.5% | 0/1 recorded |
+| S6 · Data & Database | 1.3/10 | 66.7% | 0/3 recorded |
+| S7 · Testing & Quality Assurance | 0/10 † | 33.3% | 0/2 recorded |
+| S8 · CI/CD, Infrastructure & Observability | 3.3/10 | 66.7% | 0/1 recorded |
+| S9 · Release & Change Management | — not verified | 0% | 0/2 recorded |
+| S10 · Dependencies & Third-Party | 10/10 † | 25% | 0/3 recorded |
+| S12 · Documentation & Knowledge | 10/10 † | 25% | 0/3 recorded |
+| S15 · Platform-Specific | 5.1/10 | 50% | 0/5 recorded |
+| S16 · Future Readiness | — not verified | 0% | 0/2 recorded |
 
-*Confidence = share of applicable rules the engine could verify automatically; unverified checks are excluded from the score rather than counted as passes. **†** = fewer than half of that section's applicable checks could be verified. Automation coverage: **65.8%**. The rest is in the judgement queue below.*
+*Confidence = share of applicable rules the engine could verify automatically; unverified checks are excluded from the score rather than counted as passes. **†** = fewer than half of that section's applicable checks could be verified. **Review** = judgement checks with a dated human review on record (`⏳` marks an overdue review). Automation coverage: **65.8%**. The rest is in the judgement queue below.*
 
 ## 🏷️ Findings Summary
 
@@ -331,35 +331,46 @@ No open findings in this section. ✅
 These checks cannot be settled by grep. Work through them with an agent or a reviewer;
 each one records the evidence required. **RULE 4: never mark ✅ without evidence.**
 
-| Rule | Section | Severity | What to look for | Evidence to record |
-|---|---|---|---|---|
-| `REPO-003` No secrets in git history | S1 | 🔴 CRITICAL | Deleting a secret from HEAD does not delete it from history. Anyone who cloned the repo still has it. | Command output, or a manual `gitleaks detect --log-opts=--all` run. |
-| `SEC-015` Authorization is enforced per request, not per route | S2 | 🟡 MEDIUM | Checking "is logged in" is not checking "may access THIS record". IDOR is the most common authorization bug and no linter finds it. | For each data endpoint: file:line showing the ownership/permission check on the requested resource ID. |
-| `REL-005` Database migrations run forward and are reversible | S9 | 🟡 MEDIUM | A migration you cannot reverse is a one-way door taken during a deploy, usually at the worst moment. | Migration tool in use, and for the last destructive migration: the expand/contract or down-migration plan. |
-| `DEP-002` No known-HIGH/CRITICAL vulnerabilities in dependencies | S10 | 🟡 MEDIUM | Most modern compromises arrive through a transitive dependency, not your own code. | `npm audit` / `pip-audit` / `osv-scanner` / `trivy fs` output dated today. |
-| `DATA-004` No N+1 query patterns | S6 | 🟢 LOW | An endpoint that works with 10 rows falls over at 10,000 — usually in production, rarely in staging. | Query logs for the main list endpoints: is there one query per row, or one query with a join/include? |
-| `TEST-006` Integration tests cover the seams | S7 | 🟢 LOW | Unit tests with everything mocked verify your mock, not your integration. | Tests that exercise a real database/queue/HTTP boundary (or a containerised test double) rather than mocking every collaborator. |
-| `TEST-008` Security-relevant behaviour is tested | S7 | 🟢 LOW | Authorization regressions are silent: nothing crashes, someone just sees data they should not. | Tests asserting that user A cannot read or modify user B's resources, and that unauthenticated calls are rejected. |
-| `CICD-010` Backups exist AND restores have been tested | S8 | 🟢 LOW | Nobody has ever been fired for having backups. Plenty of teams have died from never testing the restore. | Backup schedule, retention, encryption at rest, and — critically — the date of the last successful restore drill. |
-| `REL-006` Migrations are separated from application deploys | S9 | 🟢 LOW | Deploying code and schema simultaneously means the old code briefly runs against the new schema. | Deploy order: does the schema change ship before the code that requires it? |
-| `API-002` Request timeouts are configured | S15 | 🟢 LOW | No timeout means one slow dependency exhausts your entire worker pool. | Server request timeout, upstream client timeouts, and DB statement timeouts — all three, with values. |
-| `API-004` Write operations are idempotent | S15 | 🟢 LOW | Networks retry. Clients double-click. Only one of those should create two orders. | An idempotency-key mechanism (or natural-key upsert) on POST/PUT endpoints that create resources. |
-| `REPO-015` Commit history is meaningful | S1 | 🔵 FUTURE | Commit messages are the only history most projects ever write down. "fix stuff" costs the next person an afternoon. | Last 20 commit messages. Are they descriptive and consistently formatted? |
-| `ARCH-004` Layers are separated (transport / domain / data) | S4 | 🔵 FUTURE | Business logic mixed into HTTP handlers cannot be tested, reused, or moved — and every new transport duplicates it. | Directory layout or file:line showing HTTP handlers delegating to a domain/service layer rather than querying the DB inline. |
-| `ARCH-008` Side effects are isolated and testable | S4 | 🔵 FUTURE | Side effects called inline cannot be tested without the network, the clock, or the database. That is why tests get slow and flaky. | Examples of I/O (network, disk, clock, randomness) being injected or wrapped rather than called inline from business logic. |
-| `CQ-007` Logging is structured and levelled | S5 | 🔵 FUTURE | Unstructured logs cannot be queried, alerted on, or correlated. At 3am, grep is not a strategy. | Sample log output: JSON or key=value, with DEBUG/INFO/WARN/ERROR used consistently. |
-| `DATA-003` Indexes exist on queried columns | S6 | 🔵 FUTURE | Most "the database is slow" incidents are one missing index on one column. | The five heaviest queries and their EXPLAIN plans. Any sequential scan on a large table needs a justification. |
-| `DATA-009` Delete strategy is defined | S6 | 🔵 FUTURE | "Delete the account" needs a defined answer before a regulator or a customer asks for it. | Whether records are hard-deleted or soft-deleted, and how that interacts with retention and erasure requests. |
-| `DEP-004` No obviously redundant dependencies | S10 | 🔵 FUTURE | Two HTTP clients means two sets of CVEs, two upgrade paths, and an argument every PR. | Two libraries doing the same job (e.g. both axios and node-fetch; both moment and date-fns). |
-| `DEP-006` Licenses are compatible with the project license | S10 | 🔵 FUTURE | One AGPL transitive dependency can force disclosure of your entire source. | An SPDX license inventory of direct dependencies and any GPL/AGPL entries in a permissively-licensed or commercial project. |
-| `DOC-001` README covers what / install / run / contribute | S12 | 🔵 FUTURE | A README that only says the project name is a README-shaped placeholder. | The four headings. If any is missing, the README fails this check. |
-| `DOC-002` Setup instructions have been verified recently | S12 | 🔵 FUTURE | Setup docs rot faster than any other file, and the cost lands on whoever joins next. | A clean-machine clone-and-run within the last quarter, or CI that installs from scratch on every PR. |
-| `DOC-004` Complex logic is explained at the point of use | S12 | 🔵 FUTURE | Code tells you what it does. Only a comment can tell you why the obvious solution was wrong. | Two non-obvious modules: does a comment explain WHY, not WHAT? |
-| `API-003` Retries are bounded with jitter | S15 | 🔵 FUTURE | Retrying a POST three times can create three charges. Retrying without jitter synchronises your thundering herd. | Retry configuration: max attempts, backoff strategy, and whether retries are applied to non-idempotent calls. |
-| `API-005` Response format is consistent | S15 | 🔵 FUTURE | Clients should not need per-endpoint parsing logic. | One success envelope, one error envelope (code, message, details, requestId) used everywhere. |
-| `API-008` Health and readiness endpoints are unauthenticated but minimal | S15 | 🔵 FUTURE | A verbose /health endpoint is a free architecture diagram for an attacker. | /health returns no version strings, dependency names, or configuration details to anonymous callers. |
-| `FUT-002` No core technology is at or near end of life | S16 | 🔵 FUTURE | Node 16, Python 3.8, and CentOS 7 all had an EOL date that everyone knew about in advance. | Runtime version, framework major versions, and their upstream EOL dates. |
-| `FUT-003` Data archiving strategy exists | S16 | 🔵 FUTURE | A table nobody can archive eventually makes every query slow and every migration terrifying. | Retention policy per table/dataset and where cold data goes. |
+**2** the tool can settle once allowed (a command or a committed artifact) · **25** need reasoning.
+
+### ⚙️ Assisted — the tool settles these once
+
+Enable `--allow-commands`, or commit the artifact the check reads, and the engine resolves the rule — no judgement required.
+
+| Rule | Section | Severity | What to look for | Evidence to record | Last reviewed |
+|---|---|---|---|---|---|
+| `REPO-003` No secrets in git history | S1 | 🔴 CRITICAL | Deleting a secret from HEAD does not delete it from history. Anyone who cloned the repo still has it. | Command output, or a manual `gitleaks detect --log-opts=--all` run. | never |
+| `DEP-002` No known-HIGH/CRITICAL vulnerabilities in dependencies | S10 | 🟡 MEDIUM | Most modern compromises arrive through a transitive dependency, not your own code. | `npm audit` / `pip-audit` / `osv-scanner` / `trivy fs` output dated today. | never |
+
+### 🧠 Judgement — reasoning required
+
+| Rule | Section | Severity | What to look for | Evidence to record | Last reviewed |
+|---|---|---|---|---|---|
+| `SEC-015` Authorization is enforced per request, not per route | S2 | 🟡 MEDIUM | Checking "is logged in" is not checking "may access THIS record". IDOR is the most common authorization bug and no linter finds it. | For each data endpoint: file:line showing the ownership/permission check on the requested resource ID. | never |
+| `REL-005` Database migrations run forward and are reversible | S9 | 🟡 MEDIUM | A migration you cannot reverse is a one-way door taken during a deploy, usually at the worst moment. | Migration tool in use, and for the last destructive migration: the expand/contract or down-migration plan. | never |
+| `DATA-004` No N+1 query patterns | S6 | 🟢 LOW | An endpoint that works with 10 rows falls over at 10,000 — usually in production, rarely in staging. | Query logs for the main list endpoints: is there one query per row, or one query with a join/include? | never |
+| `TEST-006` Integration tests cover the seams | S7 | 🟢 LOW | Unit tests with everything mocked verify your mock, not your integration. | Tests that exercise a real database/queue/HTTP boundary (or a containerised test double) rather than mocking every collaborator. | never |
+| `TEST-008` Security-relevant behaviour is tested | S7 | 🟢 LOW | Authorization regressions are silent: nothing crashes, someone just sees data they should not. | Tests asserting that user A cannot read or modify user B's resources, and that unauthenticated calls are rejected. | never |
+| `CICD-010` Backups exist AND restores have been tested | S8 | 🟢 LOW | Nobody has ever been fired for having backups. Plenty of teams have died from never testing the restore. | Backup schedule, retention, encryption at rest, and — critically — the date of the last successful restore drill. | never |
+| `REL-006` Migrations are separated from application deploys | S9 | 🟢 LOW | Deploying code and schema simultaneously means the old code briefly runs against the new schema. | Deploy order: does the schema change ship before the code that requires it? | never |
+| `API-002` Request timeouts are configured | S15 | 🟢 LOW | No timeout means one slow dependency exhausts your entire worker pool. | Server request timeout, upstream client timeouts, and DB statement timeouts — all three, with values. | never |
+| `API-004` Write operations are idempotent | S15 | 🟢 LOW | Networks retry. Clients double-click. Only one of those should create two orders. | An idempotency-key mechanism (or natural-key upsert) on POST/PUT endpoints that create resources. | never |
+| `REPO-015` Commit history is meaningful | S1 | 🔵 FUTURE | Commit messages are the only history most projects ever write down. "fix stuff" costs the next person an afternoon. | Last 20 commit messages. Are they descriptive and consistently formatted? | never |
+| `ARCH-004` Layers are separated (transport / domain / data) | S4 | 🔵 FUTURE | Business logic mixed into HTTP handlers cannot be tested, reused, or moved — and every new transport duplicates it. | Directory layout or file:line showing HTTP handlers delegating to a domain/service layer rather than querying the DB inline. | never |
+| `ARCH-008` Side effects are isolated and testable | S4 | 🔵 FUTURE | Side effects called inline cannot be tested without the network, the clock, or the database. That is why tests get slow and flaky. | Examples of I/O (network, disk, clock, randomness) being injected or wrapped rather than called inline from business logic. | never |
+| `CQ-007` Logging is structured and levelled | S5 | 🔵 FUTURE | Unstructured logs cannot be queried, alerted on, or correlated. At 3am, grep is not a strategy. | Sample log output: JSON or key=value, with DEBUG/INFO/WARN/ERROR used consistently. | never |
+| `DATA-003` Indexes exist on queried columns | S6 | 🔵 FUTURE | Most "the database is slow" incidents are one missing index on one column. | The five heaviest queries and their EXPLAIN plans. Any sequential scan on a large table needs a justification. | never |
+| `DATA-009` Delete strategy is defined | S6 | 🔵 FUTURE | "Delete the account" needs a defined answer before a regulator or a customer asks for it. | Whether records are hard-deleted or soft-deleted, and how that interacts with retention and erasure requests. | never |
+| `DEP-004` No obviously redundant dependencies | S10 | 🔵 FUTURE | Two HTTP clients means two sets of CVEs, two upgrade paths, and an argument every PR. | Two libraries doing the same job (e.g. both axios and node-fetch; both moment and date-fns). | never |
+| `DEP-006` Licenses are compatible with the project license | S10 | 🔵 FUTURE | One AGPL transitive dependency can force disclosure of your entire source. | An SPDX license inventory of direct dependencies and any GPL/AGPL entries in a permissively-licensed or commercial project. | never |
+| `DOC-001` README covers what / install / run / contribute | S12 | 🔵 FUTURE | A README that only says the project name is a README-shaped placeholder. | The four headings. If any is missing, the README fails this check. | never |
+| `DOC-002` Setup instructions have been verified recently | S12 | 🔵 FUTURE | Setup docs rot faster than any other file, and the cost lands on whoever joins next. | A clean-machine clone-and-run within the last quarter, or CI that installs from scratch on every PR. | never |
+| `DOC-004` Complex logic is explained at the point of use | S12 | 🔵 FUTURE | Code tells you what it does. Only a comment can tell you why the obvious solution was wrong. | Two non-obvious modules: does a comment explain WHY, not WHAT? | never |
+| `API-003` Retries are bounded with jitter | S15 | 🔵 FUTURE | Retrying a POST three times can create three charges. Retrying without jitter synchronises your thundering herd. | Retry configuration: max attempts, backoff strategy, and whether retries are applied to non-idempotent calls. | never |
+| `API-005` Response format is consistent | S15 | 🔵 FUTURE | Clients should not need per-endpoint parsing logic. | One success envelope, one error envelope (code, message, details, requestId) used everywhere. | never |
+| `API-008` Health and readiness endpoints are unauthenticated but minimal | S15 | 🔵 FUTURE | A verbose /health endpoint is a free architecture diagram for an attacker. | /health returns no version strings, dependency names, or configuration details to anonymous callers. | never |
+| `FUT-002` No core technology is at or near end of life | S16 | 🔵 FUTURE | Node 16, Python 3.8, and CentOS 7 all had an EOL date that everyone knew about in advance. | Runtime version, framework major versions, and their upstream EOL dates. | never |
+| `FUT-003` Data archiving strategy exists | S16 | 🔵 FUTURE | A table nobody can archive eventually makes every query slow and every migration terrifying. | Retention policy per table/dataset and where cold data goes. | never |
 
 ## 🗺️ Recommended Roadmap
 

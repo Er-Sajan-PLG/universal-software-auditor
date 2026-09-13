@@ -35,6 +35,17 @@ suppressions:
     file: 'scripts/legacy/**'
     reason: 'Vendored legacy script; replaced in the Q3 migration.'
 
+# ── Recorded reviews ───────────────────────────────────────────────────────
+# Provenance, not a waiver: a review does not change a verdict, it records that
+# someone examined an open item and when to look again. Same file/line scoping
+# as a suppression.
+reviews:
+  - rule: SEC-015
+    reviewed: '2026-09-01'
+    until: '2027-03-01'
+    by: sajan
+    note: 'Ownership check confirmed on the routes that matter.'
+
 # ── Indexing ───────────────────────────────────────────────────────────────
 ignore: # extra globs, on top of .gitignore + USA defaults
   - 'generated/**'
@@ -48,20 +59,21 @@ facts: # assert what detection could not infer
 
 ## Field reference
 
-| Field                 | Type                                  | Effect                                                                         |
-| --------------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
-| `version`             | `1`                                   | Schema version                                                                 |
-| `maturity`            | stage                                 | Overrides auto-detection; changes dampening and the expected band              |
-| `include`             | pack ids                              | Force packs on even when `skip_when` says no                                   |
-| `exclude`             | pack ids                              | Force packs off                                                                |
-| `rules.<id>.severity` | severity                              | Re-grade one rule (must be on the ladder, else ignored with a warning)         |
-| `rules.<id>.weight`   | number                                | Change how much it moves the score (finite, ≥ 0, else ignored with a warning)  |
-| `rules.<id>.disabled` | bool                                  | Skip entirely (still listed as ➖ SKIPPED)                                     |
-| `rules.<id>.reason`   | string                                | **Required in practice** — an override with no reason is an unaudited decision |
-| `suppressions[]`      | `{rule, reason, until, file?, line?}` | Excluded from the score, listed under Accepted Risk                            |
-| `ignore`              | globs                                 | Extra paths to keep out of the index                                           |
-| `facts`               | fact strings                          | Assert detection facts manually (`ns:value`)                                   |
-| `sections`            | section ids                           | Restrict the report to these sections                                          |
+| Field                 | Type                                                 | Effect                                                                         |
+| --------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `version`             | `1`                                                  | Schema version                                                                 |
+| `maturity`            | stage                                                | Overrides auto-detection; changes dampening and the expected band              |
+| `include`             | pack ids                                             | Force packs on even when `skip_when` says no                                   |
+| `exclude`             | pack ids                                             | Force packs off                                                                |
+| `rules.<id>.severity` | severity                                             | Re-grade one rule (must be on the ladder, else ignored with a warning)         |
+| `rules.<id>.weight`   | number                                               | Change how much it moves the score (finite, ≥ 0, else ignored with a warning)  |
+| `rules.<id>.disabled` | bool                                                 | Skip entirely (still listed as ➖ SKIPPED)                                     |
+| `rules.<id>.reason`   | string                                               | **Required in practice** — an override with no reason is an unaudited decision |
+| `suppressions[]`      | `{rule, reason, until, file?, line?}`                | Excluded from the score, listed under Accepted Risk                            |
+| `reviews[]`           | `{rule, reviewed, until?, file?, line?, by?, note?}` | Dated human-review provenance on open findings (never changes a verdict)       |
+| `ignore`              | globs                                                | Extra paths to keep out of the index                                           |
+| `facts`               | fact strings                                         | Assert detection facts manually (`ns:value`)                                   |
+| `sections`            | section ids                                          | Restrict the report to these sections                                          |
 
 ## What is indexed
 
@@ -126,6 +138,16 @@ fix its target.
 one that cannot be parsed as a date, excludes the suppression with a warning
 and the finding reports normally. Use unambiguous ISO dates (`2026-12-31`).
 An audit must never silently honour dead risk acceptances (see ADR-0007).
+
+**A review records attention; it does not excuse.** `reviews:` attaches a
+`reviewed` date (and an optional `until` re-review deadline) to a still-open
+finding. It changes no verdict and hides nothing — it is provenance, so the next
+audit shows the item with its age instead of pretending no one has looked. A
+review whose `until` has passed is marked stale in the section table and the
+queue, and warns. A review that matched no finding also warns, so the ledger
+decays instead of accumulating (ADR-0023). Reviews take the same `file`/`line`
+scoping as suppressions, and a review with an unparseable date is dropped
+(fail closed).
 
 **`include` forces packs on wholesale.** A force-loaded pack applies all its
 rules regardless of depth and `applies_when` — that is the documented

@@ -30,6 +30,8 @@ export interface JsonFinding {
   why?: string;
   evidenceHint?: string;
   references?: string[];
+  automatability?: Finding['automatability'];
+  review?: Finding['review'];
 }
 
 export interface JsonReport {
@@ -62,6 +64,8 @@ function projectFinding(f: Finding): JsonFinding {
   if (f.why) out.why = f.why;
   if (f.evidenceHint) out.evidenceHint = f.evidenceHint;
   if (f.references && f.references.length > 0) out.references = f.references;
+  if (f.automatability) out.automatability = f.automatability;
+  if (f.review) out.review = f.review;
   return out;
 }
 

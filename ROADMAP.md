@@ -59,9 +59,10 @@ verify` success, attestation/VSA presence where network allows; existence
 - [x] **Site-level suppressions** — a waiver may carry a `file` glob (and
       optional `line`); only matching locations are excused, unmatched ones
       stay active, and a waiver that matched nothing is reported. ADR-0022. _(M)_
-- [ ] **Hotspot triage + review staleness** — split "tool uncertain, human
-      confirms once" from deterministic violations; per-item last-reviewed
-      dates next to confidence. _(M)_
+- [x] **Hotspot triage + review staleness** — the judgement queue is split by
+      automatability (`assist` = the tool settles it once allowed, `manual` =
+      reasoning required), and `.usa.yaml` `reviews:` record dated human
+      attention with an optional `until` deadline that surfaces as stale. ADR-0023. _(M)_
 - [ ] **New-code quality gates** — gate on newly-introduced ≥ HIGH plus
       regressed rules (trailer + `diff` already compute the inputs), instead of
       absolute `--fail-on` which punishes legacy adoption. _(M)_

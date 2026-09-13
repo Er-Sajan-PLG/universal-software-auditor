@@ -40,6 +40,15 @@ export function loadConfig(target: string, explicit?: string): UsaConfig {
         file: str(s.file),
         line: num(s.line),
       })),
+      reviews: maps(doc.reviews).map((r) => ({
+        rule: String(r.rule ?? ''),
+        reviewed: str(r.reviewed) ?? '',
+        until: str(r.until),
+        file: str(r.file),
+        line: num(r.line),
+        by: str(r.by),
+        note: str(r.note),
+      })),
       ignore: strList(doc.ignore),
       facts: strList(doc.facts),
       sections: strList(doc.sections),
@@ -80,6 +89,21 @@ suppressions:
   # - rule: SEC-004
   #   file: "scripts/legacy/**"
   #   reason: "Vendored legacy script; replaced in the Q3 migration."
+
+# Recorded human reviews. A review is provenance, not a waiver: it does not
+# change a verdict, it records that a person examined an open item and when to
+# look again. Reviews that match no finding, or whose "until" has passed, are
+# reported so the ledger stays honest. Use ISO dates.
+reviews:
+  # - rule: SEC-015
+  #   reviewed: "2026-09-01"
+  #   until: "2027-03-01"
+  #   by: "sajan"
+  #   note: "Ownership check confirmed on the routes that matter; re-check after the API split."
+  # - rule: DOC-003
+  #   file: "docs/**"
+  #   reviewed: "2026-08-15"
+  #   note: "Reviewed; docs live in Notion as recorded in ADR-014."
 
 # Extra globs to exclude from indexing (on top of .gitignore + USA defaults).
 ignore: []

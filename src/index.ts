@@ -37,6 +37,18 @@ export {
   validateAutomatability,
 } from './engine/automatability.js';
 export {
+  buildReviewIndex,
+  attachReviews,
+  resolveActiveReviews,
+  unusedReviews,
+  describeReview,
+  reviewAgeDays,
+  reviewOverdueDays,
+  isReviewStale,
+  type ReviewIndex,
+  type ReviewEntry,
+} from './engine/review.js';
+export {
   loadCatalogues,
   catalogueOf,
   catalogueCoverage,

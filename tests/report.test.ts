@@ -148,6 +148,61 @@ describe('markdown report', () => {
     expect(md).toContain('file:line of the ownership check');
   });
 
+  it('splits the judgement queue into assisted and reasoning sections', () => {
+    const md = renderMarkdown(
+      baseReport([
+        finding({
+          ruleId: 'DEP-002',
+          status: 'UNKNOWN',
+          automatability: 'assist',
+          title: 'Dependency audit',
+        }),
+        finding({
+          ruleId: 'SEC-015',
+          status: 'UNKNOWN',
+          automatability: 'manual',
+          title: 'Authorization per resource',
+        }),
+      ]),
+      profile,
+    );
+    expect(md).toContain('Assisted — the tool settles these once');
+    expect(md).toContain('Judgement — reasoning required');
+    expect(md).toContain('**1** the tool can settle once allowed');
+    expect(md).toContain('**1** need reasoning');
+  });
+
+  it('shows last-reviewed provenance and marks an overdue review', () => {
+    const md = renderMarkdown(
+      baseReport([
+        finding({
+          ruleId: 'SEC-015',
+          status: 'UNKNOWN',
+          review: { reviewed: '2020-01-01', until: '2020-02-01' },
+        }),
+      ]),
+      profile,
+    );
+    expect(md).toContain('Last reviewed');
+    expect(md).toContain('2020-01-01');
+    expect(md).toContain('overdue');
+  });
+
+  it('shows review coverage per section, excluding non-judgement findings', () => {
+    const report = baseReport([
+      finding({
+        ruleId: 'SEC-015',
+        section: 'S2',
+        status: 'UNKNOWN',
+        review: { reviewed: '2026-09-01' },
+      }),
+      finding({ ruleId: 'SEC-016', section: 'S2', status: 'UNKNOWN' }),
+    ]);
+    const md = renderMarkdown(report, profile);
+    const row = md.split('\n').find((l) => l.includes('S2 · Security'))!;
+    expect(row).toContain('1/2 recorded');
+  });
+
   it('lists suppressed findings under Accepted Risk', () => {
     const md = renderMarkdown(
       baseReport([finding({ suppressedReason: 'Accepted: admin-only, 40 rows' })]),
@@ -299,6 +354,20 @@ describe('json report', () => {
     expect(doc.findings[0]!.references).toEqual(['OWASP']);
   });
 
+  it('exposes automatability and review provenance', () => {
+    const f = finding({
+      automatability: 'assist',
+      review: { reviewed: '2026-09-01', until: '2027-01-01', by: 'sajan' },
+    });
+    const doc = toJsonReport(baseReport([f]));
+    expect(doc.findings[0]!.automatability).toBe('assist');
+    expect(doc.findings[0]!.review).toEqual({
+      reviewed: '2026-09-01',
+      until: '2027-01-01',
+      by: 'sajan',
+    });
+  });
+
   it('is deterministic for identical reports', () => {
     const r = baseReport([finding({}), finding({ ruleId: 'SEC-001', status: 'FAIL' })]);
     expect(renderJson(r)).toBe(renderJson(r));
@@ -380,6 +449,11 @@ describe('sarif report', () => {
     expect(log.runs[0]!.results[0]!.suppressions).toEqual([
       { kind: 'external', justification: 'accepted risk' },
     ]);
+  });
+
+  it('stamps automatability onto the rule properties when present', () => {
+    const log = toSarif(baseReport([finding({ status: 'FAIL', automatability: 'full' })]));
+    expect(log.runs[0]!.tool.driver.rules[0]!.properties.automatability).toBe('full');
   });
 
   it('produces no results for an all-clean report', () => {

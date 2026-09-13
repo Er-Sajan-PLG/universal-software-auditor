@@ -148,20 +148,34 @@ improvement — the thing a single audit can never do.
 
 USA audits itself with the full stack — copy what fits:
 
-| Workflow              | What it does                                                                                                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ci.yml`              | lint+format+typecheck · Vitest with coverage thresholds · build + CLI smoke · rule-pack validation · npm audit + gitleaks + license scan · **hygiene** (`check-adrs` + `check-docs`) |
-| `self-audit.yml`      | `usa audit . --depth deep --fail-on critical` on every PR, score as PR comment                                                                                                       |
-| `scorecard.yml`       | OpenSSF Scorecard monthly + on push (API-verified hygiene; SARIF to Security tab)                                                                                                    |
-| `automerge.yml`       | Dependabot patch/minor auto-merge once CI is green (majors stay manual)                                                                                                              |
-| `gitleaks-pin.yml`    | Monthly check that the curl-pinned gitleaks binary in `ci.yml` is current (no bot watches it) — opens a deduped issue when stale                                                     |
-| `release.yml`         | Tag push `v*` → OIDC trusted publishing (no long-lived token) + `--provenance` + CycloneDX SBOM artifact                                                                             |
-| `release-please.yml`  | Conventional commits → open Release PR (bump + CHANGELOG as reviewable diff); merging it cuts the tag that fires `release.yml`                                                       |
-| `commits` in `ci.yml` | Lints PR commit messages (commitlint) — releases are computed from history, so history must parse                                                                                    |
+| Workflow              | What it does                                                                                                                                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`              | lint+format+typecheck · Vitest with coverage thresholds · build + CLI smoke · rule-pack validation · npm audit + gitleaks + license scan · **hygiene** (`check-adrs` + `check-docs`) · **resync** (regenerates + pushes `cli.md`/`sample-report.md` on PRs) |
+| `self-audit.yml`      | `usa audit . --depth deep --fail-on critical` on every PR, score as PR comment                                                                                                                                                                              |
+| `scorecard.yml`       | OpenSSF Scorecard monthly + on push (API-verified hygiene; SARIF to Security tab)                                                                                                                                                                           |
+| `automerge.yml`       | Dependabot patch/minor auto-merge once CI is green (majors stay manual)                                                                                                                                                                                     |
+| `gitleaks-pin.yml`    | Monthly check that the curl-pinned gitleaks binary in `ci.yml` is current (no bot watches it) — opens a deduped issue when stale                                                                                                                            |
+| `release.yml`         | Tag push `v*` → OIDC trusted publishing (no long-lived token) + `--provenance` + CycloneDX SBOM artifact                                                                                                                                                    |
+| `release-please.yml`  | Conventional commits → open Release PR (bump + CHANGELOG as reviewable diff); merging it cuts the tag that fires `release.yml`                                                                                                                              |
+| `commits` in `ci.yml` | Lints PR commit messages (commitlint) — releases are computed from history, so history must parse                                                                                                                                                           |
 
 Release setup note: trusted publishing needs a one-time owner step on
 npmjs.com (package Settings → Trusted Publisher → this repo + workflow)
 before the first OIDC publish succeeds.
+
+### Generated docs resync themselves
+
+`docs/reference/cli.md` and `examples/sample-report.md` are byte-compared
+against the real engine on every PR, so any CLI/engine change (or version bump)
+would turn the next PR red until someone runs the generators. The `resync` job
+in `ci.yml` runs them instead: on same-repo PRs it regenerates both files and
+pushes the result back to the PR branch as a `docs:` commit, and the
+re-triggered run validates it green. Expect a red-then-green cycle on PRs that
+touch the CLI or the report renderer — no action needed. It never pushes to
+forks, never pushes to `master`, and refuses a second consecutive push (a
+still-dirty tree after a regen means a nondeterministic generator, which is a
+bug to fix, not to commit over). Marker sync (`sync-docs`) stays manual:
+markers encode author intent.
 
 ## How a release happens (developer-style, no manual versioning)
 

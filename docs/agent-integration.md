@@ -25,6 +25,19 @@ Then, to the agent:
 > reasoning. Do not mark anything ✅ without evidence (Rule 4).
 > Then rewrite the report with your findings folded in.
 
+The queue is **triaged by automatability** (ADR-0021, ADR-0023):
+
+- **⚙️ Assisted — the tool settles these once.** These rules have a
+  deterministic path but need a permission or an artifact (`command`, `oracle`).
+  Do **not** reason about them: enable `--allow-commands` or commit the artifact
+  the check reads, and re-run. The engine resolves them itself.
+- **🧠 Judgement — reasoning required.** These (`manual`) are the agent's real
+  task. Nothing but reasoning settles them.
+
+Each queue row also shows **Last reviewed** — a dated entry from `.usa.yaml`
+reviews, with its age and any overdue deadline. Treat it as provenance: an item
+someone confirmed is still open, not a verdict you may skip.
+
 ## Why this is better than "audit this codebase"
 
 A bare prompt produces three failure modes, and the template exists to prevent all

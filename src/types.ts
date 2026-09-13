@@ -78,6 +78,33 @@ export interface Finding {
   references?: string[];
   /** Set when a project-level suppression (`nack:`) hid this finding. */
   suppressedReason?: string;
+  /**
+   * Effective automatability of the rule that produced this finding (ADR-0021):
+   * `full` the engine settled it, `assist` the engine can settle it with a
+   * command/artifact, `manual` only a human can. The engine always sets this;
+   * hand-built findings may omit it, in which case the report treats it as
+   * `manual` (fail closed — a finding whose automation is unknown needs a human).
+   */
+  automatability?: Automatability;
+  /** Recorded human review provenance, when `.usa.yaml` has a matching entry. */
+  review?: FindingReview;
+}
+
+/**
+ * A recorded human review of a finding (ADR-0023). It is provenance, not a
+ * verdict: it never changes the engine's status, it only records that a person
+ * examined the item and when they must look again. An `until` in the past is
+ * stale and is surfaced as such.
+ */
+export interface FindingReview {
+  /** ISO date the item was last examined. */
+  reviewed: string;
+  /** Optional ISO re-review deadline; once past, the review is stale. */
+  until?: string;
+  /** Who reviewed (free text, for provenance). */
+  by?: string;
+  /** What the reviewer concluded and why the item remains open. */
+  note?: string;
 }
 
 /* ------------------------------------------------------------------ rules -- */
@@ -252,6 +279,28 @@ export interface Suppression {
   line?: number;
 }
 
+/**
+ * A recorded human review (ADR-0023). It carries the same `file`/`line` site
+ * scoping as a suppression (ADR-0022), but it excuses nothing: it attaches
+ * provenance to a finding the engine still reports. An unused review (one that
+ * matched no finding) is reported, so the ledger decays instead of accumulating.
+ */
+export interface Review {
+  rule: string;
+  /** ISO date the item was last examined. Required. */
+  reviewed: string;
+  /** Optional ISO re-review deadline; once past, the review is stale. */
+  until?: string;
+  /** Restrict to findings in files matching this glob (ADR-0022 semantics). */
+  file?: string;
+  /** Restrict to one line within `file`. */
+  line?: number;
+  /** Who reviewed (free text, for provenance). */
+  by?: string;
+  /** What was concluded and why the item remains open. */
+  note?: string;
+}
+
 export interface UsaConfig {
   version: 1;
   /** Override auto-detection: force a maturity stage. */
@@ -267,6 +316,8 @@ export interface UsaConfig {
   >;
   /** Suppressed findings — must carry a reason (auditable). */
   suppressions?: Suppression[];
+  /** Recorded human reviews of open findings — dated provenance (ADR-0023). */
+  reviews?: Review[];
   /** Extra globs to ignore while indexing. */
   ignore?: string[];
   /** Extra facts asserted by the operator. */

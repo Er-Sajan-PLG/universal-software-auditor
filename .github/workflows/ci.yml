@@ -173,6 +173,82 @@ jobs:
       - name: Sample report is generated and committed
         run: npm run docs:sample
 
+  # Generated files (docs/reference/cli.md, examples/sample-report.md) are
+  # byte-compared by the hygiene job, so any engine/CLI change turns the next
+  # PR red until someone runs the generators. This job is those hands: on
+  # same-repo PRs it regenerates and pushes the result back to the PR branch,
+  # and the re-triggered run validates it green. No human runs a generator
+  # by hand anymore.
+  #
+  # Boundaries, stated exactly because a bot with push access deserves them:
+  # - PR-only. Master is protected; a red hygiene gate there means a human
+  #   must look, not a script must push.
+  # - Same-repo PRs only. A fork branch is someone else's remote — never
+  #   push there.
+  # - Loop-proof. A second push can only happen if the files are still dirty
+  #   after a regen, which means a nondeterministic generator (a real bug).
+  #   The HEAD-message guard below refuses that push so CI fails loudly
+  #   instead of push-spamming forever.
+  # - The hygiene --check gates stay the enforcers; this job only produces
+  #   the bytes they compare. Marker sync (sync-docs) is deliberately out of
+  #   scope: markers encode author intent, which belongs to a human.
+  resync:
+    name: Resync generated docs
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The head branch itself, not the merge commit, so a fix can be
+          # pushed straight back. Passed as an action input, never
+          # interpolated into shell (SUP-008).
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Regenerate and push if stale
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Numeric only, like the commits job below: SUP-008 forbids
+          # event-payload text in run blocks, so the head repo is resolved
+          # via gh instead of ${{ github.event.pull_request… }}.
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          set -euo pipefail
+          # A fork branch lives on someone else's remote — never push there.
+          # $GITHUB_REPOSITORY is runner-provided, never PR-controlled.
+          HEAD_REPO="$(gh pr view "$PR_NUMBER" --json headRepository --jq .headRepository.nameWithOwner)"
+          if [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+            echo "fork PR ($HEAD_REPO) — skipping push."
+            exit 0
+          fi
+          node scripts/gen-cli-docs.mjs
+          node scripts/gen-sample-report.mjs
+          if git diff --quiet -- docs/reference/cli.md examples/sample-report.md; then
+            echo "generated docs already in sync."
+            exit 0
+          fi
+          if git log -1 --format=%s | grep -q '^docs: resync generated docs'; then
+            echo "still dirty after our own resync — refusing to push again; inspect the generators."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/reference/cli.md examples/sample-report.md
+          # Conventional: the commits job lints every PR commit with commitlint.
+          git commit -m "docs: resync generated docs"
+          # HEAD, not a branch name: no ref text enters the shell at all.
+          git push origin HEAD
+          echo "pushed resync — the re-triggered run will validate it."
+
   # USA audits supply-chain hygiene on other people's repos, so it runs the
   # same three scanners on itself. These are the checks behind SUP-005..007.
   security:

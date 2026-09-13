@@ -59,6 +59,12 @@ total rather than quietly scoring 10.
 to an agent or a reviewer. Every row says what to look for and what evidence to
 record. **Do not mark anything ✅ without evidence.**
 
+The queue is triaged: **⚙️ Assisted** items settle themselves once you enable
+`--allow-commands` or commit the artifact they read — re-run instead of
+reasoning. **🧠 Judgement** items need a person. Each row shows **Last
+reviewed** from `.usa.yaml` `reviews:` so a confirmed item is recorded once
+with its age, not re-litigated every run (ADR-0023).
+
 **5 · Ship the roadmap.** SPRINT 0 → SPRINT 1 → SPRINT 2 → BACKLOG, generated from
 severity. `DEFERRED` lists what the maturity profile says you should deliberately
 ignore _at this stage_.
