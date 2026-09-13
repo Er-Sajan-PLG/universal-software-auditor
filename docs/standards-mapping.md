@@ -135,7 +135,7 @@ that already justify it. This table is generated from the real loaded rules by
 "assisted" means it needs `--allow-commands` or an external oracle artifact;
 "manual" means a human owns the verdict. Rules with no codified standard behind
 them (internal heuristics, tooling hints, or conceptual attributions) fall in the
-`(uncatalogued)` bucket — an honest count, not an omission. <!-- usa:fact rules -->281<!-- /usa:fact --> rules total.
+`(uncatalogued)` bucket — an honest count, not an omission. <!-- usa:fact rules -->287<!-- /usa:fact --> rules total.
 
 <!-- usa:begin standards-coverage -->
 
@@ -150,7 +150,7 @@ them (internal heuristics, tooling hints, or conceptual attributions) fall in th
 | ISO/IEC 5055 (`iso-5055@2021`)                     | 7     | 4               | 0        | 3      |
 | OWASP Top 10 (`owasp-top10@2021`)                  | 19    | 4               | 0        | 15     |
 | OpenSSF Scorecard (`scorecard@5.5.0`)              | 31    | 23              | 1        | 7      |
-| SLSA (`slsa@1.2`)                                  | 9     | 5               | 0        | 4      |
+| SLSA (`slsa@1.2`)                                  | 15    | 8               | 3        | 4      |
 | NIST SSDF (SP 800-218) (`ssdf@1.1`)                | 21    | 11              | 1        | 9      |
 | Smart Contract Weakness Classification (`swc@1.0`) | 6     | 4               | 0        | 2      |
 | WCAG (`wcag@2.2`)                                  | 9     | 2               | 0        | 7      |

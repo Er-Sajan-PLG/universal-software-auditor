@@ -188,7 +188,7 @@ rules/
 ├── index.yaml              pack registry
 ├── detectors.yaml          ~230 detection signals → facts
 ├── profiles/maturity.yaml  the five lifecycle profiles
-├── core/                   11 universal packs
+├── core/                   13 universal packs
 │   ├── repo.yaml           ├── security.yaml      ├── supply-chain.yaml
 │   ├── architecture.yaml   ├── code-quality.yaml  ├── testing.yaml
 │   ├── cicd.yaml           ├── release.yaml       ├── dependencies.yaml

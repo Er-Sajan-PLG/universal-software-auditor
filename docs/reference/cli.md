@@ -145,6 +145,20 @@ examples
    SUP-016    MEDIUM   supply-chain     Container images are scanned before publish
    SUP-017    FUTURE   supply-chain     Build pipeline is reproducible from source
 
+## core/provenance-cosign — Provenance Chain Verification (cosign) (3 rules)
+   Production-half chain verification for release provenance: these controls cryptographically verify release artifacts against committed Sigstore bundles and keys with a local `cosign` binary. They complement the beta-level existence checks (SUP-013 commit signing, SUP-014 SBOM, SUP-015 attestation): beta proves the material exists, production proves the chain verifies. Aligned with SLSA v1.2. Verify, never mint (ADR-0011): USA checks signatures, it never signs. Command checks are UNKNOWN without --allow-commands — that is the honest assist posture — and every command fails closed on a missing binary, key, or bundle (FAIL or UNKNOWN with a loud message, never PASS).
+
+   SUP-018    HIGH     supply-chain     Release blob signatures verify with cosign (chain verification)
+   SUP-019    MEDIUM   supply-chain     SLSA attestation bundles verify with cosign (chain verification)
+   SUP-020    MEDIUM   supply-chain     Every release artifact ships a Sigstore bundle (chain completeness)
+
+## core/provenance-attestation — Provenance Attestation Presence (3 rules)
+   Beta-level existence checks for build provenance evidence. Writing perfect code is not enough if nobody can answer "was this artifact built by us, from this source?" — these controls assert the attestation and verification summary files are present in the tree. Chain verification at production belongs to the cosign pack; this pack only checks presence. Aligned with SLSA v1.2 and Sigstore.
+
+   SUP-022    HIGH     supply-chain     SLSA provenance attestation file present
+   SUP-023    MEDIUM   supply-chain     Verification Summary Attestation present
+   SUP-024    MEDIUM   supply-chain     Detached signature or transparency bundle present
+
 ## core/architecture — Architecture & Design (10 rules)
    Structure, boundaries, and the decisions behind them. Mostly judgement — USA automates the parts that show up as files and flags the rest for review rather than pretending a regex can measure coupling.
 
@@ -451,5 +465,5 @@ examples
    SW-005     HIGH     security         Request validation uses Validatable or a validation library
    SW-006     MEDIUM   security         Security headers middleware is configured
 
-281 rule(s) across 28 pack(s).
+287 rule(s) across 30 pack(s).
 ```
