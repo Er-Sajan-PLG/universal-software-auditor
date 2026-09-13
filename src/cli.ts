@@ -500,8 +500,13 @@ async function cmdLive(args: Args): Promise<number> {
       const provider = providerId;
       const model = modelOpt;
       chat = (req) => complete({ ...req, provider, ...(model === undefined ? {} : { model }) });
-    } catch (err) {
-      console.error(`live: ${(err as Error).message} — continuing in deterministic-only mode.`);
+    } catch {
+      // Deliberately NOT printing the error: provider failures name key
+      // material (env vars, endpoints), and a transcript-adjacent CLI must
+      // never paraphrase secrets into logs. The provider id is safe to name.
+      console.error(
+        `live: LLM provider "${providerId}" unavailable (check its API key) — continuing in deterministic-only mode.`,
+      );
       chat = undefined;
     }
   } else {
