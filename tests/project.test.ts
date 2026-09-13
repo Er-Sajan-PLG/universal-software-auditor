@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import fs from 'node:fs';
+import path from 'node:path';
 import { makeProject } from './helpers.js';
 import { MAX_FILES, Project } from '../src/util/project.js';
 
@@ -200,5 +201,28 @@ describe('configurable index caps', () => {
     } finally {
       cleanup();
     }
+  });
+});
+
+describe('git worktree detection', () => {
+  it('treats a .git gitdir pointer as a repo', () => {
+    const root = build({});
+    fs.mkdirSync(path.join(root, 'real.gitdir'));
+    fs.writeFileSync(path.join(root, '.git'), `gitdir: ${path.join(root, 'real.gitdir')}\n`);
+    expect(new Project(root).gitInfo().isRepo).toBe(true);
+  });
+
+  it('rejects garbage and dangling .git pointers', () => {
+    const garbage = build({});
+    fs.writeFileSync(path.join(garbage, '.git'), 'not a git pointer\n');
+    expect(new Project(garbage).gitInfo().isRepo).toBe(false);
+    const dangling = build({});
+    fs.writeFileSync(path.join(dangling, '.git'), 'gitdir: /nonexistent/usa-test\n');
+    expect(new Project(dangling).gitInfo().isRepo).toBe(false);
+  });
+
+  it('still reports a plain directory as a non-repo', () => {
+    const root = build({ 'a.ts': 'export const x = 1;\n' });
+    expect(new Project(root).gitInfo().isRepo).toBe(false);
   });
 });
