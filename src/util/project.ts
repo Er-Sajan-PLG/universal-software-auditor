@@ -467,7 +467,7 @@ export class Project {
     branches: number;
     isRepo: boolean;
   } {
-    const isRepo = isDir(path.join(this.root, '.git'));
+    const isRepo = isGitRepo(path.join(this.root, '.git'));
     if (!isRepo) {
       return { commits: 0, contributors: 0, tags: 0, branches: 0, isRepo: false };
     }
@@ -543,6 +543,25 @@ function normalizeLimit(v: number | undefined, fallback: number): number {
 function isDir(p: string): boolean {
   try {
     return fs.statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A git checkout is a `.git` directory — or, inside a linked worktree, a
+ * `.git` *file* pointing at the real dir (`gitdir: <path>`). The engine runs
+ * its own git subprocesses (which resolve the pointer themselves), so
+ * detection only needs the pointer to be well-formed and live. Anything else
+ * (missing, garbage, dangling) is not a repo: fail closed, never claim
+ * history the engine cannot read.
+ */
+function isGitRepo(dotGit: string): boolean {
+  try {
+    if (fs.statSync(dotGit).isDirectory()) return true;
+    const m = /^gitdir: (.+?)\s*$/.exec(fs.readFileSync(dotGit, 'utf8'));
+    if (!m) return false;
+    return isDir(path.resolve(path.dirname(dotGit), m[1]!));
   } catch {
     return false;
   }
