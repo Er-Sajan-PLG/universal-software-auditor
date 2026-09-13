@@ -75,6 +75,15 @@ facts: # assert what detection could not infer
 | `facts`               | fact strings                                         | Assert detection facts manually (`ns:value`)                                   |
 | `sections`            | section ids                                          | Restrict the report to these sections                                          |
 
+## Foundation interview file
+
+Project vision, intents, and per-pillar evidence live in
+`.usa/foundation.yaml` — a sibling of this file, not a field in it. Audit
+configuration says how USA runs; the foundation file says what the project
+is. See [Foundation readiness](foundation.md) for the workflow, the pillars,
+and a commented example. The FND rule pack reads that file; everything on
+this page stays as it is.
+
 ## What is indexed
 
 The file index skips, in order:

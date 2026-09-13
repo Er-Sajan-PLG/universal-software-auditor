@@ -38,6 +38,26 @@ Each queue row also shows **Last reviewed** — a dated entry from `.usa.yaml`
 reviews, with its age and any overdue deadline. Treat it as provenance: an item
 someone confirmed is still open, not a verdict you may skip.
 
+## Foundation interview playbook
+
+On a project with no foundation file, run the interview before working the
+judgement queue — it is the agent's job, not the tool's. Ask, do not infer:
+
+1. **Vision** — what the project is for, who it serves, what it is not.
+   One honest paragraph from the people building it, never invented.
+2. **Intents** — the promises the team stands behind, each naming how it
+   will be recognised when it holds.
+3. **Pillars** — walk docs, governance, AI readiness, testing, environment,
+   pipelines, and standards, collecting pointers to real artifacts.
+4. **Write the file** — record the answers in `.usa/foundation.yaml` and
+   re-run the audit so the FND rules grade what you recorded.
+5. **Never mark ready without evidence** — a pillar with no pointer grades
+   MISSING, and that is the truthful answer. Leave the field empty rather
+   than inventing readiness; Rule 4 applies to the interview too.
+
+See [Foundation readiness](foundation.md) for the workflow, the pillars, and
+a full commented example of the file.
+
 ## Why this is better than "audit this codebase"
 
 A bare prompt produces three failure modes, and the template exists to prevent all

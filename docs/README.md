@@ -6,6 +6,7 @@
 | [Getting started](getting-started.md)         | Install, first audit, reading the report                                                                                             |
 | [Concepts](concepts.md)                       | Severity × status, scoring maths, confidence, applicability                                                                          |
 | [Configuration](configuration.md)             | `.usa.yaml` reference                                                                                                                |
+| [Foundation readiness](foundation.md)         | Vision, intents, pillars, and the interview file                                                                                     |
 | [Rule packs](rule-packs.md)                   | Every check kind, with examples — start here to contribute a pack                                                                    |
 | [Detectors](detectors.md)                     | The fact catalogue and how to add signals                                                                                            |
 | [Maturity profiles](maturity-profiles.md)     | Lifecycle stages, dampening, expected bands                                                                                          |
