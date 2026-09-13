@@ -1,0 +1,11 @@
+rule: FND-001
+negative:
+  files:
+    README.md: |
+      # App
+      Purpose and setup steps.
+positive:
+  files:
+    package.json: |
+      { "name": "app" }
+  expect: MISSING

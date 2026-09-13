@@ -1,0 +1,12 @@
+rule: FND-009
+negative:
+  files:
+    codecov.yml: |
+      coverage:
+        status:
+          project: off
+positive:
+  files:
+    README.md: |
+      # App
+  expect: MISSING

@@ -1,0 +1,12 @@
+rule: FND-011
+negative:
+  files:
+    .env.example: |
+      PORT=3000
+    Dockerfile: |
+      FROM node:20
+positive:
+  files:
+    .env.example: |
+      PORT=3000
+  expect: MISSING

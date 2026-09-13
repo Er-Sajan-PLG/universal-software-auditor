@@ -1,0 +1,307 @@
+id: core/foundation
+title: Foundation Readiness
+section: S3
+section_title: Foundation Readiness
+description: >
+  Deterministic repo-setup readiness checks across seven pillars — docs,
+  governance, AI-readiness, testing, environment, pipelines, and standards —
+  so a project can be audited, built, and extended by humans and agents alike.
+  Intent-gated rules apply only when the interview declares a matching intent;
+  without the foundation file those rules skip and the generic ones still apply.
+version: '1.0'
+
+rules:
+  - id: FND-001
+    title: A README exists at the top level
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: documentation
+    tags: ['pillar:docs']
+    check:
+      kind: any_file
+      patterns:
+        - 'README.md'
+        - 'README.rst'
+        - 'README.txt'
+        - 'README'
+        - 'readme.md'
+        - 'readme.txt'
+        - 'readme'
+    why: 'A repo without a README has no front door: neither a human nor an agent can learn what it is or how to start.'
+    remediation: 'Add a README with purpose, setup steps, and how to run the checks.'
+    references: ['CII-Best-Practices']
+
+  - id: FND-002
+    title: License, contribution, and security docs are present
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: compliance
+    tags: ['pillar:docs']
+    check:
+      kind: count_min
+      patterns:
+        - '**/LICENSE*'
+        - '**/LICENCE*'
+        - '**/COPYING*'
+        - '**/CONTRIBUTING*'
+        - '**/SECURITY*'
+        - '**/CODE_OF_CONDUCT*'
+      min: 2
+    why: 'Missing license, contribution, or security-contact docs turn every external contribution and disclosure into a judgement call.'
+    remediation: 'Commit a LICENSE plus at least one of CONTRIBUTING, SECURITY, or CODE_OF_CONDUCT.'
+    references: ['OpenSSF-Scorecard:License', 'OpenSSF-Scorecard:Security-Policy', 'SPDX']
+
+  - id: FND-003
+    title: A CODEOWNERS file assigns review ownership
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: compliance
+    tags: ['pillar:governance']
+    check:
+      kind: any_file
+      patterns:
+        - '**/CODEOWNERS'
+    why: 'Without declared owners, reviews fall to whoever happens to look, and critical paths go unreviewed.'
+    remediation: 'Add a CODEOWNERS file mapping critical paths to the teams that must review them.'
+    references: ['OpenSSF-Scorecard:Code-Review']
+
+  - id: FND-004
+    title: Branch-protection evidence lives in .github
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: compliance
+    tags: ['pillar:governance']
+    check:
+      kind: grep_present
+      pattern: '(branch-?protection|required_pull_request_reviews|required_status_checks|require_code_owner_reviews|dismiss_stale_reviews)'
+      include: ['.github/**/*']
+      exclude: ['**/node_modules/**']
+      flags: i
+    why: 'Branch protection configured only in the forge UI is invisible to audit; checked-in evidence keeps the control reviewable.'
+    remediation: 'Check in branch-protection evidence (e.g. a settings or policy file under .github) requiring reviews and status checks.'
+    references: ['OpenSSF-Scorecard:Branch-Protection', 'SLSA-Source']
+
+  - id: FND-005
+    title: Architecture decisions are recorded as ADRs
+    section: S3
+    section_title: Foundation Readiness
+    severity: LOW
+    class: documentation
+    tags: ['pillar:governance']
+    check:
+      kind: any_file
+      patterns:
+        - 'docs/adr/**'
+        - 'docs/adrs/**'
+        - 'doc/adr/**'
+        - 'adr/**'
+        - 'adrs/**'
+        - 'docs/decisions/**'
+    why: 'Decisions without records get re-litigated forever; ADRs preserve the context future changes need.'
+    remediation: 'Record significant decisions as ADRs under docs/adr.'
+    references: ['ADR-Nygard']
+
+  - id: FND-006
+    title: Agent instructions (AGENTS.md or llms.txt) exist
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: documentation
+    tags: ['pillar:ai-readiness']
+    check:
+      kind: any_file
+      patterns:
+        - 'AGENTS.md'
+        - 'agents.md'
+        - 'llms.txt'
+    why: 'Agents working without project instructions improvise conventions; a checked-in instruction file makes machine collaboration deterministic.'
+    remediation: 'Add an AGENTS.md (or llms.txt) with build, test, and contribution instructions for agents.'
+    references: ['Agent-Skills', 'Docs-as-Code']
+
+  - id: FND-007
+    title: Docs carry machine-readable markers
+    section: S3
+    section_title: Foundation Readiness
+    severity: LOW
+    class: documentation
+    tags: ['pillar:ai-readiness']
+    check:
+      kind: grep_present
+      pattern: '(usa:[a-z0-9:_-]+|machine-readable|llms\.txt|AGENTS\.md)'
+      include: ['**/*.md', '**/*.txt']
+      exclude: ['**/node_modules/**']
+      flags: i
+    why: 'Markers agents can parse (fact flags, machine-readable pointers) turn prose docs into instructions automation can follow.'
+    remediation: 'Reference AGENTS.md/llms.txt from the README and tag machine-actionable facts with usa: markers.'
+    references: ['Agent-Skills', 'Docs-as-Code']
+
+  - id: FND-008
+    title: A test directory exists
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: correctness
+    tags: ['pillar:testing']
+    check:
+      kind: any_file
+      patterns:
+        - 'tests/**'
+        - 'test/**'
+        - '__tests__/**'
+        - 'spec/**'
+        - 'e2e/**'
+    why: 'A conventional test location tells contributors and CI exactly where confidence lives.'
+    remediation: 'Create a tests (or test/__tests__/spec) directory and put the first happy-path test there.'
+    references: ['OpenSSF-Scorecard:CI-Tests', 'NIST-SSDF-RV.1.1']
+
+  - id: FND-009
+    title: A coverage configuration exists
+    section: S3
+    section_title: Foundation Readiness
+    severity: LOW
+    class: correctness
+    tags: ['pillar:testing']
+    check:
+      kind: any_file
+      patterns:
+        - '.codecov.yml'
+        - '.codecov.yaml'
+        - 'codecov.yml'
+        - 'codecov.yaml'
+        - '**/vitest.config.*'
+        - '**/jest.config.*'
+        - '**/vitest.coverage.*'
+        - '**/.nycrc*'
+        - '**/coveragerc'
+        - '**/.coveragerc'
+        - '**/coverage.config.*'
+    why: 'Coverage that is never configured is never collected; the config is the commitment that coverage runs somewhere.'
+    remediation: 'Add a coverage config (e.g. codecov.yml or coverage settings in your test runner config).'
+    references: ['NIST-SSDF-RV.1.1']
+
+  - id: FND-010
+    title: The runtime version is pinned
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: operations
+    tags: ['pillar:environment']
+    check:
+      kind: any_file
+      patterns:
+        - '.nvmrc'
+        - '.node-version'
+        - '.tool-versions'
+        - '.python-version'
+        - '.ruby-version'
+        - '.go-version'
+        - 'runtime.txt'
+        - 'go.mod'
+        - 'Cargo.toml'
+        - 'pom.xml'
+        - 'Package.swift'
+        - '.java-version'
+    why: 'An unpinned runtime means every machine builds with a different toolchain; "works on my machine" starts here.'
+    remediation: 'Pin the runtime with .nvmrc, .tool-versions, .python-version, or the ecosystem equivalent.'
+    references: ['NIST-SSDF-PS.3.2', 'Reproducible-Builds']
+
+  - id: FND-011
+    title: The environment is reproducible from checked-in files
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: operations
+    tags: ['pillar:environment']
+    check:
+      kind: count_min
+      patterns:
+        - '.env.example'
+        - '.env.sample'
+        - '.env.template'
+        - 'Dockerfile'
+        - 'Dockerfile.*'
+        - 'Containerfile'
+        - 'compose.yml'
+        - 'compose.yaml'
+        - 'docker-compose.yml'
+        - 'docker-compose.yaml'
+        - '.devcontainer/devcontainer.json'
+        - 'Vagrantfile'
+      min: 2
+    why: "Setup that lives in one person's shell history is not setup; an env example plus a container definition lets anyone boot the project."
+    remediation: 'Commit a .env.example and a Dockerfile (or compose/devcontainer definition) so setup is declarative.'
+    references: ['12-Factor:Config', '12-Factor:Dev-Prod-Parity']
+
+  - id: FND-012
+    title: A CI workflow exists
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: operations
+    tags: ['pillar:pipelines']
+    check:
+      kind: any_file
+      patterns:
+        - '.github/workflows/*.yml'
+        - '.github/workflows/*.yaml'
+        - '.gitlab-ci.yml'
+        - 'Jenkinsfile'
+        - '.circleci/config.yml'
+        - 'azure-pipelines.yml'
+        - '.buildkite/**'
+        - 'bitbucket-pipelines.yml'
+    why: 'Without CI, every quality gate is advisory; the workflow file is the proof the gates actually run.'
+    remediation: 'Add a CI workflow that runs build, tests, and lint on every pull request.'
+    references: ['OpenSSF-Scorecard:CI-Tests', 'DORA']
+
+  - id: FND-013
+    title: A local task runner captures common workflows
+    section: S3
+    section_title: Foundation Readiness
+    severity: LOW
+    class: operations
+    tags: ['pillar:pipelines']
+    check:
+      kind: any_file
+      patterns:
+        - 'Makefile'
+        - 'makefile'
+        - 'GNUmakefile'
+        - 'justfile'
+        - 'Justfile'
+        - '.justfile'
+        - 'Taskfile.yml'
+        - 'Taskfile.yaml'
+        - 'Taskfile.dist.yml'
+        - 'tasks.py'
+    why: 'Tribal "run these five commands" knowledge rots; a task runner makes setup, test, and lint one documented command each.'
+    remediation: 'Add a Makefile or justfile with setup, test, and lint targets.'
+    references: ['DORA']
+
+  - id: FND-014
+    title: A machine-readable API contract is checked in
+    section: S3
+    section_title: Foundation Readiness
+    severity: MEDIUM
+    class: compliance
+    tags: ['pillar:standards']
+    applies_when:
+      any:
+        - { fact: 'intent:api' }
+        - { fact: 'intent:service' }
+    check:
+      kind: any_file
+      patterns:
+        - '**/openapi.{json,yaml,yml}'
+        - '**/swagger.{json,yaml,yml}'
+        - '**/asyncapi.{json,yaml,yml}'
+        - '**/api/*.yaml'
+        - '**/api/*.yml'
+        - '**/api/*.json'
+    why: 'An API without a checked-in contract cannot be reviewed, mocked, or tested by machines; the spec is the interface under version control.'
+    remediation: 'Check in an OpenAPI (or AsyncAPI) document describing the service contract.'
+    references: ['OpenAPI']

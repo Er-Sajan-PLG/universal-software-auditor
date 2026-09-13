@@ -1,0 +1,11 @@
+rule: FND-006
+negative:
+  files:
+    AGENTS.md: |
+      # Agent instructions
+      Run `npm test` before committing.
+positive:
+  files:
+    README.md: |
+      # App
+  expect: MISSING

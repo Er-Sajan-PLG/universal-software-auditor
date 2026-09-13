@@ -1,0 +1,10 @@
+rule: FND-010
+negative:
+  files:
+    .nvmrc: |
+      20
+positive:
+  files:
+    package.json: |
+      { "name": "app" }
+  expect: MISSING
