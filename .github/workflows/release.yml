@@ -61,18 +61,20 @@ jobs:
 
       # GitHub Packages mirror: the repo's Packages tab only lists packages
       # hosted on npm.pkg.github.com — npmjs releases never appear there.
-      # Same tarball, second registry. The mirror publishes under the OWNER
-      # scope (@er-sajan-plg), not the npmjs scope (@xenos1996): GPR maps a
-      # scope to the GitHub identity that owns it, so only the owner scope is
-      # writable with this repo's GITHUB_TOKEN. Placed last because
-      # reconfiguring the scope below repoints publishes at GPR for the rest
-      # of the job. No provenance flag: GPR does not consume Sigstore
-      # attestations.
+      # Same tarball, second registry, same `@xenos1996` scope, so one
+      # identity holds on both channels. GPR maps a scope to the GitHub
+      # identity that owns it, and this repo's owner (Er-Sajan-PLG) is not
+      # that identity — so the mirror authenticates with a classic PAT minted
+      # on the scope-owning account (write:packages), stored as GPR_TOKEN.
+      # Never GITHUB_TOKEN here: cross-account writes are rejected with
+      # "installation does not exist". Placed last because reconfiguring the
+      # scope below repoints @xenos1996 publishes at GPR for the rest of the
+      # job. No provenance flag: GPR does not consume Sigstore attestations.
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@er-sajan-plg'
+          scope: '@xenos1996'
       - run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GPR_TOKEN }}
