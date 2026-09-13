@@ -31,6 +31,7 @@ a changed decision gets a _new_ ADR that supersedes the old one).
 | 0020 | Documentation facts are machine-synced and machine-checked | Accepted   | —          |
 | 0021 | Catalogues are pinned, and automatability is derived       | Accepted   | —          |
 | 0022 | Suppressions are site-level, and unused ones are reported  | Accepted   | —          |
+| 0023 | Judgement queue is triaged; reviews are dated provenance   | Accepted   | —          |
 
 ## Coverage map (what has no ADR, and why)
 

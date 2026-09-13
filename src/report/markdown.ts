@@ -1,5 +1,6 @@
 import type { AuditReport, Finding, Severity, Status } from '../types.js';
 import type { MaturityProfile } from '../engine/maturity.js';
+import { isReviewStale, reviewAgeDays } from '../engine/review.js';
 
 const TAG: Record<Status, string> = {
   PASS: '✅',
@@ -52,13 +53,14 @@ export function renderMarkdown(report: AuditReport, profile: MaturityProfile): s
   const unresolved = active.filter((f) => f.status === 'UNKNOWN');
   const actioned = active.filter((f) => f.status !== 'PASS' && f.status !== 'UNKNOWN');
   const passed = active.filter((f) => f.status === 'PASS');
+  const atMs = parseableTime(report.generatedAt);
 
   renderReportHeader(p, report, profile);
   renderExecutiveSummary(p, report, profile);
   renderCounts(p, report, suppressed.length);
   renderImmediate(p, actioned);
   renderBySection(p, report, profile, actioned, passed);
-  renderJudgementQueue(p, unresolved);
+  renderJudgementQueue(p, unresolved, atMs);
   renderSuppressed(p, suppressed);
   renderRoadmap(p, profile, actioned);
   renderAppendix(p, report);
@@ -129,33 +131,74 @@ function renderExecutiveSummary(p: Print, report: AuditReport, profile: Maturity
   if (profile.summary) p(`> ${profile.summary.trim()}`);
   p();
 
-  p('| Dimension | Score | Confidence |');
-  p('|---|---|---|');
+  p('| Dimension | Score | Confidence | Review |');
+  p('|---|---|---|---|');
+  const reviews = sectionReviews(report.findings, parseableTime(report.generatedAt));
   for (const s of report.score.sections) {
-    p(renderSectionRow(s));
+    p(renderSectionRow(s, reviews.get(s.id)));
   }
   p();
   p(
     `*Confidence = share of applicable rules the engine could verify automatically; ` +
       `unverified checks are excluded from the score rather than counted as passes. ` +
       `**†** = fewer than half of that section's applicable checks could be verified. ` +
-      `Automation coverage: **${fmt(coverage)}%**. The rest is in the judgement queue below.*`,
+      `**Review** = judgement checks with a dated human review on record (\`⏳\` marks an ` +
+      `overdue review). Automation coverage: **${fmt(coverage)}%**. The rest is in the ` +
+      `judgement queue below.*`,
   );
   p();
 }
 
-function renderSectionRow(s: {
-  id: string;
-  title: string;
-  score: number | null;
-  confidence: number;
-}): string {
+/** Judgement-queue review coverage for one section. */
+interface ReviewSummary {
+  total: number;
+  reviewed: number;
+  overdue: number;
+}
+
+/**
+ * How much human review is on record per section, counted over the judgement
+ * checks (UNKNOWN) — the only ones a review is meant to vouch for. A section
+ * with an overdue review is marked so staleness is visible next to confidence,
+ * not buried in the queue (ADR-0023).
+ */
+function sectionReviews(findings: Finding[], atMs: number): Map<string, ReviewSummary> {
+  const map = new Map<string, ReviewSummary>();
+  for (const f of findings) {
+    if (f.status !== 'UNKNOWN' || f.suppressedReason) continue;
+    const s = map.get(f.section) ?? { total: 0, reviewed: 0, overdue: 0 };
+    s.total++;
+    if (f.review) {
+      s.reviewed++;
+      if (isReviewStale(f.review, atMs)) s.overdue++;
+    }
+    map.set(f.section, s);
+  }
+  return map;
+}
+
+function renderSectionRow(
+  s: {
+    id: string;
+    title: string;
+    score: number | null;
+    confidence: number;
+  },
+  review: ReviewSummary | undefined,
+): string {
   // A section can score 10/10 on one verified rule out of six. Mark it, so a
   // perfect-looking table does not imply a thorough audit.
   const thin = s.score !== null && s.confidence < 50 ? ' †' : '';
+  const reviewCell = formatReviewCell(review);
   return s.score === null
-    ? `| ${s.id} · ${s.title} | — not verified | 0% |`
-    : `| ${s.id} · ${s.title} | ${fmt(s.score)}/10${thin} | ${fmt(s.confidence)}% |`;
+    ? `| ${s.id} · ${s.title} | — not verified | 0% | ${reviewCell} |`
+    : `| ${s.id} · ${s.title} | ${fmt(s.score)}/10${thin} | ${fmt(s.confidence)}% | ${reviewCell} |`;
+}
+
+function formatReviewCell(review: ReviewSummary | undefined): string {
+  if (!review || review.total === 0) return '—';
+  const overdue = review.overdue > 0 ? ` ⏳${review.overdue} overdue` : '';
+  return `${review.reviewed}/${review.total} recorded${overdue}`;
 }
 
 /* --------------------------------------------------------------- counts -- */
@@ -324,7 +367,7 @@ function renderPassingDetails(p: Print, id: string, good: Finding[]): void {
 
 /* ------------------------------------------------------------- judgement -- */
 
-function renderJudgementQueue(p: Print, unresolved: Finding[]): void {
+function renderJudgementQueue(p: Print, unresolved: Finding[], atMs: number): void {
   p('## 🧠 Judgement Queue (agent / human review)');
   p();
   p('These checks cannot be settled by grep. Work through them with an agent or a reviewer;');
@@ -335,15 +378,56 @@ function renderJudgementQueue(p: Print, unresolved: Finding[]): void {
     p();
     return;
   }
-  p('| Rule | Section | Severity | What to look for | Evidence to record |');
-  p('|---|---|---|---|---|');
-  for (const f of unresolved) {
+
+  // Triage by automatability (ADR-0021): `assist` checks have a deterministic
+  // path (a command or a committed artifact) and "confirm once" settles them;
+  // `manual` checks need reasoning no tool can supply. Mixing them turned the
+  // queue into a flat wall of identical-looking ❓ rows.
+  const assisted = unresolved.filter((f) => (f.automatability ?? 'manual') === 'assist');
+  const judgement = unresolved.filter((f) => (f.automatability ?? 'manual') !== 'assist');
+  p(
+    `**${assisted.length}** the tool can settle once allowed (a command or a committed artifact) · ` +
+      `**${judgement.length}** need reasoning.`,
+  );
+  p();
+  if (assisted.length > 0) {
+    p('### ⚙️ Assisted — the tool settles these once');
+    p();
+    p(
+      'Enable `--allow-commands`, or commit the artifact the check reads, and the engine ' +
+        'resolves the rule — no judgement required.',
+    );
+    p();
+    renderQueueTable(p, assisted, atMs);
+  }
+  if (judgement.length > 0) {
+    p('### 🧠 Judgement — reasoning required');
+    p();
+    renderQueueTable(p, judgement, atMs);
+  }
+}
+
+function renderQueueTable(p: Print, items: Finding[], atMs: number): void {
+  p('| Rule | Section | Severity | What to look for | Evidence to record | Last reviewed |');
+  p('|---|---|---|---|---|---|');
+  for (const f of items) {
     p(
       `| \`${f.ruleId}\` ${escapeCell(f.title)} | ${f.section} | ${SEV_TAG[f.severity]} ${f.severity} | ` +
-        `${escapeCell(f.why ?? f.message)} | ${escapeCell(f.evidenceHint ?? 'file:line + reasoning')} |`,
+        `${escapeCell(f.why ?? f.message)} | ${escapeCell(f.evidenceHint ?? 'file:line + reasoning')} | ` +
+        `${escapeCell(reviewLabel(f, atMs))} |`,
     );
   }
   p();
+}
+
+/** `2026-09-01 (12d ago)` / `never` / with `· ⚠️ overdue` when the deadline passed. */
+function reviewLabel(f: Finding, atMs: number): string {
+  if (!f.review) return 'never';
+  const age = reviewAgeDays(f.review, atMs);
+  const ageStr = age === null ? '' : ` (${age}d ago)`;
+  const due = f.review.until ? ` · due ${f.review.until}` : '';
+  const overdue = isReviewStale(f.review, atMs) ? ' · ⚠️ overdue' : '';
+  return `${f.review.reviewed}${ageStr}${due}${overdue}`;
 }
 
 /* ------------------------------------------------------------ suppressed -- */
@@ -520,6 +604,12 @@ function fmtLocation(l: { file: string; line?: number }): string {
 
 function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
+/** Epoch ms for a report timestamp, falling back to now when it is unparseable. */
+function parseableTime(iso: string): number {
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? Date.now() : t;
 }
 
 function bar(value: number, max: number, width = 24): string {

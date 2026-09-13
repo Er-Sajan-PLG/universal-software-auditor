@@ -99,6 +99,7 @@ function toRule(f: Finding): SarifRule {
       severity: f.severity,
       baseSeverity: f.baseSeverity,
       ruleClass: f.ruleClass,
+      ...(f.automatability ? { automatability: f.automatability } : {}),
     },
   };
 }

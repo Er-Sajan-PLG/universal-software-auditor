@@ -16,6 +16,14 @@ import { detect, loadDetectorFile } from '../detect/index.js';
 import { loadRulePacks, applyRuleOverrides } from './loader.js';
 import { evaluateRule, packApplies, ruleApplies, type EvalContext } from './evaluate.js';
 import { buildSuppressionIndex, describeSuppression, unusedSuppressions } from './suppression.js';
+import {
+  attachReviews,
+  buildReviewIndex,
+  describeReview,
+  resolveActiveReviews,
+  reviewOverdueDays,
+  type ReviewIndex,
+} from './review.js';
 import { loadSections } from './sections.js';
 import { loadProfiles, dampen, type MaturityProfile } from './maturity.js';
 import { loadConfig } from '../config.js';
@@ -101,6 +109,7 @@ export function runAudit(options: AuditOptions): AuditOutcome {
   applyRuleOverrides(packs, overrides);
 
   const suppressions = buildSuppressionIndex(resolveSuppressions(config.suppressions, warnings));
+  const reviews = buildReviewIndex(resolveActiveReviews(config.reviews, warnings));
   const { include, exclude } = resolvePackSets(options, config);
 
   // A pack may assert extra facts simply by applying (e.g. "we are a monorepo").
@@ -145,6 +154,11 @@ export function runAudit(options: AuditOptions): AuditOutcome {
   // evaluation, so oversize counts are only complete once scoring is done.
   appendIndexWarnings(project, warnings);
   appendUnusedSuppressionWarnings(suppressions, warnings);
+  attachReviews(
+    reviews,
+    evaluated.map((e) => e.finding),
+  );
+  appendReviewWarnings(reviews, warnings);
   const card = score(evaluated, sections, profile);
   const report = buildReport(
     opts,
@@ -271,6 +285,33 @@ function appendUnusedSuppressionWarnings(
     warnings.push(
       `suppression for ${describeSuppression(s)} matched no finding — remove it or fix the target`,
     );
+  }
+}
+
+/**
+ * A review that matched nothing is dead provenance — the finding was fixed, the
+ * rule renamed, the file moved. A review whose `until` has passed is a decision
+ * nobody has revisited. Both are reported so the ledger decays instead of
+ * accumulating (ADR-0023, the ESLint model applied to attention).
+ */
+function appendReviewWarnings(reviews: ReviewIndex, warnings: string[]): void {
+  const nowMs = Date.now();
+  for (const entries of reviews.values()) {
+    for (const entry of entries) {
+      if (!entry.used) {
+        warnings.push(
+          `review for ${describeReview(entry.review)} matched no finding — remove it or re-target it`,
+        );
+        continue;
+      }
+      const overdue = reviewOverdueDays(entry.review, nowMs);
+      if (overdue !== null) {
+        warnings.push(
+          `review for ${describeReview(entry.review)} was due ${entry.review.until} — ` +
+            `overdue by ${overdue} day(s); re-review`,
+        );
+      }
+    }
   }
 }
 
