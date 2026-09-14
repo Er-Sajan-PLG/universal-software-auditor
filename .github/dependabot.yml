@@ -9,6 +9,14 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    # TypeScript majors are never grouped bumps: 7.x is the Go-native
+    # rewrite (tsgo) — it violates typescript-eslint's peer range
+    # (typescript <6.1.0), drops the tsserver bin, and adds
+    # platform-native install weight. Taking a new major is a deliberate
+    # migration PR, so the group stays silent on majors entirely.
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: '/'
