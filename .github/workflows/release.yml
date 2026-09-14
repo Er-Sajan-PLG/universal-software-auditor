@@ -17,7 +17,10 @@ permissions:
   attestations: write
   # The bundle step files provenance/ through a pull request — creating it
   # needs pull-requests scope. (v2.9.0 tag run failed exactly here:
-  # "Resource not accessible by integration" on createPullRequest.)
+  # "Resource not accessible by integration" on createPullRequest. The
+  # follow-up fix then shipped the comment without this line — v2.9.1
+  # proved it. The line is here now. Really.)
+  pull-requests: write
   # OIDC trusted publishing: no long-lived NPM_TOKEN. One-time owner setup:
   # npmjs.com → package Settings → Trusted Publisher → GitHub Actions,
   # this repo + this workflow. Until then, publishing fails closed here.
@@ -118,6 +121,9 @@ jobs:
           dl=(sha256*.jsonl)
           mkdir -p provenance
           mv "${dl[0]}" "provenance/v${VERSION}.sigstore.json"
+          # The downloaded bundle is valid JSON but not Prettier-shaped;
+          # without this every bundle PR fails Lint & format on arrival.
+          npx prettier --write "provenance/v${VERSION}.sigstore.json"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "provenance/v${VERSION}"
