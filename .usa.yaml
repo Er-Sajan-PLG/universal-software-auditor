@@ -31,6 +31,15 @@ suppressions:
       provision, so there is nothing for Terraform or a Dockerfile to describe.
       Revisit the day the project ships a hosted service.
 
+  - rule: REPO-002
+    file: .npmrc
+    reason: >-
+      The root .npmrc carries only the @xenos1996 scope-to-registry address
+      (one mapping line, no credentials). REPO-002 bans .npmrc categorically
+      because most committed copies leak tokens; this one cannot — NODE-004
+      keeps guarding its contents, and any added credential line fails the
+      gate. Revisit if the file ever needs more than the address.
+
   - rule: CICD-008
     reason: >-
       Deliberately no error tracking. USA runs on other people's machines and
