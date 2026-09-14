@@ -113,6 +113,7 @@ describe('global flags', () => {
           ['out.json', (raw) => expect(JSON.parse(raw).schema).toBe('usa-report-json-v1')],
           ['out.sarif', (raw) => expect(JSON.parse(raw).version).toBe('2.1.0')],
           ['out.md', (raw) => expect(raw).toContain('# ')],
+          ['out.html', (raw) => expect(raw).toContain('<!DOCTYPE html>')],
         ];
         for (const [name, check] of cases) {
           const out = path.join(dir, name);

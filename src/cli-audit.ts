@@ -8,6 +8,7 @@ import { renderMarkdown, parseTrailer } from './report/markdown.js';
 import { renderJson } from './report/json.js';
 import { renderSarif } from './report/sarif.js';
 import { renderNarrative } from './report/narrative.js';
+import { renderHtml } from './report/html.js';
 import { evaluateGate, evaluateNewCodeGate, parseBaselineTrailer } from './engine/gate.js';
 import {
   VERSION,
@@ -26,9 +27,9 @@ import { writeTextFile } from './util/files.js';
 /** The `audit` command driver: options, gating, and report writing. */
 /* ------------------------------------------------------------------ audit -- */
 
-type OutputFormat = 'md' | 'json' | 'sarif' | 'narrative';
+type OutputFormat = 'md' | 'json' | 'sarif' | 'narrative' | 'html';
 
-const FORMATS: OutputFormat[] = ['md', 'json', 'sarif', 'narrative'];
+const FORMATS: OutputFormat[] = ['md', 'json', 'sarif', 'narrative', 'html'];
 
 interface AuditCliOptions {
   target: string;
@@ -50,6 +51,7 @@ function resolveFormat(flag: string | undefined, out: string): OutputFormat {
   const ext = path.extname(out).toLowerCase();
   if (ext === '.json') return 'json';
   if (ext === '.sarif') return 'sarif';
+  if (ext === '.html' || ext === '.htm') return 'html';
   return 'md';
 }
 
@@ -196,6 +198,8 @@ function renderReport(report: AuditReport, profile: MaturityProfile, format: Out
       return renderSarif(report);
     case 'narrative':
       return renderNarrative(report, profile);
+    case 'html':
+      return renderHtml(report, profile);
     default:
       return renderMarkdown(report, profile);
   }
