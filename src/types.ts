@@ -151,7 +151,7 @@ export type Check =
   /** PASS when at least one file matching `patterns` is TRACKED by git. */
   | { kind: 'tracked_present'; patterns: string[] }
   /** PASS when NO file matching `patterns` is tracked by git (committed junk). */
-  | { kind: 'tracked_absent'; patterns: string[] }
+  | { kind: 'tracked_absent'; patterns: string[]; exclude?: string[] }
   /** PASS when the number of distinct files matching `patterns` >= `min`. */
   | { kind: 'count_min'; patterns: string[]; min: number }
   /** PASS when no indexed file matching `patterns` exceeds `max_lines`. */

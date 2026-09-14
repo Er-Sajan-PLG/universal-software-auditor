@@ -87,11 +87,12 @@ describe('preset table sanity', () => {
     'custom',
   ];
 
-  it('nvidia preset points at NIM with the pinned DeepSeek model', () => {
+  it('nvidia preset points at NIM with max reasoning', () => {
     const nvidia = PROVIDER_PRESETS['nvidia'];
     expect(nvidia?.baseURL).toBe('https://integrate.api.nvidia.com/v1');
     expect(nvidia?.apiKeyEnv).toBe('NVIDIA_API_KEY');
-    expect(nvidia?.defaultModel).toBe('deepseek-ai/deepseek-v4-pro-0813');
+    expect(nvidia?.defaultModel).toBe('nvidia/nemotron-3-ultra-550b-a55b');
+    expect(nvidia?.defaultReasoningEffort).toBe('high');
     expect(nvidia?.fetchModels).toBe(true);
   });
 
@@ -253,6 +254,25 @@ describe('complete', () => {
       reasoningEffort: 'high',
     });
     expect(JSON.parse(String(seen[1]?.init.body))).toMatchObject({ reasoning_effort: 'high' });
+  });
+
+  it('preset reasoning default rides along; explicit per-request effort wins', async () => {
+    process.env['NVIDIA_API_KEY'] = FAKE_KEY;
+    const { seen } = captureFetch(() => jsonResponse(chatPayload()));
+    await complete({
+      provider: 'nvidia',
+      model: 'nvidia/nemotron-3-ultra-550b-a55b',
+      messages: [],
+    });
+    expect(JSON.parse(String(seen[0]?.init.body))).toMatchObject({ reasoning_effort: 'high' });
+
+    await complete({
+      provider: 'nvidia',
+      model: 'nvidia/nemotron-3-ultra-550b-a55b',
+      messages: [],
+      reasoningEffort: 'low',
+    });
+    expect(JSON.parse(String(seen[1]?.init.body))).toMatchObject({ reasoning_effort: 'low' });
   });
 
   it('omits temperature/max_tokens when unset (provider defaults apply)', async () => {
