@@ -98,6 +98,13 @@ describe('global flags', () => {
     expect(r.err).toContain('--format must be one of md|json|sarif');
   });
 
+  it('rules warns on stderr when --format is passed and still prints human output', () => {
+    const r = run(['rules', '--format', 'json']);
+    expect(r.code).toBe(0);
+    expect(r.err).toContain('rules has no --format; ignoring');
+    expect(r.out).toContain('rule(s) across');
+  });
+
   describe('report format selection', () => {
     it('infers json and sarif from the --out extension, md otherwise', () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'usa-format-'));
