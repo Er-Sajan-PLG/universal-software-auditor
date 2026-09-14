@@ -62,3 +62,9 @@ pretense.
   the code, the help text, and this ADR all say so in the same words.
 - Every deferred item above is a go/no-go gate for its phase, reviewed
   here before implementation, not discovered after.
+
+## Scar tissue
+
+- Uncommitted work dies on `git reset --hard`. This ADR was written
+  once, destroyed by a debugging reset, and rewritten from memory —
+  commit early, especially ADRs, which cannot be regenerated from code.
