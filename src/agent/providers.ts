@@ -58,6 +58,14 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     defaultModel: 'deepseek-chat',
     fetchModels: true,
   },
+  nvidia: {
+    id: 'nvidia',
+    label: 'NVIDIA NIM',
+    baseURL: 'https://integrate.api.nvidia.com/v1',
+    apiKeyEnv: 'NVIDIA_API_KEY',
+    defaultModel: 'deepseek-ai/deepseek-v4-pro-0813',
+    fetchModels: true,
+  },
   groq: {
     id: 'groq',
     label: 'Groq',
