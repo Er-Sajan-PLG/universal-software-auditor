@@ -103,6 +103,23 @@ ownership check on the requested resource ID. Refs: OWASP-A01:2021.
 code, and reads plaintext traffic. Fix the two critical items before any
 deploy; fix the rest before any user touches it.
 
+### Downgrade transparency — what the profile changed
+
+The prototype profile dampens severity. Maturity may defer _process_, never
+_safety_ — so the table below restores the real severity for anything that
+guards a trust boundary:
+
+| Finding                               | Real severity | Shown as | Effect if trusted                                     |
+| ------------------------------------- | ------------- | -------- | ----------------------------------------------------- |
+| `SEC-006` `eval()` in request handler | HIGH          | MEDIUM   | Would leave RCE in "this sprint" instead of "tonight" |
+| `SEC-003` plaintext internal HTTP     | HIGH          | MEDIUM   | Would leave readable service traffic as routine       |
+| `SEC-008` no input validation         | HIGH          | MEDIUM   | Would leave the root cause of the SQLi as routine     |
+| `SUP-001` no lockfile                 | HIGH          | MEDIUM   | Would leave unrepeatable builds as routine            |
+| `TEST-001` no test suite              | HIGH          | MEDIUM   | Would leave unverifiable fixes as routine             |
+
+Process deferrals (LICENSE, `.editorconfig`, ADRs) stay deferred — that half
+of the profile is working as designed.
+
 ## 2. Data, testing, supply chain — the voids
 
 **Data:** no migrations, no transactions, no constraints, no pagination —
@@ -165,7 +182,42 @@ authorization review · negative tests · LICENSE · CODEOWNERS + ADRs.
 SBOM · Dependabot · backup + restore drill · SLOs/timeouts/idempotency ·
 threat model · mutation testing · deprecated-API cleanup.
 
-## 5. What this audit did not check
+## 5. Judgement queue, priced
+
+The engine could not settle these; each names its price — the exact evidence
+that closes it. Unpriced rows are abdication; these are not.
+
+**Do this week** — `REPO-003` secrets in git history (`gitleaks detect
+--log-opts=--all`, ~1 min) · `DEP-002` dependency vulnerabilities (`npm
+audit` / `osv-scanner`, ~5 min) · `SEC-015` ownership check on every data
+endpoint (`file:line` per endpoint plus one negative test).
+
+**Do this month** — `REL-005` migrations reversible · `TEST-008`
+authorization regressions tested · `CICD-010` backup exists _and_ a restore
+was drilled (a backup nobody restored is a rumor) · `API-004` write
+idempotency · `ARCH-004` layer separation.
+
+**Consciously defer** — everything else, including commit-message hygiene at
+zero commits. Deferring with a reason is a decision; deferring silently is
+how these become permanent.
+
+## 6. Trust progression — the story in one page
+
+Trust is not a score. It is a sequence of gates, each depending on the one
+before it. You cannot skip gates.
+
+```text
+GATE 0 — FOUNDATION: can another person reproduce this? ......... 🟠 PARTIAL
+GATE 1 — SECURITY: is it safe to expose? ........................ 🔴 RED
+GATE 2 — DATA INTEGRITY: will it lose or corrupt data? .......... 🔴 RED
+GATE 3 — VERIFIABILITY: can you prove a change is correct? ...... 🔴 RED
+GATE 4 — OPERABILITY: can you run it, see it, recover it? ....... 🔴 RED
+GATE 5 — SUPPLY CHAIN: do you know what you ship? ............... 🔴 RED
+GATE 6 — ARCHITECTURE: can it evolve without collapse? .......... 🟠 PARTIAL
+GATE 7 — FUTURE READINESS: true in 18 months? ................... ❓ UNKNOWN
+```
+
+## 7. What this audit did not check
 
 A fixed, honest account of the method's limits: reachability and taint
 analysis · threat model, data flow, authz matrix · secret validity and full
@@ -174,9 +226,16 @@ auth existence, prototype pollution · runtime and observability reality ·
 benchmark against comparable repos. Static file inspection is not semantic
 analysis; absence of a finding is not evidence of safety.
 
-## 6. Machine record
+## 8. Machine record
 
 The deterministic substrate lives in the raw companion,
 `examples/sample-report.md` (same audit, checklist projection, embedded
 `usa-report-v1` trailer — diff it with `usa diff`). Scores there are
 reproducible: re-run with the same rules and depth to compare.
+
+**What changed since the last audit:** this is the first audit in this
+format, so there is no baseline yet. From the next run on, compare trailers
+(`usa diff <before> <after>`) and report movement as resolved / new /
+regressed — the report then tells a story across time (security posture up
+after the SQL fix, operability down after the background worker landed),
+not just a snapshot.
