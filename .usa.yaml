@@ -18,12 +18,6 @@ ignore:
 # Suppressions — accepted risk, always with a reason. They stay visible in the
 # report (under "Accepted risk") but are excluded from the score.
 suppressions:
-  - rule: REPO-018
-    reason: >-
-      AGENTS.md ships as a distributable template asset
-      (templates/AGENTS.audit.md) rather than at this repo's root, and is
-      therefore excluded from the index above.
-
   - rule: CICD-006
     reason: >-
       No infrastructure to define. USA is a CLI distributed through npm and
