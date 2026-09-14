@@ -417,6 +417,9 @@ function groupFlagsByNamespace(flags: Iterable<string>): Map<string, string[]> {
 /* ------------------------------------------------------------------ rules -- */
 
 function cmdRules(args: Args): number {
+  if (args['format'] !== undefined) {
+    console.error('warning: rules has no --format; ignoring');
+  }
   const rulesDir = path.resolve(str(args, 'rules-dir', DEFAULT_RULES_DIR) ?? DEFAULT_RULES_DIR);
   const { packs } = loadRulePacks(rulesDir);
   const filter = str(args, 'section');
