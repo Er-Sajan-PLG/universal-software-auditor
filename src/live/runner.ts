@@ -16,16 +16,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AuditReport } from '../types.js';
 import type { MaturityProfile } from '../engine/maturity.js';
-import type { ChatRequest } from '../agent/types.js';
+import type { ChatRequest, ModelInfo } from '../agent/types.js';
 import { runAudit } from '../engine/audit.js';
 import { renderMarkdown } from '../report/markdown.js';
 import {
+  ASK_ORDER,
   INTERVIEW_QUESTIONS,
   applyInterviewAnswer,
   formatQuestionPrompt,
+  summarizeFoundation,
   type InterviewQuestion,
 } from '../foundation/interview.js';
-import { defaultFoundation, type FoundationConfig } from '../foundation/types.js';
+import { detectFoundationDefaults } from '../foundation/detect.js';
+import { type FoundationConfig } from '../foundation/types.js';
 import { sanitizeIntent } from '../foundation/loader.js';
 import { advance, initialSession, renderTranscript } from './session.js';
 import type { AskFn, ChatFn, PrintFn, SessionState, TranscriptEntry } from './types.js';
@@ -44,6 +47,12 @@ export interface LiveSessionOptions {
   transcriptPath?: string;
   provider?: string;
   model?: string;
+  /**
+   * Max UNKNOWN findings to walk in triage (default 15, hard ceiling 50).
+   * A conversation, not an interrogation — the rest stay queued in the
+   * report, which is where the queue lives.
+   */
+  triageLimit?: number;
 }
 
 interface LiveContext {
@@ -55,6 +64,40 @@ interface LiveContext {
 const SYSTEM_PROMPT = 'You are the USA live audit assistant. Propose, never decide.';
 
 /** Triage walks at most this many UNKNOWN findings; the rest stay queued. */
+const DEFAULT_TRIAGE_LIMIT = 15;
+
+/**
+ * Warns when the configured model is not in the provider's advertised list —
+ * the classic cause of a mid-session 404. Pure logic over an injected
+ * listing, so tests stub the network away. Null means "looks fine" OR
+ * "could not check" (offline/unlisted — the call itself will report loudly).
+ */
+export async function checkModelAdvertised(
+  providerId: string,
+  model: string | undefined,
+  listModels: (providerId: string) => Promise<ModelInfo[]>,
+): Promise<string | null> {
+  if (!model) return null;
+  let advertised: ModelInfo[];
+  try {
+    advertised = await listModels(providerId);
+  } catch {
+    return null;
+  }
+  if (advertised.some((m) => m.name === model)) return null;
+  return (
+    `live: model "${model}" is not advertised by ${providerId} ` +
+    `(calls may fail — a 404 usually means an unknown model id); continuing.`
+  );
+}
+
+/** Effective triage walk length: requested, defaulted, and hard-capped. */
+function effectiveTriageLimit(opts: LiveSessionOptions): number {
+  const n = opts.triageLimit;
+  if (n === undefined) return DEFAULT_TRIAGE_LIMIT;
+  if (!Number.isInteger(n) || n < 1) return DEFAULT_TRIAGE_LIMIT;
+  return Math.min(n, TRIAGE_CAP);
+}
 const TRIAGE_CAP = 50;
 
 /**
@@ -151,12 +194,20 @@ async function modelTurn(
 
 async function runFoundationStep(opts: LiveSessionOptions, ctx: LiveContext): Promise<void> {
   ctx.state = advance(ctx.state, 'foundation');
-  opts.print('Foundation: capturing project intent (empty answers keep defaults).');
-  let config = defaultFoundation(path.basename(path.resolve(opts.dir)) || 'project');
-  for (const question of INTERVIEW_QUESTIONS) {
+  const dir = path.resolve(opts.dir);
+  const projectName = path.basename(dir) || 'project';
+  // Everything the repo already says is pre-filled — the human is only asked
+  // what no tool can observe (vision, intents, stage target).
+  let config = detectFoundationDefaults(dir, projectName);
+  opts.print(
+    `Quick intent check — I already looked at ${projectName}, so just ${ASK_ORDER.length} questions.`,
+  );
+  for (const id of ASK_ORDER) {
+    const question = INTERVIEW_QUESTIONS.find((q) => q.id === id);
+    if (!question) continue;
     const raw = await opts.ask(formatQuestionPrompt(question, config));
     if (raw === null) {
-      opts.print('(EOF — keeping defaults for the remaining questions.)');
+      opts.print('(EOF — keeping what was detected for the remaining questions.)');
       break;
     }
     config = await applyWithRetries(opts, question, config, raw);
@@ -165,6 +216,7 @@ async function runFoundationStep(opts: LiveSessionOptions, ctx: LiveContext): Pr
   ctx.state = { ...ctx.state, facts: [...ctx.state.facts, ...facts] };
   const summary = `Foundation captured: ${facts.length > 0 ? facts.join(', ') : '(no usable intents)'}.`;
   opts.print(summary);
+  opts.print(summarizeFoundation(config));
   appendTool(ctx, summary);
   await modelTurn(opts, ctx, 'foundation', `[foundation] facts: ${facts.join(', ') || '(none)'}.`);
 }
@@ -212,6 +264,14 @@ async function runAuditStep(opts: LiveSessionOptions, ctx: LiveContext): Promise
   const summary = auditSummary(report);
   opts.print(summary);
   appendTool(ctx, summary);
+  // Proof of reading: the deterministic index size behind the verdict.
+  const filesRead = report.detection.metrics['files'];
+  const indexed =
+    typeof filesRead === 'number'
+      ? `Read ${filesRead} files listed in the project index.`
+      : 'File index size unavailable.';
+  opts.print(indexed);
+  appendTool(ctx, indexed);
   await modelTurn(opts, ctx, 'audit', `[audit] ${summary}`);
 }
 
@@ -229,11 +289,12 @@ async function runTriageStep(opts: LiveSessionOptions, ctx: LiveContext): Promis
   ctx.state = advance(ctx.state, 'next');
   const report = ctx.report as AuditReport;
   const unknowns = report.findings.filter((f) => f.status === 'UNKNOWN');
-  const capped = unknowns.slice(0, TRIAGE_CAP);
+  const limit = effectiveTriageLimit(opts);
+  const capped = unknowns.slice(0, limit);
   let recorded = 0;
   for (const finding of capped) {
     const raw = await opts.ask(
-      `Evidence for ${finding.ruleId} (${finding.title}) — file:line or empty to skip: `,
+      `Evidence for ${finding.ruleId} (${finding.title}) — e.g. src/auth.ts:88 (Enter to skip): `,
     );
     const answer = (raw ?? '').trim();
     if (answer === '') continue;
@@ -252,7 +313,7 @@ async function runTriageStep(opts: LiveSessionOptions, ctx: LiveContext): Promis
   if (unknowns.length > capped.length) {
     appendTool(
       ctx,
-      `${unknowns.length - capped.length} finding(s) left queued (triage cap ${TRIAGE_CAP}).`,
+      `${unknowns.length - capped.length} finding(s) left queued (triage limit ${limit}; raise with --triage-limit).`,
     );
   }
   const summary = `Triage: ${recorded} evidence note(s) recorded over ${capped.length} finding(s) walked.`;

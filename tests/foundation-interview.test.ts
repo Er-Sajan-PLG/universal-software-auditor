@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  ASK_ORDER,
   INTERVIEW_QUESTIONS,
   applyInterviewAnswer,
   foundationFromAnswers,
@@ -227,5 +228,46 @@ describe('foundation CLI wiring', () => {
     expect(r.out).toContain('usa foundation init [path]');
     expect(r.out).toContain('usa foundation show [path]');
     expect(r.out).toContain('--non-interactive');
+  });
+});
+
+describe('forgiving answers', () => {
+  it('multi-select splits on comma, semicolon, pipe, and newline', () => {
+    const start = defaultFoundation('demo');
+    expect(applyInterviewAnswer(start, 'project.intents', 'api;cli').project.intents).toEqual([
+      'api',
+      'cli',
+    ]);
+    expect(applyInterviewAnswer(start, 'project.intents', 'api|cli').project.intents).toEqual([
+      'api',
+      'cli',
+    ]);
+    expect(applyInterviewAnswer(start, 'project.intents', 'api\ncli').project.intents).toEqual([
+      'api',
+      'cli',
+    ]);
+  });
+
+  it('"all" (any case) selects every option', () => {
+    const start = defaultFoundation('demo');
+    const lowered = applyInterviewAnswer(start, 'project.intents', 'all').project.intents;
+    expect(lowered).toEqual(
+      INTERVIEW_QUESTIONS.find((q) => q.id === 'project.intents')?.options ?? [],
+    );
+    expect(applyInterviewAnswer(start, 'project.intents', 'ALL').project.intents).toEqual(lowered);
+  });
+
+  it('select accepts case-insensitive answers but still rejects unknown ones', () => {
+    const start = defaultFoundation('demo');
+    expect(applyInterviewAnswer(start, 'stage', 'Beta').stage).toBe('beta');
+    expect(() => applyInterviewAnswer(start, 'stage', 'moon')).toThrow('moon');
+    expect(() => applyInterviewAnswer(start, 'project.intents', 'api, pager')).toThrow('"pager"');
+  });
+
+  it('ASK_ORDER names the four human questions and nothing else', () => {
+    expect([...ASK_ORDER]).toEqual(['project.name', 'project.vision', 'project.intents', 'stage']);
+    for (const id of ASK_ORDER) {
+      expect(INTERVIEW_QUESTIONS.some((q) => q.id === id)).toBe(true);
+    }
   });
 });

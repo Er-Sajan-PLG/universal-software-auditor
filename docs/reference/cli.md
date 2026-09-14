@@ -24,6 +24,7 @@ usa — Universal Software Auditor
   usa foundation init [path]    Capture project intent into .usa/foundation.yaml
   usa foundation show [path]    Print the effective intent and asserted facts
   usa live [path]               Conversational audit session (deterministic without a provider)
+  usa models --provider ID      List models the provider advertises
 
 evolve options
   --store <dir>        Persist audit runs/results (content-addressed store)
@@ -55,6 +56,10 @@ live options
   --provider <id>     LLM provider preset (default $USA_PROVIDER, else deterministic-only)
   --model <m>         Model id (default preset default or $USA_MODEL)
   --transcript <file> Write the session transcript to this file
+  --triage-limit <n>  Max findings to walk in triage (default 15, ceiling 50)
+
+models options
+  --provider <id>     LLM provider preset (or $USA_PROVIDER)
 
 audit options
   --out <file>        Report path (default AUDIT.md)

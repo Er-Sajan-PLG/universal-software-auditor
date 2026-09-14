@@ -5,6 +5,16 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { main, isEntryPoint } from '../src/cli.js';
 
+const { mockedListModels } = vi.hoisted(() => ({ mockedListModels: vi.fn() }));
+
+// Network is stubbed at the agent boundary: `usa models` tests never touch
+// real endpoints. Every other import keeps its real implementation, so the
+// existing suites exercise the genuine CLI paths.
+vi.mock('../src/agent/providers.js', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../src/agent/providers.js')>();
+  return { ...mod, listModels: mockedListModels };
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -148,5 +158,73 @@ describe('global flags', () => {
         fs.rmSync(dir, { recursive: true, force: true });
       }
     });
+  });
+});
+
+describe('usa live triage limit', () => {
+  it('rejects a non-positive triage limit without running a session', async () => {
+    const logs: string[] = [];
+    const errs: string[] = [];
+    vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => {
+      logs.push(a.join(' '));
+    });
+    vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      errs.push(a.join(' '));
+    });
+    const code = await main(['live', '.', '--triage-limit', 'abc']);
+    expect(code).toBe(2);
+    expect(errs.join('\n')).toContain('--triage-limit must be a positive number');
+    expect(logs.join('\n')).not.toContain('Live session complete.');
+  });
+});
+
+describe('usa models', () => {
+  const KEY = 'OPENAI_API_KEY';
+  let saved: string | undefined;
+
+  function setKey(): void {
+    saved = process.env[KEY];
+    process.env[KEY] = 'test-key-never-sent';
+  }
+
+  function restoreKey(): void {
+    if (saved === undefined) delete process.env[KEY];
+    else process.env[KEY] = saved;
+  }
+
+  it('prints one advertised model per line', async () => {
+    setKey();
+    mockedListModels.mockResolvedValue([{ name: 'm-one' }, { name: 'm-two' }]);
+    try {
+      const logs: string[] = [];
+      vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => {
+        logs.push(a.join(' '));
+      });
+      const code = await main(['models', '--provider', 'openai']);
+      expect(code).toBe(0);
+      expect(logs).toEqual(['m-one', 'm-two']);
+      expect(mockedListModels).toHaveBeenCalledWith('openai');
+    } finally {
+      restoreKey();
+    }
+  });
+
+  it('needs a provider and fails closed without one', async () => {
+    const savedProvider = process.env['USA_PROVIDER'];
+    const savedLive = process.env['USA_LIVE_PROVIDER'];
+    delete process.env['USA_PROVIDER'];
+    delete process.env['USA_LIVE_PROVIDER'];
+    try {
+      const errs: string[] = [];
+      vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+        errs.push(a.join(' '));
+      });
+      const code = await main(['models']);
+      expect(code).toBe(2);
+      expect(errs.join('\n')).toContain('Usage: usa models');
+    } finally {
+      if (savedProvider !== undefined) process.env['USA_PROVIDER'] = savedProvider;
+      if (savedLive !== undefined) process.env['USA_LIVE_PROVIDER'] = savedLive;
+    }
   });
 });
