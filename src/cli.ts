@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { VERSION, bool, parseArgs, type Args } from './cli-args.js';
