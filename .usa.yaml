@@ -200,3 +200,26 @@ reviews:
       appends through the content-addressed store (hash dedup, tested).
       Live transcripts intentionally overwrite — each session is new input,
       not a repeated operation.
+
+  - rule: CICD-003
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Merged commit to production with no human typing commands anywhere:
+      release-please PR, squash, tag, and the Release workflow publishes to
+      npmjs plus the GPR mirror, attests, verifies, and files provenance —
+      observed across a dozen releases with zero manual publishes. The
+      documented workflow_dispatch fallback needs no server access either.
+
+  - rule: CICD-004
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Procedure documented in docs/release.md Rollback (deprecate plus
+      repoint latest on npmjs, delete the GitHub release, delete the GPR
+      version, announce via patch notes); registry mutations need a human
+      classic token by design. Never exercised — the closest event was a
+      fail-closed duplicate publish, which is prevention, not rollback.
+      Re-review immediately after first real use.
