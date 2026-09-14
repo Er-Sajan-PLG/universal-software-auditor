@@ -62,6 +62,21 @@ suppressions:
       no cross-tenant boundary to isolate. Revisit the day retrieval is
       added, at which point this suppression must burn.
 
+  - rule: TAS-006
+    reason: >-
+      Thresholds are enforced, just not in jest: there is no jest in this
+      repo. Coverage floors live in vitest.config.ts and TEST-005 (which
+      checks they are enforced) passes. Pinning a jest key in package.json
+      for a vitest project would be decoration.
+
+  - rule: FND-013
+    reason: >-
+      package.json scripts are the task runner here (build, lint, test,
+      docs, release, self-audit) — every workflow in the contributing path
+      runs through them. A Makefile would duplicate that surface for no
+      new capability. Revisit if workflows ever need orchestration npm
+      scripts cannot express.
+
 # Reviews — dated human attention (ADR-0023). A review never changes a
 # verdict; it records that someone looked, with evidence, and when to look
 # again. Stale reviews warn instead of silently rotting.
