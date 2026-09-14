@@ -85,6 +85,7 @@ usa audit . --depth deep                 # include deep-only rules (cycles, dupl
 usa audit . --profile production         # grade against the full bar regardless of age
 usa audit . --fail-on high               # exit 1 on HIGH+ (for CI gates)
 usa audit . --out reports/2026-09.md     # dated reports, so you can diff them later
+usa audit . --format narrative           # verdict-first story: foundation, fires, honest score
 usa audit . --allow-commands             # run shell checks (npm audit, depcheck, dpdm)
 usa audit . --include stacks/solidity    # force a pack on
 usa rules --section S2                   # list rules

@@ -16,6 +16,7 @@ import {
 } from './report/signature.js';
 import { renderJson } from './report/json.js';
 import { renderSarif } from './report/sarif.js';
+import { renderNarrative } from './report/narrative.js';
 import type { MaturityProfile } from './engine/maturity.js';
 import { diffReports } from './engine/diff.js';
 import { bootstrapPacks, writeBootstrapPacks } from './bootstrap/index.js';
@@ -150,9 +151,9 @@ export function main(argv: string[]): number | Promise<number> {
 
 /* ------------------------------------------------------------------ audit -- */
 
-type OutputFormat = 'md' | 'json' | 'sarif';
+type OutputFormat = 'md' | 'json' | 'sarif' | 'narrative';
 
-const FORMATS: OutputFormat[] = ['md', 'json', 'sarif'];
+const FORMATS: OutputFormat[] = ['md', 'json', 'sarif', 'narrative'];
 
 interface AuditCliOptions {
   target: string;
@@ -309,6 +310,8 @@ function renderReport(report: AuditReport, profile: MaturityProfile, format: Out
       return renderJson(report);
     case 'sarif':
       return renderSarif(report);
+    case 'narrative':
+      return renderNarrative(report, profile);
     default:
       return renderMarkdown(report, profile);
   }
@@ -1038,7 +1041,7 @@ live options
 
 audit options
   --out <file>        Report path (default AUDIT.md)
-  --format <fmt>      md | json | sarif        (default: inferred from --out)
+  --format <fmt>      md | json | sarif | narrative (default: inferred from --out)
   --depth <level>     quick | standard | deep          (default standard)
   --profile <stage>   auto | prototype | mvp | beta | production | legacy
   --rules-dir <dir>   Rule pack directory             (default bundled rules/)

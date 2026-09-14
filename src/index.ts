@@ -95,6 +95,7 @@ export {
   type FreshnessResult,
 } from './engine/test-evidence.js';
 export { renderMarkdown, parseTrailer, trailer } from './report/markdown.js';
+export { renderNarrative } from './report/narrative.js';
 export {
   renderJson,
   toJsonReport,

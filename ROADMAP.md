@@ -109,21 +109,14 @@ verify` chain at production (`core/provenance-cosign`, SUP-018–020),
 - [x] **Future-ready categorization** — ten domains as a derived axis over
       rules (`rules/categories.yaml` + `usa categories`); five resolve, five
       honestly empty. ADR-0033. _(M)_
-- [ ] **Report format selection** — five candidate formats drafted as
-      specified-not-implemented exemplars; one graduates to a renderer. _(S)_
+- [x] **Report format selection** — the narrative renderer ships as a second
+      format (`narrative`): verdict-first, foundation gate, honest confidence,
+      derived from the same `AuditReport` as the checklist. ADR-0036. _(S)_
 
 ## Deliberately not planned (yet)
 
 - Penetration testing: USA finds the hole, never exploits it. Explicitly
   future (VISION.md); needs its own charter + safety ADR first.
-- CVE database / lockfile resolver / reachability analysis (ADR-0011)
-- Interprocedural analysis, DAST, fuzzing (see "What USA is not")
-- Compliance certification (USA maps to standards; auditors certify)
-- Full DORA platform (no deployment to measure at this scale)
-- Renovate migration (no problem to solve at ~10 dependencies)
-- HTML / JUnit renderers (JSON and SARIF feed standards-based consumers;
-  HTML/JUnit would only feed bespoke ones — ADR-0018)
-
 - CVE database / lockfile resolver / reachability analysis (ADR-0011)
 - Interprocedural analysis, DAST, fuzzing (see "What USA is not")
 - Compliance certification (USA maps to standards; auditors certify)
