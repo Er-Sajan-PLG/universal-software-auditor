@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.2](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.8.1...v2.8.2) (2026-09-14)
+
+
+### Bug Fixes
+
+* **release:** scope the npmjs registry override, bare --registry loses to .npmrc ([#61](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/61)) ([fbe4e4a](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/fbe4e4aa8f72578560752febe5e4402a48925d87))
+
 ## [2.8.1](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.8.0...v2.8.1) (2026-09-14)
 
 
