@@ -116,10 +116,23 @@ usa live . --transcript SESSION.md
 ```
 
 Walks foundation → audit → triage → report with you, keeping a transcript.
-With a provider configured (`--provider`, `--model`, or `USA_PROVIDER`), the
-model turns converse; without one the session runs deterministically, saying
-so loudly at every skipped turn. See [Agent integration](agent-integration.md)
-for driving it with an agent, and `usa live --help` for flags.
+The interview asks four things only (name, vision, intents, stage) — everything
+else is pre-filled from what the repo already shows, and an empty answer keeps
+the detected value. With a provider configured (`--provider`, `--model`, or
+`USA_PROVIDER`), the model turns converse; without one the session runs
+deterministically, saying so loudly at every skipped turn. Triage walks at most
+15 findings per session (`--triage-limit N` raises it to 50); the rest stay
+queued in the report. Read the transcript with any pager or editor (`cat`,
+`less`) at the exact `--transcript` path — it is Markdown, not a program. See
+[Agent integration](agent-integration.md) for driving it with an agent, and
+`usa live --help` for flags.
+
+Check which models a provider serves before spending calls on a wrong id
+(a 404 almost always means an unknown model, not a broken key):
+
+```bash
+usa models --provider nvidia
+```
 
 **Keys live in `.env`, never in the repo.** Copy `.env.example` to `.env` and
 fill in your own values — for example `NVIDIA_API_KEY` plus

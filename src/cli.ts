@@ -31,8 +31,8 @@ import { ruleAutomatability } from './engine/automatability.js';
 import { catalogueCoverage, catalogueOf, loadCatalogues } from './engine/catalogues.js';
 import { categoryCoverage, loadCategories } from './engine/categories.js';
 import { createStdinAsk, runFoundationInit, runFoundationShow } from './foundation/interview.js';
-import { runLiveSession, type ChatFn } from './live/runner.js';
-import { complete, loadProviderConfig } from './agent/index.js';
+import { checkModelAdvertised, runLiveSession, type ChatFn } from './live/runner.js';
+import { complete, listModels, loadProviderConfig } from './agent/index.js';
 import type { Catalogue } from './engine/catalogues.js';
 import type { QueueSummary } from './evolution/queue.js';
 import type {
@@ -117,6 +117,7 @@ const COMMANDS: Record<string, (args: Args) => number | Promise<number>> = {
   foundation: cmdFoundation,
   categories: cmdCategories,
   live: cmdLive,
+  models: cmdModels,
 };
 
 /** Global --help/--version, resolved before dispatch. Returns null to continue. */
@@ -511,23 +512,14 @@ async function cmdLive(args: Args): Promise<number> {
     str(args, 'provider') ?? process.env['USA_PROVIDER'] ?? process.env['USA_LIVE_PROVIDER'];
   const modelOpt = str(args, 'model') ?? process.env['USA_MODEL'];
   const transcriptPath = str(args, 'transcript');
+  const triageLimit = parseTriageLimit(str(args, 'triage-limit'));
+  if (triageLimit === null) {
+    console.error('--triage-limit must be a positive number');
+    return 2;
+  }
   let chat: ChatFn | undefined;
   if (providerId) {
-    try {
-      loadProviderConfig(providerId, modelOpt === undefined ? undefined : { model: modelOpt });
-      const provider = providerId;
-      const model = modelOpt;
-      chat = (req) => complete({ ...req, provider, ...(model === undefined ? {} : { model }) });
-    } catch {
-      // Deliberately a STATIC message: provider failures name key material
-      // (env vars, endpoints) and even the provider id is env-derived, so a
-      // transcript-adjacent CLI interpolates nothing here — neither the
-      // error nor the id. The user just typed it; they know which one failed.
-      console.error(
-        'live: LLM provider unavailable (check its API key) — continuing in deterministic-only mode.',
-      );
-      chat = undefined;
-    }
+    chat = await resolveLiveChat(providerId, modelOpt);
   } else {
     console.log(
       'live: no provider configured (set --provider or USA_PROVIDER) — deterministic-only mode.',
@@ -541,13 +533,91 @@ async function cmdLive(args: Args): Promise<number> {
     transcriptPath,
     provider: providerId,
     model: modelOpt,
+    triageLimit: triageLimit ?? undefined,
   });
 }
+
+/**
+ * Resolve the session chat, or undefined for deterministic-only mode. The
+ * pre-flight warns once up front about unadvertised model ids (the classic
+ * mid-session 404); the call itself stays authoritative.
+ */
+async function resolveLiveChat(
+  providerId: string,
+  modelOpt: string | undefined,
+): Promise<ChatFn | undefined> {
+  try {
+    const cfg = loadProviderConfig(
+      providerId,
+      modelOpt === undefined ? undefined : { model: modelOpt },
+    );
+    const provider = providerId;
+    const model = modelOpt;
+    const admonition = await checkModelAdvertised(providerId, cfg.model, listModels);
+    if (admonition) console.error(admonition);
+    return (req) => complete({ ...req, provider, ...(model === undefined ? {} : { model }) });
+  } catch {
+    // Deliberately a STATIC message: provider failures name key material
+    // (env vars, endpoints) and even the provider id is env-derived, so a
+    // transcript-adjacent CLI interpolates nothing here — neither the
+    // error nor the id. The user just typed it; they know which one failed.
+    console.error(
+      'live: LLM provider unavailable (check its API key) — continuing in deterministic-only mode.',
+    );
+    return undefined;
+  }
+}
+
+/** Positive integer, or null when the flag value is unusable. */
+function parseTriageLimit(raw: string | undefined): number | null | undefined {
+  if (raw === undefined) return undefined;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) return null;
+  return n;
+}
+
+/**
+ * `usa models`: what the provider actually serves, so a model id can be
+ * checked before a session burns calls on a 404. Read-only and side-effect
+ * free beyond one GET.
+ */
+async function cmdModels(args: Args): Promise<number> {
+  if (bool(args, 'help')) {
+    console.log(MODELS_HELP_TEXT);
+    return 0;
+  }
+  const providerId = str(args, 'provider') ?? process.env['USA_PROVIDER'];
+  if (!providerId) {
+    console.error('Usage: usa models --provider <id> (or set USA_PROVIDER)');
+    return 2;
+  }
+  let names: string[];
+  try {
+    // Validates the key and resolves static defaults first — same fail-closed
+    // contract as the session; the static message policy applies here too.
+    loadProviderConfig(providerId);
+    names = (await listModels(providerId)).map((m) => m.name);
+  } catch {
+    console.error('live: LLM provider unavailable (check its API key).');
+    return 2;
+  }
+  for (const name of names) console.log(name);
+  return 0;
+}
+
+const MODELS_HELP_TEXT = `
+usa models — list models a provider advertises
+
+  usa models --provider ID
+
+  Prints one model id per line (live listing, static default on fallback).
+  Use it to check a model id exists before a session spends calls on a 404.
+`.trim();
 
 const LIVE_HELP_TEXT = `
 usa live — conversational audit session
 
-  usa live [path] [--provider ID] [--model M] [--transcript FILE]
+  usa live [path] [--provider ID] [--model M] [--transcript FILE] [--triage-limit N]
 
   Walks foundation → audit → triage → report with you. The deterministic
   engine verifies; the model only proposes. Without a provider the session
@@ -556,6 +626,7 @@ usa live — conversational audit session
   --provider <id>     LLM provider preset (default $USA_PROVIDER, else deterministic-only)
   --model <m>         Model id (default preset default or $USA_MODEL)
   --transcript <file> Write the session transcript to this file
+  --triage-limit <n>  Max findings to walk in triage (default 15, ceiling 50)
 `.trim();
 
 function printRuleDetail(packId: string, rule: Rule, catalogues: Catalogue[]): void {
@@ -1022,6 +1093,7 @@ usa — Universal Software Auditor
   usa foundation init [path]    Capture project intent into .usa/foundation.yaml
   usa foundation show [path]    Print the effective intent and asserted facts
   usa live [path]               Conversational audit session (deterministic without a provider)
+  usa models --provider ID      List models the provider advertises
 
 evolve options
   --store <dir>        Persist audit runs/results (content-addressed store)
@@ -1053,6 +1125,10 @@ live options
   --provider <id>     LLM provider preset (default $USA_PROVIDER, else deterministic-only)
   --model <m>         Model id (default preset default or $USA_MODEL)
   --transcript <file> Write the session transcript to this file
+  --triage-limit <n>  Max findings to walk in triage (default 15, ceiling 50)
+
+models options
+  --provider <id>     LLM provider preset (or $USA_PROVIDER)
 
 audit options
   --out <file>        Report path (default AUDIT.md)

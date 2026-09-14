@@ -22,6 +22,7 @@ import {
   type FoundationConfig,
 } from './types.js';
 import { foundationFile, parseFoundationYamlText, sanitizeIntent } from './loader.js';
+import { detectFoundationDefaults } from './detect.js';
 
 /* ---------------------------------------------------------- pure builders -- */
 
@@ -51,21 +52,21 @@ export const INTERVIEW_QUESTIONS: readonly InterviewQuestion[] = [
   },
   {
     id: 'project.vision',
-    prompt: 'Vision (one or two sentences, free text)',
+    prompt: 'What is this project for? (one or two sentences — the only answer no tool can guess)',
     kind: 'text',
     read: (c) => c.project.vision,
   },
   {
     id: 'project.intents',
-    prompt: 'Intents (comma-separated)',
+    prompt: 'Intents — what does it do? (any that fit, comma-separated, or just say "all")',
     kind: 'multi-select',
     options: INTENT_OPTIONS,
-    help: `One or more of: ${INTENT_OPTIONS.join(', ')}. Each becomes an intent:<value> fact.`,
+    help: `One or more of: ${INTENT_OPTIONS.join(', ')}. Each becomes an intent:<value> fact the audit can see.`,
     read: (c) => c.project.intents.join(', '),
   },
   {
     id: 'stage',
-    prompt: 'Stage target',
+    prompt: 'Stage target — how grown-up should the audit treat it as aiming to be?',
     kind: 'select',
     options: STAGE_OPTIONS,
     read: (c) => c.stage ?? '',
@@ -170,12 +171,29 @@ function parseBool(raw: string, id: string): boolean {
   throw new Error(`"${id}": expected yes/no, got ${JSON.stringify(raw)}`);
 }
 
+/**
+ * Forgiving tokenization: humans paste option lists back (`a|b|c`), use
+ * semicolons, or hit enter mid-thought. Split on every plausible separator —
+ * validation against the option list still rejects real mistakes loudly.
+ */
 function splitList(raw: string): string[] {
   return raw
-    .split(',')
+    .split(/[,;|\n]/)
     .map((s) => s.trim())
     .filter(Boolean);
 }
+
+/**
+ * The interview asks four things; everything else is detected from the repo
+ * (see detect.ts) or stays default. Vision and intents are the only answers
+ * no tool can observe — the rest would be an interrogation, not an interview.
+ */
+export const ASK_ORDER: readonly string[] = [
+  'project.name',
+  'project.vision',
+  'project.intents',
+  'stage',
+];
 
 /**
  * Applies one raw answer to a copy of `config` and returns it. An empty
@@ -218,9 +236,14 @@ const ANSWER_HANDLERS: Record<QuestionKind, AnswerHandler> = {
     return next;
   },
   'multi-select': (next, id, raw, question) => {
+    const options = question.options ?? [];
     const values = splitList(raw).map((s) => s.toLowerCase());
     if (values.length === 0) return next;
-    const options = question.options ?? [];
+    // "all" (any case) means every option — the most common reasonable answer.
+    if (values.length === 1 && values[0] === 'all') {
+      setPath(next, id, [...options]);
+      return next;
+    }
     for (const v of values) checkOption(id, v, v, options);
     setPath(next, id, values);
     return next;
@@ -505,11 +528,16 @@ export function runFoundationInit(opts: FoundationInitOptions): number {
       return 0;
     }
     const projectName = opts.projectName ?? path.basename(dir);
-    let config = defaultFoundation(projectName);
+    let config = detectFoundationDefaults(dir, projectName);
     if (!opts.nonInteractive) {
       const ask = opts.ask ?? createStdinAsk();
-      print(`Capturing foundation intent for ${projectName} (empty answers keep defaults).`);
-      for (const question of INTERVIEW_QUESTIONS) {
+      print(
+        `Quick intent check for ${projectName} — I already looked at the repo, ` +
+          `so just ${ASK_ORDER.length} questions (empty answers keep what I found).`,
+      );
+      for (const id of ASK_ORDER) {
+        const question = INTERVIEW_QUESTIONS.find((q) => q.id === id);
+        if (!question) continue;
         config = askInterviewQuestion(question, config, ask, print, error);
       }
     }

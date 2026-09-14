@@ -178,3 +178,64 @@ describe('runLiveSession exit codes', () => {
     expect(h.lines.join('\n')).toContain('not found or not a directory');
   });
 });
+
+describe('triage limit', () => {
+  it('walks at most triageLimit findings and names the limit when queue remains', async () => {
+    const dir = makeScratch();
+    const transcriptPath = path.join(dir, 'T.md');
+    try {
+      const h = makeHarness((prompt) => (prompt.includes('Evidence for') ? 'src/app.ts:42' : ''));
+      const code = await runLiveSession({
+        dir,
+        ask: h.ask,
+        print: h.print,
+        transcriptPath,
+        triageLimit: 3,
+      });
+      expect(code).toBe(0);
+      expect(h.prompts.filter((p) => p.includes('Evidence for'))).toHaveLength(3);
+      expect(fs.readFileSync(transcriptPath, 'utf8')).toContain('left queued (triage limit 3');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('an invalid triageLimit falls back instead of crashing', async () => {
+    const dir = makeScratch();
+    try {
+      const h = makeHarness();
+      const code = await runLiveSession({ dir, ask: h.ask, print: h.print, triageLimit: 0 });
+      expect(code).toBe(0);
+      expect(h.lines.join('\n')).toContain('Live session complete.');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('prints how many files the deterministic index read', async () => {
+    const dir = makeScratch();
+    try {
+      const h = makeHarness();
+      await runLiveSession({ dir, ask: h.ask, print: h.print });
+      expect(h.lines.join('\n')).toContain('files listed in the project index');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('checkModelAdvertised', () => {
+  it('is silent when the model is advertised, warns when absent, quiet when uncheckable', async () => {
+    const { checkModelAdvertised } = await import('../src/live/runner.js');
+    const listed = async () => [{ name: 'model-a' }, { name: 'model-b' }];
+    expect(await checkModelAdvertised('p', 'model-a', listed)).toBeNull();
+    expect(await checkModelAdvertised('p', undefined, listed)).toBeNull();
+    const missing = await checkModelAdvertised('p', 'model-zzz', listed);
+    expect(missing).toContain('model-zzz');
+    expect(missing).toContain('404');
+    const failing = async (): Promise<never> => {
+      throw new Error('offline');
+    };
+    expect(await checkModelAdvertised('p', 'model-zzz', failing)).toBeNull();
+  });
+});
