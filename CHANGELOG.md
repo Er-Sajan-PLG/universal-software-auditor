@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.1](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.16.0...v2.16.1) (2026-09-14)
+
+
+### Bug Fixes
+
+* **cli:** restore node shebang lost in god-file split ([#113](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/113)) ([87e3afb](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/87e3afbb3f13d5f7491bed49092a61891e934dee))
+
 ## [2.16.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.15.0...v2.16.0) (2026-09-14)
 
 
