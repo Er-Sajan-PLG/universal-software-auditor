@@ -54,6 +54,24 @@ describe('Store', () => {
     expect(store.has('f'.repeat(64))).toBe(false);
   });
 
+  it('refuses addresses that escape the store directory (SEC-010)', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'usa-store-'));
+    cleanups.push(() => fs.rmSync(dir, { recursive: true, force: true }));
+    // A secret next to the store: a traversal read would return it.
+    fs.writeFileSync(path.join(dir, 'secret.json'), JSON.stringify({ s: 1 }));
+    const store = new Store(path.join(dir, 'data'));
+    expect(() => store.get('../secret')).toThrow(/escapes the object store/);
+    expect(() => store.has('../../secret')).toThrow(/escapes the object store/);
+    expect(() => store.get('/abs/evil')).toThrow(/escapes the object store/);
+  });
+
+  it('treats a bare double-dot id as a plain absent name, not an escape', () => {
+    const store = tempStore();
+    // '..' becomes the harmless filename '....json' inside the store.
+    expect(store.get('..')).toBeNull();
+    expect(store.has('..')).toBe(false);
+  });
+
   it('persists across two Store instances on the same directory', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'usa-store-'));
     cleanups.push(() => fs.rmSync(dir, { recursive: true, force: true }));

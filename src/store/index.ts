@@ -69,6 +69,17 @@ export class Store {
   }
 
   private pathFor(id: string): string {
-    return path.join(this.objectsDir, `${id}.json`);
+    // SEC-010: `id` reaches `get`/`has` from callers, so treat it as
+    // untrusted. Resolve against the store dir and prove containment — a
+    // `..` segment must throw, never escape onto the wider disk. `put`
+    // addresses are safe by construction (content hashes), but the guard
+    // lives here so every path out of the store passes through it.
+    const file = path.resolve(this.objectsDir, `${id}.json`);
+    if (path.relative(this.objectsDir, file).startsWith(`..${path.sep}`)) {
+      // Static message: `id` is caller-influenced and must not flow into
+      // text that could surface in reports or logs.
+      throw new Error('store: address escapes the object store');
+    }
+    return file;
   }
 }
