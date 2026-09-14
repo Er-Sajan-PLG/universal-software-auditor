@@ -1,12 +1,17 @@
 rule: TAS-008
 negative:
+  # Pins the vitest alternative in isolation: if `allowOnly` ever stops
+  # matching, nothing else in this project can mask it.
   files:
-    playwright.config.ts: |
-      import { defineConfig } from '@playwright/test';
-      export default defineConfig({ forbidOnly: !!process.env.CI });
+    vitest.config.ts: |
+      import { defineConfig } from 'vitest/config';
+      export default defineConfig({ test: { allowOnly: false } });
 positive:
   files:
     playwright.config.ts: |
       import { defineConfig } from '@playwright/test';
       export default defineConfig({ use: { trace: 'on' } });
+    vitest.config.ts: |
+      import { defineConfig } from 'vitest/config';
+      export default defineConfig({ test: { pool: 'forks' } });
   expect: MISSING

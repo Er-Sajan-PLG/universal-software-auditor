@@ -4,6 +4,12 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',
+    // TAS-008: a stray `.only` fails the build instead of shrinking the
+    // suite. Vitest already defaults this way under CI, but the default is
+    // invisible (and the rule that checks for it needs something to match):
+    // stated explicitly, local focused debugging stays allowed, and the
+    // determinism-guard test below pins the CI behavior end to end.
+    allowOnly: !process.env.CI,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

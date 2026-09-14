@@ -345,7 +345,7 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
   - 📚 Mutation-Testing
 - 🚫 **A determinism guard is set in test config or CI** `TAS-008` — Not detected — pattern not found in playwright.config.*, cypress.config.*, vitest.config.*, vitest.workspace.*, jest.config.*, package.json, .github/workflows/*.yml, .github/workflows/*.yaml, .gitlab-ci.yml.
   - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
-  - 🛠️ Set forbidOnly on CI (e.g. Playwright forbidOnly) so a stray .only fails the build instead of shrinking it.
+  - 🛠️ Set forbidOnly on CI (e.g. Playwright forbidOnly, or vitest --allowOnly=false) so a stray .only fails the build instead of shrinking it.
   - 📚 Google-Testing-Blog:Flaky
 - 🚫 **A test retry budget is declared** `TAS-009` — Not detected — pattern not found in playwright.config.*, cypress.config.*, vitest.config.*, jest.config.*, package.json, .github/workflows/*.yml, .github/workflows/*.yaml, .gitlab-ci.yml.
   - 🪶 Downgraded LOW → FUTURE by the Prototype / Spike profile
