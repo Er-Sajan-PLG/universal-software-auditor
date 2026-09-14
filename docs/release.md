@@ -118,6 +118,34 @@ duplicate version fails closed at the registry with nothing mutated.
 Never push `v*` tags by hand; the tag is the release act and belongs to
 release-please (bootstrap tag `v1.0.0` excepted).
 
+## Rollback (un-shipping a bad release)
+
+Use when a published version is broken or compromised. Registry mutations
+cannot use OIDC trusted publishing — a human runs these with a classic
+token, which is why this section exists instead of a workflow. Replace
+`BAD` with the bad version and `GOOD` with the last known-good one.
+
+```bash
+# 1. npmjs (source of truth): deprecate the bad version, repoint latest.
+npm deprecate "@xenos1996/usa@BAD" "broken release, use GOOD or later"
+npm dist-tag add "@xenos1996/usa@GOOD" latest
+
+# 2. GitHub Release: delete the release (keeps the tag as history).
+#    Releases page → the BAD tag → Delete (do NOT delete the tag itself).
+
+# 3. GitHub Packages mirror: Packages → usa → package versions → delete BAD.
+```
+
+Then announce: a patch release whose notes point away from `BAD`, so
+`CHANGELOG.md` tells the story without rewriting it. Never republish over
+`BAD` — registries are fail-closed on duplicates for a reason, and a
+reused version number is how implants hide.
+
+Status: documented, never exercised. The closest real event was a failed
+publish (duplicate version, fail-closed at the registry), which is the
+system working, not a rollback. Exercise this with a dry walk before it
+is ever needed under pressure.
+
 ## Verifying a signed report (verify-only)
 
 A rendered report can ship with an optional detached signature sidecar
