@@ -141,7 +141,9 @@ init` leave existing files alone with a message). The store is
 - Never use `bash` tooling (or code comments) to talk to the user, and
   never `echo` your way through file operations — use the proper file
   tools. Verify your own work by execution: run the code, run the
-  tests, show the output.
+  tests, show the output. Judge commands by exit codes, never by tailing
+  output — an empty tail looks clean while errors hide two lines up.
+  This bit twice on real work.
 
 ## Docs hygiene (CI enforces all of it)
 
