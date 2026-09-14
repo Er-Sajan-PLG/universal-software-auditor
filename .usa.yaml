@@ -134,3 +134,16 @@ reviews:
       files. The store is content-addressed append-only, benchmark rm
       targets owned scratch only, and no CLI command deletes user files or
       publishes — so there is no destructive path left without a preview.
+
+  - rule: SUP-023
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      The release job now verifies each tarball (gh attestation verify,
+      SLSA predicate asserted) and files a generated VSA beside the bundle
+      (scripts/make-vsa.mjs, schema-tested); the job fails before filing,
+      so a VSA exists iff verification passed. slsa-verifier CLI was
+      rehearsed and rejected: it cannot verify attest-action provenance
+      (untrusted-workflow refusal), hence gh-verify with an explicit policy
+      and an L2 claim scoped to exactly what was checked.

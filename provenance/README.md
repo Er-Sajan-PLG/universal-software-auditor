@@ -16,3 +16,19 @@ The npm registry carries its own independent provenance for the same
 release (published with Sigstore attestation), verifiable with
 `npm audit signatures`. Two channels, same claim: the tarball you
 installed is the tarball the release built.
+
+## Verification summaries (SUP-023)
+
+Each `v*.vsa.json` next to a bundle records that the release workflow
+verified the tarball before filing it: Sigstore validity, repository
+identity, SLSA provenance predicate, digest match. A VSA file exists if
+and only if that check passed — the job fails before filing otherwise.
+
+Re-run the check yourself with the same command the workflow uses:
+
+```bash
+gh attestation verify <tarball> --repo Er-Sajan-PLG/universal-software-auditor --predicate-type https://slsa.dev/provenance/v1
+```
+
+The statement follows the SLSA verification_summary shape: verifier,
+time, resource, policy (pinned by digest), input attestation, verdict.
