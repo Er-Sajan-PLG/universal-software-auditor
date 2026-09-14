@@ -353,6 +353,7 @@ const CHECK_BUILDERS: Record<string, (c: YamlMap) => Check> = {
   tracked_absent: (c) => ({
     kind: 'tracked_absent',
     patterns: toStringArray(c.patterns ?? c.files),
+    exclude: c.exclude ? toStringArray(c.exclude) : undefined,
   }),
   file_lines_max: (c) => ({
     kind: 'file_lines_max',

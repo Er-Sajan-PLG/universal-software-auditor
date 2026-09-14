@@ -84,6 +84,12 @@ export interface ProviderPreset {
   freeTier?: boolean;
   /** Whether the vendor is known to serve `GET {baseURL}/models`. */
   fetchModels: boolean;
+  /**
+   * Reasoning effort used when the caller does not specify one. Kept as a
+   * plain string like {@link ReasoningEffort} (vendors differ; the server
+   * decides what is valid). Absent means "send nothing, take the default".
+   */
+  defaultReasoningEffort?: ReasoningEffort;
 }
 
 /** A model id advertised via (or in place of) `GET {baseURL}/models`. */
@@ -101,6 +107,7 @@ export interface ResolvedConfig {
   baseURL: string;
   apiKey?: string;
   model: string;
+  reasoningEffort?: ReasoningEffort;
 }
 
 /** Caller-supplied overrides, used for the `custom` preset. */

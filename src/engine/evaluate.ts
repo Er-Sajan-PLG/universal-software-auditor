@@ -15,6 +15,7 @@ import { Project } from '../util/project.js';
 import { DEFAULT_WEIGHT } from './loader.js';
 import { ruleAutomatability } from './automatability.js';
 import { applySuppressions, type SuppressionIndex } from './suppression.js';
+import { matchesAny } from '../util/glob.js';
 
 export interface EvalContext {
   project: Project;
@@ -333,7 +334,13 @@ function checkTrackedAbsent(
   check: Extract<Check, { kind: 'tracked_absent' }>,
   h: CheckHelpers,
 ): CheckOutcome {
-  const found = h.project.trackedGlob(check.patterns);
+  // Documented safe templates (e.g. an empty `.env.example`) match the
+  // patterns but carry no secrets — excluding them by name keeps the rule
+  // from crying wolf, while content scanning (gitleaks hook) remains the
+  // backstop for actual values smuggled into any filename.
+  const found = h.project
+    .trackedGlob(check.patterns)
+    .filter((f) => !matchesAny(f, check.exclude ?? []));
   if (found.length === 0) return h.pass(`no tracked files matching ${check.patterns.join(', ')}`);
   return {
     status: 'FAIL',

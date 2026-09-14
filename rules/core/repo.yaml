@@ -45,6 +45,10 @@ rules:
           '.npmrc',
           '.pypirc',
         ]
+      # Documented empty templates, never secret-bearing by convention. An
+      # `.env.example` with all-empty values is the safe pattern this very
+      # repo documents — flagging it would punish the fix it prescribes.
+      exclude: ['.env.example', '.env.sample', '.env.template']
     why: 'A committed .env is a published credential. Rotating is the only fix.'
     remediation: 'Remove from the index, rotate every value in the file, purge history (git filter-repo / BFG), add to .gitignore.'
     references: ['CWE-798', 'ASVS-14.3.2', 'OpenSSF-Scorecard:Binary-Artifacts']

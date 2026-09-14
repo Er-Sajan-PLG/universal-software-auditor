@@ -32,6 +32,7 @@ import type {
   ModelInfo,
   ProviderOverrides,
   ProviderPreset,
+  ReasoningEffort,
   ResolvedConfig,
 } from './types.js';
 
@@ -63,7 +64,10 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     label: 'NVIDIA NIM',
     baseURL: 'https://integrate.api.nvidia.com/v1',
     apiKeyEnv: 'NVIDIA_API_KEY',
-    defaultModel: 'deepseek-ai/deepseek-v4-pro-0813',
+    defaultModel: 'nvidia/nemotron-3-ultra-550b-a55b',
+    // Highest standard effort (`low|medium|high`); the server decides what is
+    // valid, and an explicit per-request effort always wins.
+    defaultReasoningEffort: 'high',
     fetchModels: true,
   },
   groq: {
@@ -180,6 +184,9 @@ export function loadProviderConfig(
     model,
   };
   if (apiKey !== undefined) resolved.apiKey = apiKey;
+  if (preset.defaultReasoningEffort !== undefined) {
+    resolved.reasoningEffort = preset.defaultReasoningEffort;
+  }
   return resolved;
 }
 
@@ -247,8 +254,9 @@ function numOrUndefined(v: unknown): number | undefined {
 
 /**
  * Run one OpenAI-compatible Chat Completions request. Optional fields
- * (`temperature`, `max_tokens`, `reasoning_effort`) are sent ONLY when set,
- * so provider defaults apply otherwise. Non-2xx responses throw an `Error`
+ * (`temperature`, `max_tokens`) are sent ONLY when set, so provider defaults
+ * apply otherwise; `reasoning_effort` additionally falls back to the preset
+ * default. Non-2xx responses throw an `Error`
  * carrying the HTTP status plus a body snippet (never key material).
  */
 export async function complete(req: ChatRequest): Promise<ChatResult> {
@@ -256,7 +264,7 @@ export async function complete(req: ChatRequest): Promise<ChatResult> {
   const res = await fetch(`${cfg.baseURL}/chat/completions`, {
     method: 'POST',
     headers: authHeaders(cfg.apiKey),
-    body: JSON.stringify(buildChatBody(req, cfg.model)),
+    body: JSON.stringify(buildChatBody(req, cfg.model, cfg.reasoningEffort)),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   await ensureOk(res);
@@ -264,14 +272,20 @@ export async function complete(req: ChatRequest): Promise<ChatResult> {
 }
 
 /** Optional fields ride along ONLY when set — provider defaults win otherwise. */
-function buildChatBody(req: ChatRequest, model: string): Record<string, unknown> {
+function buildChatBody(
+  req: ChatRequest,
+  model: string,
+  presetEffort: ReasoningEffort | undefined,
+): Record<string, unknown> {
   const body: Record<string, unknown> = {
     model,
     messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
   };
   if (req.temperature !== undefined) body['temperature'] = req.temperature;
   if (req.maxTokens !== undefined) body['max_tokens'] = req.maxTokens;
-  if (req.reasoningEffort !== undefined) body['reasoning_effort'] = req.reasoningEffort;
+  // Explicit per-request effort wins; otherwise the preset default rides along.
+  const effort = req.reasoningEffort ?? presetEffort;
+  if (effort !== undefined) body['reasoning_effort'] = effort;
   return body;
 }
 
