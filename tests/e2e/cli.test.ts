@@ -160,6 +160,15 @@ describe('global flags', () => {
       }
     });
 
+    it('ships a node shebang: symlink installs exec the file directly', () => {
+      // Regression (god-file split): src/cli.ts lost its `#!/usr/bin/env
+      // node` first line, so symlink installs fell through to the shell —
+      // bash ran the imports through ImageMagick and the COMMANDS map as
+      // commands. The entry point must always be directly executable.
+      const first = fs.readFileSync(path.join('src', 'cli.ts'), 'utf8').split('\n')[0];
+      expect(first).toBe('#!/usr/bin/env node');
+    });
+
     it('rejects a different file, a missing file, and an undefined argv', () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'usa-bin-'));
       try {
