@@ -44,6 +44,19 @@ describe('global flags', () => {
     expect(run(['-h']).code).toBe(0);
   });
 
+  it('a subcommand flag help wins over top-level help (live)', async () => {
+    const logs: string[] = [];
+    vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => {
+      logs.push(a.join(' '));
+    });
+    // cmdLive is async (the LLM transport is), so main() returns a Promise here.
+    const code = await main(['live', '--help']);
+    const out = logs.join('\n');
+    expect(code).toBe(0);
+    expect(out).toContain('usa live [path]');
+    expect(out).not.toContain('usa audit [path]');
+  });
+
   it('unknown commands still exit 2', () => {
     const r = run(['frobnicate']);
     expect(r.code).toBe(2);

@@ -7,6 +7,7 @@ import { runAudit } from './engine/audit.js';
 import { loadRulePacks, loadPackFile } from './engine/loader.js';
 import { loadDetectorFile } from './detect/index.js';
 import { Project } from './util/project.js';
+import { loadEnvFile } from './util/env.js';
 import { detect } from './detect/index.js';
 import { renderMarkdown, parseTrailer } from './report/markdown.js';
 import {
@@ -118,9 +119,12 @@ const COMMANDS: Record<string, (args: Args) => number | Promise<number>> = {
   live: cmdLive,
 };
 
-export function main(argv: string[]): number | Promise<number> {
-  const args = parseArgs(argv);
+/** Global --help/--version, resolved before dispatch. Returns null to continue. */
+function handleTopLevelFlags(args: Args, cmd: string): number | Promise<number> | null {
   if (bool(args, 'help')) {
+    // A subcommand's own help wins over the top-level text — `usa live --help`
+    // used to print the generic help, orphaning LIVE_HELP_TEXT entirely.
+    if (cmd === 'live') return cmdLive(args);
     console.log(HELP);
     return 0;
   }
@@ -128,7 +132,18 @@ export function main(argv: string[]): number | Promise<number> {
     console.log(`usa ${VERSION}`);
     return 0;
   }
+  return null;
+}
+
+export function main(argv: string[]): number | Promise<number> {
+  // `.env` sits beside the invocation (never committed — see .gitignore), so
+  // provider keys work without exporting them into every shell first. The real
+  // environment always wins; this only fills gaps. No values are ever logged.
+  loadEnvFile(process.cwd());
+  const args = parseArgs(argv);
   const cmd = (args._[0] ?? 'audit') as string;
+  const handled = handleTopLevelFlags(args, cmd);
+  if (handled !== null) return handled;
 
   const run = COMMANDS[cmd];
   if (run) return run(args);

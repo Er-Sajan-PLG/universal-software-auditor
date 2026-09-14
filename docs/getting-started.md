@@ -121,6 +121,13 @@ model turns converse; without one the session runs deterministically, saying
 so loudly at every skipped turn. See [Agent integration](agent-integration.md)
 for driving it with an agent, and `usa live --help` for flags.
 
+**Keys live in `.env`, never in the repo.** Copy `.env.example` to `.env` and
+fill in your own values — for example `NVIDIA_API_KEY` plus
+`usa live --provider nvidia`. The file is gitignored so it cannot be
+committed (the pre-commit secret scan is the backstop), the real environment
+always wins over it, and USA never prints key values. No key, no network
+needed for anything else: every other command works fully offline.
+
 ## Next steps
 
 - [Concepts](concepts.md) — how severity, status, and scoring actually work

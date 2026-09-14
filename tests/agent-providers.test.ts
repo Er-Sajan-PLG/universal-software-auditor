@@ -79,12 +79,21 @@ describe('preset table sanity', () => {
     'deepseek',
     'groq',
     'mistral',
+    'nvidia',
     'together',
     'openrouter',
     'ollama',
     'lmstudio',
     'custom',
   ];
+
+  it('nvidia preset points at NIM with the pinned DeepSeek model', () => {
+    const nvidia = PROVIDER_PRESETS['nvidia'];
+    expect(nvidia?.baseURL).toBe('https://integrate.api.nvidia.com/v1');
+    expect(nvidia?.apiKeyEnv).toBe('NVIDIA_API_KEY');
+    expect(nvidia?.defaultModel).toBe('deepseek-ai/deepseek-v4-pro-0813');
+    expect(nvidia?.fetchModels).toBe(true);
+  });
 
   it('contains exactly the expected provider ids, each unique and self-keyed', () => {
     expect(Object.keys(PROVIDER_PRESETS).sort()).toEqual([...EXPECTED_IDS].sort());
@@ -116,7 +125,7 @@ describe('preset table sanity', () => {
     expect(PROVIDER_PRESETS['ollama']?.apiKeyEnv).toBe('');
     expect(PROVIDER_PRESETS['lmstudio']?.apiKeyEnv).toBe('');
     expect(PROVIDER_PRESETS['custom']?.apiKeyEnv).toBe('');
-    for (const id of ['deepseek', 'groq', 'mistral', 'together', 'openrouter']) {
+    for (const id of ['deepseek', 'groq', 'mistral', 'nvidia', 'together', 'openrouter']) {
       expect(PROVIDER_PRESETS[id]?.apiKeyEnv, id).toMatch(/_KEY$/);
     }
   });

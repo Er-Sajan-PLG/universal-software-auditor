@@ -20,3 +20,6 @@ examples/sample-report.md
 # Machine-written by release-please (double blank lines after headers).
 # Formatting it by hand fights the generator on every Release PR.
 CHANGELOG.md
+
+# KEY=VALUE, not a prettier language. Must stay byte-stable: docs quote it.
+.env.example
