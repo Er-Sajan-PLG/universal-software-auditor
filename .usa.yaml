@@ -77,6 +77,30 @@ suppressions:
       new capability. Revisit if workflows ever need orchestration npm
       scripts cannot express.
 
+  - rule: TAS-005
+    reason: >-
+      Coverage is measured on every CI run (vitest --coverage in the Test
+      job) with enforced ratcheting thresholds (TEST-005 passes) and the
+      numbers visible in CI logs. There is no hosted coverage service by
+      choice — a .codecov.yml without the service behind it would be
+      decoration, not evidence.
+
+  - rule: FND-011
+    reason: >-
+      The environment is reproducible from checked-in files: .nvmrc pins
+      the runtime, package-lock.json pins the tree, npm scripts capture
+      every workflow. Containers solve a deployment problem this project
+      does not have (see CICD-006) — a Dockerfile would be the second
+      file this rule counts, added for the count rather than a need.
+
+  - rule: FND-004
+    reason: >-
+      Protection verified via API, not via a snapshot file: six required
+      checks, no force pushes, no deletions, CODEOWNERS review required,
+      stale reviews dismissed. A checked-in copy would rot without drift
+      automation, and settings-as-code is disproportionate for a
+      single-branch repo. Revisit with a drift check, not a snapshot.
+
 # Reviews — dated human attention (ADR-0023). A review never changes a
 # verdict; it records that someone looked, with evidence, and when to look
 # again. Stale reviews warn instead of silently rotting.
