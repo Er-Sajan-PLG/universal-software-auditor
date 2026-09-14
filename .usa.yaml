@@ -162,3 +162,16 @@ reviews:
       goes only to the terminal and the labeled transcript — never parsed,
       executed, or written to repo files. Residual: misleading transcript
       text is the maximum impact; no privileged sink exists.
+
+  - rule: CLI-004
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Stdin is bounded (readCappedLine caps one line at 64 KiB and throws
+      instead of buffering piped infinity; both callers fail loudly with
+      exit 2). Shell is never invoked: the only subprocesses are execFile
+      with argument vectors (git, cosign), so --cosign-binary cannot inject.
+      All --out writers share writeTextFile (parents created, clean exit 2
+      on failure instead of raw ENOENT). Input paths are resolved and
+      existence-checked; --dry-run previews every write.

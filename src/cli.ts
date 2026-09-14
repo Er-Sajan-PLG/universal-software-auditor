@@ -7,6 +7,7 @@ import { runAudit } from './engine/audit.js';
 import { loadRulePacks, loadPackFile } from './engine/loader.js';
 import { loadDetectorFile } from './detect/index.js';
 import { Project } from './util/project.js';
+import { writeTextFile } from './util/files.js';
 import { loadEnvFile } from './util/env.js';
 import { detect } from './detect/index.js';
 import { renderMarkdown, parseTrailer } from './report/markdown.js';
@@ -287,7 +288,13 @@ function cmdAudit(args: Args): number {
   for (const w of warnings) console.error(`warning: ${w}`);
 
   const rendered = renderReport(report, profile, o.format);
-  fs.writeFileSync(o.out, rendered, 'utf8');
+  try {
+    writeTextFile(o.out, rendered);
+  } catch (err) {
+    // CLI-004: an unwritable --out is a usage error (exit 2), not a crash.
+    console.error((err as Error).message);
+    return 2;
+  }
 
   if (!o.quiet) {
     console.log(summaryLine(report));
@@ -545,14 +552,7 @@ async function cmdLive(args: Args): Promise<number> {
   }
   // CLI-003: preview before any provider call or prompting.
   if (!dryRunWrites(args, transcriptPath ? [transcriptPath] : [])) return 0;
-  let chat: ChatFn | undefined;
-  if (providerId) {
-    chat = await resolveLiveChat(providerId, modelOpt);
-  } else {
-    console.log(
-      'live: no provider configured (set --provider or USA_PROVIDER) — deterministic-only mode.',
-    );
-  }
+  const chat = await resolveLiveChatOrAnnounce(providerId, modelOpt);
   return runLiveSession({
     dir,
     ask: createStdinAsk(),
@@ -563,6 +563,23 @@ async function cmdLive(args: Args): Promise<number> {
     model: modelOpt,
     triageLimit: triageLimit ?? undefined,
   });
+}
+
+/**
+ * Resolve the session chat, announcing deterministic-only mode when no
+ * provider is configured. The pre-flight warns once up front about
+ * unadvertised model ids (the classic mid-session 404); the call itself
+ * stays authoritative.
+ */
+async function resolveLiveChatOrAnnounce(
+  providerId: string | undefined,
+  modelOpt: string | undefined,
+): Promise<ChatFn | undefined> {
+  if (providerId) return resolveLiveChat(providerId, modelOpt);
+  console.log(
+    'live: no provider configured (set --provider or USA_PROVIDER) — deterministic-only mode.',
+  );
+  return undefined;
 }
 
 /**
@@ -700,7 +717,7 @@ function cmdDiff(args: Args): number {
   };
   try {
     const md = diffReports(readTrailer(beforePath), readTrailer(afterPath));
-    if (diffOut) fs.writeFileSync(diffOut, md, 'utf8');
+    if (diffOut) writeTextFile(diffOut, md);
     console.log(md);
     return 0;
   } catch (err) {
@@ -811,6 +828,11 @@ function cmdBootstrap(args: Args): number {
     printBootstrap(outcome);
     return 0;
   }
+  return writeBootstrapResult(outcome, out);
+}
+
+/** Write packs to --out with a clean error (exit 2), never a stack trace. */
+function writeBootstrapResult(outcome: ReturnType<typeof bootstrapPacks>, out: string): number {
   try {
     writeBootstrapPacks(outcome, out);
   } catch (err) {
@@ -895,7 +917,7 @@ function cmdLearn(args: Args): number {
       return 0;
     }
     const yaml = renderSuggestions(suggestions);
-    fs.writeFileSync(outFile, yaml, 'utf8');
+    writeTextFile(outFile, yaml);
     console.log(`Wrote ${suggestions.length} suggestion(s) to ${outFile}`);
     console.log('  Review the rules, test them, then register in rules/index.yaml.');
     return 0;
