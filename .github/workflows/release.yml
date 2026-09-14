@@ -15,6 +15,9 @@ permissions:
   packages: write
   # Artifact Attestations (SUP-022) mint Sigstore bundles for the tarball.
   attestations: write
+  # The bundle step files provenance/ through a pull request — creating it
+  # needs pull-requests scope. (v2.9.0 tag run failed exactly here:
+  # "Resource not accessible by integration" on createPullRequest.)
   # OIDC trusted publishing: no long-lived NPM_TOKEN. One-time owner setup:
   # npmjs.com → package Settings → Trusted Publisher → GitHub Actions,
   # this repo + this workflow. Until then, publishing fails closed here.
