@@ -147,3 +147,18 @@ reviews:
       rehearsed and rejected: it cannot verify attest-action provenance
       (untrusted-workflow refusal), hence gh-verify with an explicit policy
       and an L2 claim scoped to exactly what was checked.
+
+  - rule: AI-001
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Single choke point (live/runner.ts modelTurn): system prompt carries
+      an instruction-hierarchy guard, user content is fenced as data, and
+      only sanitized values plus aggregate counts ever reach the model —
+      never raw repo text, never free-text answers (pinned by an
+      adversarial test feeding injection attempts through a full session).
+      The model has no tools anywhere (pure text in/out), and its output
+      goes only to the terminal and the labeled transcript — never parsed,
+      executed, or written to repo files. Residual: misleading transcript
+      text is the maximum impact; no privileged sink exists.
