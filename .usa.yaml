@@ -187,3 +187,16 @@ reviews:
       json emit pure stdout JSON with zero stderr. Observed, not changed:
       rules silently ignores --format (it has no machine contract — human
       output by design).
+
+  - rule: CLI-005
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Verified 2026-09-14 by running everything twice: audit reruns are
+      byte-identical except timestamps; init and foundation init refuse the
+      second run with already-exists messages (exit 0); learn and bootstrap
+      outputs identical; diff is a pure function of its inputs; evolve
+      appends through the content-addressed store (hash dedup, tested).
+      Live transcripts intentionally overwrite — each session is new input,
+      not a repeated operation.
