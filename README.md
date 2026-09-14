@@ -324,6 +324,9 @@ npm install && npm test
 npm run usa -- audit .       # run the CLI from source
 ```
 
+Agents and humans doing repo work: read `AGENTS.md` first — it holds
+the operating manual (the loop, the gates, the conventions).
+
 See [`CONTRIBUTING.md`](CONTRIBUTING.md). Good first contributions:
 
 - **A stack pack** for a language or framework we do not cover yet
