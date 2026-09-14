@@ -5,6 +5,19 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.7.0...v2.8.0) (2026-09-14)
+
+
+### Features
+
+* **agent:** nemotron default with max reasoning; tracked_absent exclusions for safe templates ([4b10874](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/4b10874fd3e60dce1042ecbf11b11bf1d8e0268b))
+* **agent:** nvidia preset, .env loading, subcommand help wins ([c6f94ec](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/c6f94ec2dafc916feca7eff7fd15fd595f9cd295))
+
+
+### Bug Fixes
+
+* **live:** vision-first interview, forgiving answers, clear triage, model check ([#58](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/58)) ([f487837](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/f487837ff5d8209ad14be4033e131b4b4127bac2))
+
 ## [2.7.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.6.0...v2.7.0) (2026-09-14)
 
 
