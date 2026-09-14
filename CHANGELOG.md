@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.8.3...v2.9.0) (2026-09-14)
+
+
+### Features
+
+* **release:** attest tarball and file provenance bundle via PR ([#69](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/69)) ([d4c859d](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/d4c859dac198fc3f9bc51c495358f4d6b7ce4909))
+
 ## [2.8.3](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.8.2...v2.8.3) (2026-09-14)
 
 
