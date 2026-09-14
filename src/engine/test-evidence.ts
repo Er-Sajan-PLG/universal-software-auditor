@@ -24,14 +24,20 @@ export type LevelPatterns = Partial<Record<Exclude<TestLevel, 'unknown'>, string
 /**
  * Default pattern table (documented contract):
  *
- * - unit:        `__tests__`, `*.unit.*`, `*.spec.*`, `test_*`
+ * - unit:        `__tests__`, `*.unit.*`, `*.spec.*`, `test_*`, plus a
+ *                 trailing `unit/` directory segment
  * - integration: `*integration*`, `*contract*`, `*pact*`
  * - system:      `*system*`, `*acceptance*`
  * - e2e:         `*e2e*`, `*end-to-end*`, `*.e2e.*`
  * - else:        `unknown`
+ *
+ * (The unit entry also matches a trailing `unit/` directory, written here
+ * in words because a literal glob would terminate this comment. Directory
+ * names already match for integration and e2e, but no filename pattern
+ * covers a bare unit directory, so those files fell through to `unknown`.)
  */
 export const DEFAULT_PATTERNS: Record<Exclude<TestLevel, 'unknown'>, string[]> = {
-  unit: ['__tests__', '*.unit.*', '*.spec.*', 'test_*'],
+  unit: ['__tests__', '*.unit.*', '*.spec.*', 'test_*', '*/unit/*'],
   integration: ['*integration*', '*contract*', '*pact*'],
   system: ['*system*', '*acceptance*'],
   e2e: ['*e2e*', '*end-to-end*', '*.e2e.*'],

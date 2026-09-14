@@ -160,7 +160,7 @@ usa evolve /some/repo --learn AUDIT.md --min-severity LOW
 
 ## Worked example (end-to-end, runnable test)
 
-The integration test `tests/evolution.test.ts` proves the loop on a Lua target —
+The integration test `tests/e2e/evolution.test.ts` proves the loop on a Lua target —
 a language USA detects but ships no pack for:
 
 1. **BEFORE** — `lang:lua` is detected, coverage reports it unsupported, and a
