@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.15.0...v2.16.0) (2026-09-14)
+
+
+### Features
+
+* **cli:** render audit reports as self-contained HTML ([#110](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/110)) ([1edbf4b](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/1edbf4b7eda469b5c3ca01072b437265f234ba08))
+
 ## [2.15.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.14.1...v2.15.0) (2026-09-14)
 
 
