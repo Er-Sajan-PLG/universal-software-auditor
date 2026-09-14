@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.13.0...v2.14.0) (2026-09-14)
+
+
+### Features
+
+* **tests:** forbid focused tests in CI, teach TAS-008 vitest ([#96](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/96)) ([5c278de](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/5c278de87dfb830f47d992b9aeb4b8aa61086205))
+
 ## [2.13.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.12.0...v2.13.0) (2026-09-14)
 
 
