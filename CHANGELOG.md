@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.2](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.9.1...v2.9.2) (2026-09-14)
+
+
+### Bug Fixes
+
+* **release:** actually grant pull-requests scope for the bundle PR ([#75](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/75)) ([9ab32bd](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/9ab32bdb4e0c04749a4edb8e28a384ff85640e60))
+
 ## [2.9.1](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.9.0...v2.9.1) (2026-09-14)
 
 
