@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.11.0...v2.12.0) (2026-09-14)
+
+
+### Features
+
+* **live:** fence model input as data, guard instruction hierarchy ([#85](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/85)) ([19c3a20](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/19c3a204bf64d80bf4271162e5ca562421e762fe))
+
 ## [2.11.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.10.0...v2.11.0) (2026-09-14)
 
 
