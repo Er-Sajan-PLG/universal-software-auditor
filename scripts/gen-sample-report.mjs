@@ -29,16 +29,12 @@ const FIXED_DATE = '2026-01-01T00:00:00.000Z';
 function generate() {
   const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'usa-sample-')), 'report.md');
   try {
-    execFileSync(
-      'node',
-      ['dist/cli.js', 'audit', 'examples/demo-app', '--out', tmp, '--format', 'narrative'],
-      {
-        encoding: 'utf8',
-        cwd: ROOT,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        maxBuffer: 64 * 1024 * 1024,
-      },
-    );
+    execFileSync('node', ['dist/cli.js', 'audit', 'examples/demo-app', '--out', tmp], {
+      encoding: 'utf8',
+      cwd: ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      maxBuffer: 64 * 1024 * 1024,
+    });
   } catch {
     console.error('gen-sample-report: audit failed — run `npm run build` first.');
     process.exit(2);
