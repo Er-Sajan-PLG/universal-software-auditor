@@ -44,10 +44,13 @@ jobs:
       # Provenance is public, verifiable build metadata on the registry —
       # what USA's own S3 rules demand of others (SUP-005..007, S3).
       # --access public is mandatory: scoped packages default to restricted.
-      # --registry is pinned explicitly: the repo-root .npmrc points the
-      # @xenos1996 scope at GPR, and a scoped registry beats the unscoped
-      # default — without this pin the npmjs leg would PUT to GPR instead.
-      - run: npm publish --provenance --access public --registry=https://registry.npmjs.org
+      # The scope registry is pinned explicitly IN SCOPED FORM: the repo-root
+      # .npmrc points @xenos1996 at GPR, and a scoped mapping beats the plain
+      # --registry default — a bare --registry flag does NOT win (v2.8.1
+      # failed exactly that way: PUT went to GPR, OIDC auth, ENEEDAUTH).
+      # Only a CLI-scoped override beats the project file (verified with
+      # `npm config get @xenos1996:registry --@xenos1996:registry=...`).
+      - run: npm publish --provenance --access public --@xenos1996:registry=https://registry.npmjs.org
 
       # CycloneDX SBOM for the shipped tarball. Same preach/practice logic:
       # USA audits SBOM publication (SUP-014), so it ships one. `npm sbom`
