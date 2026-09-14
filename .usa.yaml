@@ -135,19 +135,6 @@ reviews:
       targets owned scratch only, and no CLI command deletes user files or
       publishes — so there is no destructive path left without a preview.
 
-  - rule: SUP-023
-    reviewed: 2026-09-14
-    until: 2027-03-14
-    by: sajan
-    note: >-
-      The release job now verifies each tarball (gh attestation verify,
-      SLSA predicate asserted) and files a generated VSA beside the bundle
-      (scripts/make-vsa.mjs, schema-tested); the job fails before filing,
-      so a VSA exists iff verification passed. slsa-verifier CLI was
-      rehearsed and rejected: it cannot verify attest-action provenance
-      (untrusted-workflow refusal), hence gh-verify with an explicit policy
-      and an L2 claim scoped to exactly what was checked.
-
   - rule: AI-001
     reviewed: 2026-09-14
     until: 2027-03-14
@@ -173,5 +160,30 @@ reviews:
       exit 2). Shell is never invoked: the only subprocesses are execFile
       with argument vectors (git, cosign), so --cosign-binary cannot inject.
       All --out writers share writeTextFile (parents created, clean exit 2
-      on failure instead of raw ENOENT). Input paths are resolved and
+      on failure instead of raw ENOENT crash). Input paths are resolved and
       existence-checked; --dry-run previews every write.
+
+  - rule: TEST-009
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Ran 2026-09-14: full suite shuffled (seed 42) matches ordered exactly
+      (1026 passed, 1 skipped), and two consecutive ordered runs match to
+      the test. Live tests stub fetch (no network), no wall-clock dependence
+      observed. Known cosign failures are external-tool environment flakes
+      (fail identically ordered or shuffled, green in CI) — not order or
+      state leakage.
+
+  - rule: CLI-006
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Verified 2026-09-14 by redirection: --help to stdout exit 0 with empty
+      stderr; errors and usage to stderr with exit 2 and empty stdout; audit
+      --format json writes a parseable report file while the human summary
+      stays on stdout and warnings on stderr; standards/categories --format
+      json emit pure stdout JSON with zero stderr. Observed, not changed:
+      rules silently ignores --format (it has no machine contract — human
+      output by design).
