@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.3](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.8.2...v2.8.3) (2026-09-14)
+
+
+### Bug Fixes
+
+* **security:** contain store addresses, refuse path traversal (SEC-010) ([#64](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/64)) ([9db4e32](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/9db4e32f3b3cf1f72659830aa502122b9f52a63f))
+
 ## [2.8.2](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.8.1...v2.8.2) (2026-09-14)
 
 
