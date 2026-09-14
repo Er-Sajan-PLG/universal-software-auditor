@@ -45,15 +45,24 @@ export function resolveTarget(raw: string, roots: string[]): string {
     throw new Error(`target does not exist: ${raw}`);
   }
   const real = realpathSync(resolved);
+  // Roots are realpath'd too: comparing a lexically-resolved root against a
+  // real target false-rejects on machines where tmp-style prefixes are
+  // symlinks (fail-closed, but noisy). Roots must exist — the server
+  // rejects missing ones at startup with a clean message.
   for (const root of roots) {
-    const rel = path.relative(path.resolve(root), real);
+    const rel = path.relative(realpathSync(path.resolve(root)), real);
     if (rel !== '..' && !rel.startsWith(`..${path.sep}`)) return real;
   }
   throw new Error(`target escapes the allowed roots: ${raw}`);
 }
 
 export interface JobRunner {
-  (options: ServeJobOptions, target: string): { report: AuditReport; profile: MaturityProfile };
+  (
+    options: ServeJobOptions,
+    target: string,
+  ):
+    | { report: AuditReport; profile: MaturityProfile }
+    | Promise<{ report: AuditReport; profile: MaturityProfile }>;
 }
 
 export function createJobManager(
@@ -87,20 +96,24 @@ export function createJobManager(
       jobs.set(job.id, job);
       // Deferred past the HTTP response flush; the sync engine still blocks
       // the loop while it runs (documented localhost limitation, ADR-0039).
+      // Awaited so slow (test) runners hold the single-flight lock across
+      // ticks — that is what makes the 409 path deterministic.
       setImmediate(() => {
-        try {
-          const { report, profile } = runner(options, target);
-          job.report = report;
-          job.profile = profile;
-          job.status = 'done';
-        } catch (err) {
-          job.status = 'error';
-          job.error = (err as Error).message;
-        } finally {
-          job.finishedAt = new Date().toISOString();
-          running = false;
-          prune();
-        }
+        void (async () => {
+          try {
+            const { report, profile } = await runner(options, target);
+            job.report = report;
+            job.profile = profile;
+            job.status = 'done';
+          } catch (err) {
+            job.status = 'error';
+            job.error = (err as Error).message;
+          } finally {
+            job.finishedAt = new Date().toISOString();
+            running = false;
+            prune();
+          }
+        })();
       });
       return { id: job.id };
     },

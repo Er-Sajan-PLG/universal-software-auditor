@@ -24,6 +24,7 @@ usa — Universal Software Auditor
   usa foundation init [path]    Capture project intent into .usa/foundation.yaml
   usa foundation show [path]    Print the effective intent and asserted facts
   usa live [path]               Conversational audit session (deterministic without a provider)
+  usa serve [opts]              Localhost audit server (loopback only, bearer token)
   usa models --provider ID      List models the provider advertises
 
 evolve options
@@ -64,6 +65,11 @@ live options
 
 models options
   --provider <id>     LLM provider preset (or $USA_PROVIDER)
+
+serve options
+  --port <n>          Port to listen on (default 0 = ephemeral, printed at startup)
+  --token <t>         Bearer token for /api/* (default: generated and printed once)
+  --allow-root <dir>  Auditable root, repeatable (default: working directory)
 
 audit options
   --dry-run           Print the report path that would be written and exit
