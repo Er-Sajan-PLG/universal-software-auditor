@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.12.0...v2.13.0) (2026-09-14)
+
+
+### Features
+
+* **cli:** bound stdin lines, unify out-file writes ([#88](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/88)) ([f00cf8a](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/f00cf8a7cb3b5ffa0e4a6e3c8a560afa9a5b7655))
+
 ## [2.12.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.11.0...v2.12.0) (2026-09-14)
 
 
