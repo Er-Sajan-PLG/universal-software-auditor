@@ -94,7 +94,7 @@ Express service kept in this repo so you can reproduce the findings yourself:
 usa audit examples/demo-app --out /tmp/demo.md
 ```
 
-See the full report: [`examples/sample-report.md`](examples/sample-report.md).
+See the full report: [`examples/sample-report.md`](examples/sample-report.md) (raw checklist, machine-verified). For the customer-facing story over the same evidence, see [`examples/sample-report-narrative.md`](examples/sample-report-narrative.md).
 
 </details>
 
