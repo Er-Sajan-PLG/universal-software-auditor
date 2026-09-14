@@ -13,6 +13,8 @@ on:
 permissions:
   contents: write
   packages: write
+  # Artifact Attestations (SUP-022) mint Sigstore bundles for the tarball.
+  attestations: write
   # OIDC trusted publishing: no long-lived NPM_TOKEN. One-time owner setup:
   # npmjs.com → package Settings → Trusted Publisher → GitHub Actions,
   # this repo + this workflow. Until then, publishing fails closed here.
@@ -87,3 +89,40 @@ jobs:
       - run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GPR_TOKEN }}
+
+      # SLSA provenance, preserved (SUP-022): the npmjs leg already emits
+      # Sigstore provenance to the registry (`--provenance`), but a registry
+      # entry is not a repo file and SUP-022 checks for a file. So: pack the
+      # release tarball, attest it with GitHub Artifact Attestations (A),
+      # download the bundle and file it under provenance/ (B). Anyone can
+      # verify with the commands in provenance/README.md. A PR, not a direct
+      # push: this repo does not bypass its own protection (SUP-012) — the
+      # bundle PR merges through the normal loop, and SUP-022 flips green
+      # on the first audit after that merge.
+      - name: Pack release tarball for attestation
+        run: |
+          echo "TARBALL=$(npm pack | tail -1)" >> "$GITHUB_ENV"
+          echo "VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Attest release tarball (SLSA provenance)
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ${{ env.TARBALL }}
+
+      - name: File provenance bundle via PR (SUP-022)
+        run: |
+          gh attestation download "$TARBALL" --repo "$GITHUB_REPOSITORY"
+          dl=(sha256*.jsonl)
+          mkdir -p provenance
+          mv "${dl[0]}" "provenance/v${VERSION}.sigstore.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "provenance/v${VERSION}"
+          git add "provenance/v${VERSION}.sigstore.json"
+          git commit -m "docs: attach SLSA provenance bundle for v${VERSION}"
+          git push origin "HEAD:provenance/v${VERSION}"
+          gh pr create --base master --head "provenance/v${VERSION}" \
+            --title "docs: attach SLSA provenance bundle for v${VERSION}" \
+            --body "Sigstore bundle for the release tarball (SUP-022). Verify with the commands in provenance/README.md."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
