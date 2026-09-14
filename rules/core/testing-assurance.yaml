@@ -153,7 +153,7 @@ rules:
     class: correctness
     check:
       kind: grep_present
-      pattern: '(forbidOnly|forbid-only|forbid_only|failOnConsole|fail-on-console)'
+      pattern: '(forbidOnly|forbid-only|forbid_only|failOnConsole|fail-on-console|allowOnly)'
       include:
         [
           'playwright.config.*',
@@ -167,7 +167,7 @@ rules:
           '.gitlab-ci.yml',
         ]
     why: 'Focused-test markers (.only) committed by accident silently skip the rest of the suite; a forbid-only guard string proves the leak was thought about.'
-    remediation: 'Set forbidOnly on CI (e.g. Playwright forbidOnly) so a stray .only fails the build instead of shrinking it.'
+    remediation: 'Set forbidOnly on CI (e.g. Playwright forbidOnly, or vitest --allowOnly=false) so a stray .only fails the build instead of shrinking it.'
     references: ['Google-Testing-Blog:Flaky']
 
   - id: TAS-009
