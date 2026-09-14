@@ -482,6 +482,7 @@ export function createStdinAsk(
 export interface FoundationInitOptions {
   dir: string;
   nonInteractive: boolean;
+  dryRun?: boolean;
   ask?: AskFn;
   print?: PrintFn;
   error?: PrintFn;
@@ -525,6 +526,12 @@ export function runFoundationInit(opts: FoundationInitOptions): number {
   try {
     if (fs.existsSync(file)) {
       error(`${file} already exists — leaving it alone.`);
+      return 0;
+    }
+    // CLI-003: preview before prompting or writing (same line shape as the
+    // CLI helper, duplicated here to avoid a cli→foundation import cycle).
+    if (opts.dryRun) {
+      print(`dry-run: would write ${file}`);
       return 0;
     }
     const projectName = opts.projectName ?? path.basename(dir);

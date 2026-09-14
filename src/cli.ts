@@ -89,6 +89,23 @@ function str(args: Args, key: string, fallback?: string): string | undefined {
 function bool(args: Args, key: string): boolean {
   return args[key] === true || args[key] === 'true';
 }
+
+/**
+ * CLI-003: every command that writes files honors --dry-run. Call after pure
+ * argument validation with the resolved paths that WOULD be written: it
+ * prints one line per path and returns false, and the caller exits 0 before
+ * doing any work — no audit run, no model calls, no disk writes. With an
+ * empty list it says so explicitly rather than silently succeeding.
+ */
+function dryRunWrites(args: Args, files: string[]): boolean {
+  if (!bool(args, 'dry-run')) return true;
+  if (files.length === 0) {
+    console.log('dry-run: nothing would be written');
+    return false;
+  }
+  for (const f of files) console.log(`dry-run: would write ${path.resolve(f)}`);
+  return false;
+}
 function list(args: Args, key: string): string[] {
   const v = args[key];
   if (Array.isArray(v)) return v;
@@ -240,6 +257,9 @@ function cmdAudit(args: Args): number {
     console.error(`Target path does not exist: ${o.target}`);
     return 2;
   }
+
+  // CLI-003: preview the write before the (expensive) audit runs.
+  if (!dryRunWrites(args, [o.out])) return 0;
 
   let config;
   try {
@@ -484,12 +504,18 @@ function cmdFoundation(args: Args): number {
   const sub = args._[1] as string | undefined;
   const dir = str(args, 'dir') ?? (args._[2] as string | undefined) ?? '.';
   if (sub === 'init') {
-    return runFoundationInit({ dir, nonInteractive: bool(args, 'non-interactive') });
+    return runFoundationInit({
+      dir,
+      nonInteractive: bool(args, 'non-interactive'),
+      dryRun: bool(args, 'dry-run'),
+    });
   }
   if (sub === 'show' || sub === undefined) {
     return runFoundationShow({ dir });
   }
-  console.error('Usage: usa foundation <init|show> [path] [--dir <path>] [--non-interactive]');
+  console.error(
+    'Usage: usa foundation <init|show> [path] [--dir <path>] [--non-interactive] [--dry-run]',
+  );
   return 2;
 }
 
@@ -517,6 +543,8 @@ async function cmdLive(args: Args): Promise<number> {
     console.error('--triage-limit must be a positive number');
     return 2;
   }
+  // CLI-003: preview before any provider call or prompting.
+  if (!dryRunWrites(args, transcriptPath ? [transcriptPath] : [])) return 0;
   let chat: ChatFn | undefined;
   if (providerId) {
     chat = await resolveLiveChat(providerId, modelOpt);
@@ -617,7 +645,7 @@ usa models — list models a provider advertises
 const LIVE_HELP_TEXT = `
 usa live — conversational audit session
 
-  usa live [path] [--provider ID] [--model M] [--transcript FILE] [--triage-limit N]
+  usa live [path] [--provider ID] [--model M] [--transcript FILE] [--triage-limit N] [--dry-run]
 
   Walks foundation → audit → triage → report with you. The deterministic
   engine verifies; the model only proposes. Without a provider the session
@@ -627,6 +655,7 @@ usa live — conversational audit session
   --model <m>         Model id (default preset default or $USA_MODEL)
   --transcript <file> Write the session transcript to this file
   --triage-limit <n>  Max findings to walk in triage (default 15, ceiling 50)
+  --dry-run           Print the transcript path that would be written and exit
 `.trim();
 
 function printRuleDetail(packId: string, rule: Rule, catalogues: Catalogue[]): void {
@@ -659,17 +688,19 @@ function cmdDiff(args: Args): number {
   const beforePath = args._[1] as string | undefined;
   const afterPath = args._[2] as string | undefined;
   if (!beforePath || !afterPath) {
-    console.error('Usage: usa diff <before.md> <after.md> [--out DIFF.md]');
+    console.error('Usage: usa diff <before.md> <after.md> [--out DIFF.md] [--dry-run]');
     return 2;
   }
+  // CLI-003: preview before reading or comparing anything.
+  const diffOut = str(args, 'out');
+  if (!dryRunWrites(args, diffOut ? [diffOut] : [])) return 0;
   const readTrailer = (file: string) => {
     const text = fs.readFileSync(file, 'utf8');
     return parseTrailer(text) ?? text; // tolerate a raw YAML trailer file
   };
   try {
     const md = diffReports(readTrailer(beforePath), readTrailer(afterPath));
-    const out = str(args, 'out');
-    if (out) fs.writeFileSync(out, md, 'utf8');
+    if (diffOut) fs.writeFileSync(diffOut, md, 'utf8');
     console.log(md);
     return 0;
   } catch (err) {
@@ -764,6 +795,9 @@ function cmdBootstrap(args: Args): number {
   const config = loadConfig(target, str(args, 'config'));
   const project = new Project(target, config.ignore ?? []);
   const git = project.gitInfo();
+  const out = str(args, 'out');
+  // CLI-003: preview before detection runs.
+  if (out && !dryRunWrites(args, [out])) return 0;
   const detection = detect(project, loadDetectorFile(rulesDir), git, [
     ...list(args, 'fact'),
     ...(config.facts ?? []),
@@ -773,7 +807,6 @@ function cmdBootstrap(args: Args): number {
     console.log('No uncovered stacks: every detected language already has a pack.');
     return 0;
   }
-  const out = str(args, 'out');
   if (!out) {
     printBootstrap(outcome);
     return 0;
@@ -801,16 +834,24 @@ function printBootstrap(outcome: ReturnType<typeof bootstrapPacks>): void {
 
 function cmdInit(args: Args): number {
   const target = (args._[1] as string | undefined) ?? '.';
-  fs.mkdirSync(target, { recursive: true });
   const configPath = path.join(target, '.usa.yaml');
+  const workflowDir = path.join(target, '.github', 'workflows');
+  const workflowPath = path.join(workflowDir, 'usa.yml');
+  // CLI-003: preview the scaffold before creating anything.
+  if (
+    !dryRunWrites(
+      args,
+      [configPath, workflowPath].filter((p) => !fs.existsSync(p)),
+    )
+  )
+    return 0;
+  fs.mkdirSync(target, { recursive: true });
   if (fs.existsSync(configPath)) {
     console.error(`${configPath} already exists — leaving it alone.`);
   } else {
     fs.writeFileSync(configPath, EXAMPLE_CONFIG, 'utf8');
     console.log(`created ${configPath}`);
   }
-  const workflowDir = path.join(target, '.github', 'workflows');
-  const workflowPath = path.join(workflowDir, 'usa.yml');
   if (fs.existsSync(workflowPath)) {
     console.error(`${workflowPath} already exists — leaving it alone.`);
   } else {
@@ -827,7 +868,9 @@ function cmdInit(args: Args): number {
 function cmdLearn(args: Args): number {
   const reportPath = args._[1] as string | undefined;
   if (!reportPath) {
-    console.error('Usage: usa learn <report.md> [--out <file>] [--min-severity MEDIUM]');
+    console.error(
+      'Usage: usa learn <report.md> [--out <file>] [--min-severity MEDIUM] [--dry-run]',
+    );
     return 2;
   }
   if (!fs.existsSync(reportPath)) {
@@ -842,6 +885,8 @@ function cmdLearn(args: Args): number {
     console.error(`--min-severity must be one of: ${allowed.join(', ')}`);
     return 2;
   }
+  // CLI-003: preview before the report is mined.
+  if (!dryRunWrites(args, [outFile])) return 0;
   const options: LearnOptions = { reportPath, out: outFile, minSeverity };
   try {
     const suggestions = learnFromReport(options);
@@ -871,6 +916,8 @@ function cmdEvolve(args: Args): number {
   }
 
   const storeDir = str(args, 'store');
+  // CLI-003: preview before the cycle runs (or the store dir is created).
+  if (!dryRunWrites(args, storeDir ? [path.join(storeDir, 'objects')] : [])) return 0;
   const store = storeDir ? new Store(storeDir) : undefined;
 
   const candidateCapability = loadEvolveCandidate(args);
@@ -1096,6 +1143,7 @@ usa — Universal Software Auditor
   usa models --provider ID      List models the provider advertises
 
 evolve options
+  --dry-run            Print what would be written and exit (no cycle, no store writes)
   --store <dir>        Persist audit runs/results (content-addressed store)
   --candidate <file>   A candidate capability pack (YAML) to benchmark and release
   --propose            Auto-propose a candidate from the gaps (bootstrap catalog)
@@ -1106,6 +1154,7 @@ evolve options
   --rules-dir <dir>    Rule pack directory             (default bundled rules/)
 
 learn options
+  --dry-run           Print the output path that would be written and exit
   --out <file>        Output YAML file (default learn-suggestions.yaml)
   --min-severity <s>  Minimum severity to consider (CRITICAL|HIGH|MEDIUM|LOW|FUTURE, default MEDIUM)
 
@@ -1120,8 +1169,10 @@ categories options
 foundation options
   --dir <path>        Project directory (default .; a positional path works too)
   --non-interactive   Write the defaults file without prompting (init only)
+  --dry-run           Print the file that would be written and exit (init only)
 
 live options
+  --dry-run           Print the transcript path that would be written and exit
   --provider <id>     LLM provider preset (default $USA_PROVIDER, else deterministic-only)
   --model <m>         Model id (default preset default or $USA_MODEL)
   --transcript <file> Write the session transcript to this file
@@ -1131,6 +1182,7 @@ models options
   --provider <id>     LLM provider preset (or $USA_PROVIDER)
 
 audit options
+  --dry-run           Print the report path that would be written and exit
   --out <file>        Report path (default AUDIT.md)
   --format <fmt>      md | json | sarif | narrative (default: inferred from --out)
   --depth <level>     quick | standard | deep          (default standard)
@@ -1150,7 +1202,11 @@ audit options
   --max-bytes <n>     Skip files larger than n bytes (overrides config; default 2 MiB)
 
 bootstrap options
+  --dry-run           Print the path that would be written and exit (with --out)
   --out <file|dir>    Write pack files instead of printing (default: print)
+
+init options
+  --dry-run           Print the files that would be scaffolded and exit
 
 verify-report options
   --bundle <file>       Signature sidecar (required, e.g. AUDIT.md.sig.json)

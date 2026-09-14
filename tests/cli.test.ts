@@ -15,9 +15,19 @@ vi.mock('../src/agent/providers.js', async (importOriginal) => {
   return { ...mod, listModels: mockedListModels };
 });
 
+const tmpRoots: string[] = [];
+
 afterEach(() => {
   vi.restoreAllMocks();
+  while (tmpRoots.length) fs.rmSync(tmpRoots.pop()!, { recursive: true, force: true });
 });
+
+/** Scratch dir, removed after each test. */
+function tmpDir(): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'usa-dry-'));
+  tmpRoots.push(dir);
+  return dir;
+}
 
 function run(argv: string[]): { code: number; out: string; err: string } {
   const logs: string[] = [];
@@ -226,5 +236,99 @@ describe('usa models', () => {
       if (savedProvider !== undefined) process.env['USA_PROVIDER'] = savedProvider;
       if (savedLive !== undefined) process.env['USA_LIVE_PROVIDER'] = savedLive;
     }
+  });
+});
+
+describe('--dry-run (CLI-003)', () => {
+  it('audit previews the report path and writes nothing', () => {
+    const dir = tmpDir();
+    const out = path.join(dir, 'AUDIT.md');
+    const r = run(['audit', dir, '--out', out, '--dry-run']);
+    expect(r.code).toBe(0);
+    expect(fs.existsSync(out)).toBe(false);
+    expect(r.out).toContain(`dry-run: would write ${out}`);
+  });
+
+  it('diff previews and skips the comparison', () => {
+    const dir = tmpDir();
+    const a = path.join(dir, 'a.md');
+    const b = path.join(dir, 'b.md');
+    const out = path.join(dir, 'DIFF.md');
+    fs.writeFileSync(a, '# a\n', 'utf8');
+    fs.writeFileSync(b, '# b\n', 'utf8');
+    const r = run(['diff', a, b, '--out', out, '--dry-run']);
+    expect(r.code).toBe(0);
+    expect(fs.existsSync(out)).toBe(false);
+    expect(r.out).toContain(`dry-run: would write ${out}`);
+  });
+
+  it('learn previews without mining the report', () => {
+    const dir = tmpDir();
+    const report = path.join(dir, 'r.md');
+    const out = path.join(dir, 's.yaml');
+    fs.writeFileSync(report, '# report\n', 'utf8');
+    const r = run(['learn', report, '--out', out, '--dry-run']);
+    expect(r.code).toBe(0);
+    expect(fs.existsSync(out)).toBe(false);
+    expect(r.out).toContain(`dry-run: would write ${out}`);
+  });
+
+  it('bootstrap previews without running detection', () => {
+    const dir = tmpDir();
+    const out = path.join(dir, 'packs');
+    const r = run(['bootstrap', dir, '--out', out, '--dry-run']);
+    expect(r.code).toBe(0);
+    expect(fs.existsSync(out)).toBe(false);
+    expect(r.out).toContain(`dry-run: would write ${out}`);
+  });
+
+  it('evolve previews without cycling or creating the store', () => {
+    const dir = tmpDir();
+    const store = path.join(dir, 'store');
+    const r = run(['evolve', dir, '--store', store, '--dry-run']);
+    expect(r.code).toBe(0);
+    expect(fs.existsSync(store)).toBe(false);
+    expect(r.out).toContain('dry-run: would write');
+  });
+
+  it('init previews the scaffold without creating anything', () => {
+    const dir = tmpDir();
+    const target = path.join(dir, 'proj');
+    const r = run(['init', target, '--dry-run']);
+    expect(r.code).toBe(0);
+    expect(fs.existsSync(path.join(target, '.usa.yaml'))).toBe(false);
+    expect(r.out).toContain('.usa.yaml');
+  });
+
+  it('foundation init previews without prompting or writing', () => {
+    const dir = tmpDir();
+    const r = run(['foundation', 'init', '--dir', dir, '--dry-run']);
+    expect(r.code).toBe(0);
+    expect(fs.existsSync(path.join(dir, '.usa', 'foundation.yaml'))).toBe(false);
+    expect(r.out).toContain('dry-run: would write');
+  });
+
+  it('live previews the transcript without provider calls or prompting', async () => {
+    const dir = tmpDir();
+    const transcript = path.join(dir, 'SESSION.md');
+    const logs: string[] = [];
+    vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => {
+      logs.push(a.join(' '));
+    });
+    const code = await main(['live', dir, '--transcript', transcript, '--dry-run']);
+    expect(code).toBe(0);
+    expect(fs.existsSync(transcript)).toBe(false);
+    expect(logs.join('\n')).toContain(`dry-run: would write ${transcript}`);
+  });
+
+  it('live without a transcript says nothing would be written', async () => {
+    const dir = tmpDir();
+    const logs: string[] = [];
+    vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => {
+      logs.push(a.join(' '));
+    });
+    const code = await main(['live', dir, '--dry-run']);
+    expect(code).toBe(0);
+    expect(logs.join('\n')).toContain('dry-run: nothing would be written');
   });
 });

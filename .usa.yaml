@@ -121,3 +121,16 @@ reviews:
     note: >-
       README carries what (What USA adds, L206), install and run (Quick
       start, L36), and contribute (Contributing, L316).
+
+  - rule: CLI-003
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Every writing command honors --dry-run (audit, diff, learn,
+      bootstrap, evolve, init, live, foundation init): prints resolved
+      would-write paths and exits 0 before any work, covered by 9 tests.
+      init and foundation init additionally refuse to clobber existing
+      files. The store is content-addressed append-only, benchmark rm
+      targets owned scratch only, and no CLI command deletes user files or
+      publishes — so there is no destructive path left without a preview.

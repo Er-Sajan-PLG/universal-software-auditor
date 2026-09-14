@@ -27,6 +27,7 @@ usa — Universal Software Auditor
   usa models --provider ID      List models the provider advertises
 
 evolve options
+  --dry-run            Print what would be written and exit (no cycle, no store writes)
   --store <dir>        Persist audit runs/results (content-addressed store)
   --candidate <file>   A candidate capability pack (YAML) to benchmark and release
   --propose            Auto-propose a candidate from the gaps (bootstrap catalog)
@@ -37,6 +38,7 @@ evolve options
   --rules-dir <dir>    Rule pack directory             (default bundled rules/)
 
 learn options
+  --dry-run           Print the output path that would be written and exit
   --out <file>        Output YAML file (default learn-suggestions.yaml)
   --min-severity <s>  Minimum severity to consider (CRITICAL|HIGH|MEDIUM|LOW|FUTURE, default MEDIUM)
 
@@ -51,8 +53,10 @@ categories options
 foundation options
   --dir <path>        Project directory (default .; a positional path works too)
   --non-interactive   Write the defaults file without prompting (init only)
+  --dry-run           Print the file that would be written and exit (init only)
 
 live options
+  --dry-run           Print the transcript path that would be written and exit
   --provider <id>     LLM provider preset (default $USA_PROVIDER, else deterministic-only)
   --model <m>         Model id (default preset default or $USA_MODEL)
   --transcript <file> Write the session transcript to this file
@@ -62,6 +66,7 @@ models options
   --provider <id>     LLM provider preset (or $USA_PROVIDER)
 
 audit options
+  --dry-run           Print the report path that would be written and exit
   --out <file>        Report path (default AUDIT.md)
   --format <fmt>      md | json | sarif | narrative (default: inferred from --out)
   --depth <level>     quick | standard | deep          (default standard)
@@ -81,7 +86,11 @@ audit options
   --max-bytes <n>     Skip files larger than n bytes (overrides config; default 2 MiB)
 
 bootstrap options
+  --dry-run           Print the path that would be written and exit (with --out)
   --out <file|dir>    Write pack files instead of printing (default: print)
+
+init options
+  --dry-run           Print the files that would be scaffolded and exit
 
 verify-report options
   --bundle <file>       Signature sidecar (required, e.g. AUDIT.md.sig.json)
