@@ -244,7 +244,7 @@ The deterministic substrate this narrative was derived from. `usa diff` reads it
 ```yaml
 schema: usa-report-v1
 generated_at: 2026-01-01T00:00:00.000Z
-usa_version: 2.6.0
+usa_version: 2.7.0
 overall: 37.3
 sections:
   S1: {score: 7.2, open: 4, review: 2}
