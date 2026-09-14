@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.1](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.8.0...v2.8.1) (2026-09-14)
+
+
+### Bug Fixes
+
+* **release:** pin scope address in root .npmrc, npmjs leg explicit ([#59](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/59)) ([c1fe49f](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/c1fe49f9d003d630d3a1612afc84cdfa702711a7))
+
 ## [2.8.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.7.0...v2.8.0) (2026-09-14)
 
 
