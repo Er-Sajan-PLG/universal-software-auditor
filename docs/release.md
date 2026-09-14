@@ -103,12 +103,12 @@ not "fix" the duplicate-version error; it is the fail-closed contract.
 | Tag cut, GitHub Release created, **nothing published** | Tags pushed by `GITHUB_TOKEN` never fire downstream workflows (loop prevention)       | release-please uses the PAT, never the default token.                                                        |
 | Release PR lint red on `CHANGELOG.md`                  | release-please writes double blank lines; prettier wants single                       | `CHANGELOG.md` is prettier-ignored (machine-written).                                                        |
 | `Unable to resolve action ossf/scorecard-action@v2`    | Upstream publishes no `v2` major tag                                                  | Pinned exact `v2.4.4`. Check for newer semver occasionally.                                                  |
-| Installed bin exits 0 and prints **nothing**           | Entry guard compared `import.meta.url` to `file://${argv[1]}`; under npm's bin        | Resolve `argv[1]` with `fs.realpathSync` before comparing. Regression-tested in `tests/cli.test.ts`.         |
+| Installed bin exits 0 and prints **nothing**           | Entry guard compared `import.meta.url` to `file://${argv[1]}`; under npm's bin        | Resolve `argv[1]` with `fs.realpathSync` before comparing. Regression-tested in `tests/e2e/cli.test.ts`.     |
 |                                                        | symlink those never match, so `main()` never ran                                      |                                                                                                              |
 | `npx @xenos1996/usa …` → `usa: command not found`      | Run from **inside the USA repo**: npx sees cwd's `package.json` is the same package,  | Run `npx` from any other directory, or `npm install -g @xenos1996/usa`, or use `npm run usa -- …` in-repo.   |
 |                                                        | skips the registry install, and there is no local `.bin/usa`                          |                                                                                                              |
 | `usat --help` audited the repo                         | Arg parser files `--flags`, never positionals; the switch cases were dead code        | Fixed in `cli.ts` with regression tests. Do not reintroduce flag handling without a test.                    |
-| `SEC-003` failing on `https://` URLs (pre-1.0 history) | Pattern used `https?://` for a plaintext-HTTP rule                                    | Fixed to `http://`; rule carries a `NOTE:` comment. See `tests/rules.test.ts`.                               |
+| `SEC-003` failing on `https://` URLs (pre-1.0 history) | Pattern used `https?://` for a plaintext-HTTP rule                                    | Fixed to `http://`; rule carries a `NOTE:` comment. See `tests/integration/rules.test.ts`.                   |
 
 ## Manual fallback
 

@@ -1,0 +1,312 @@
+import { describe, it, expect, afterEach } from 'vitest';
+import path from 'node:path';
+import { parse } from 'yaml';
+import fs from 'node:fs';
+import { makeProject, evaluateAt } from '../engine-helpers.js';
+import { parsePackText } from '../../src/engine/loader.js';
+import type { Check } from '../../src/types.js';
+
+const RULES = path.resolve(process.cwd(), 'rules');
+
+function ruleOf(packFile: string, id: string) {
+  const doc = parse(fs.readFileSync(path.join(RULES, packFile), 'utf8')) as {
+    rules: { id: string; check: Check }[];
+  };
+  const rule = doc.rules.find((r) => r.id === id);
+  if (!rule) throw new Error(`${id} not found in ${packFile}`);
+  return rule;
+}
+
+const cleanups: (() => void)[] = [];
+afterEach(() => {
+  while (cleanups.length) cleanups.pop()!();
+});
+
+function fixture(files: Record<string, string>): string {
+  const { root, cleanup } = makeProject(files);
+  cleanups.push(cleanup);
+  return root;
+}
+
+describe('core/testing rules', () => {
+  it('TEST-005 recognises Vitest coverage thresholds', () => {
+    const rule = ruleOf('core/testing.yaml', 'TEST-005');
+    const ok = fixture({
+      'vitest.config.ts':
+        'export default defineConfig({\n  test: {\n    coverage: {\n      thresholds: { lines: 75 },\n    },\n  },\n});\n',
+    });
+    expect(evaluateAt(ok, rule.check).status).toBe('PASS');
+    const bare = fixture({ 'vitest.config.ts': 'export default defineConfig({});\n' });
+    expect(evaluateAt(bare, rule.check).status).toBe('MISSING');
+  });
+});
+
+describe('core/security rules', () => {
+  const sec002 = ruleOf('core/security.yaml', 'SEC-002');
+  const sec006 = ruleOf('core/security.yaml', 'SEC-006');
+
+  it('SEC-006 passes prose mentions, fails real dynamic execution', () => {
+    const prose = fixture({
+      'src/catalog.ts': "why: 'eval() and string assert() execute arbitrary code',\n",
+    });
+    expect(evaluateAt(prose, sec006.check).status).toBe('PASS');
+    const real = fixture({ 'src/app.js': 'const r = eval(userInput);\n' });
+    expect(evaluateAt(real, sec006.check).status).toBe('WRONG');
+    const fn = fixture({ 'src/app.js': 'const f = new Function("return " + expr);\n' });
+    expect(evaluateAt(fn, sec006.check).status).toBe('WRONG');
+  });
+  const sec003 = ruleOf('core/security.yaml', 'SEC-003');
+  const sec005 = ruleOf('core/security.yaml', 'SEC-005');
+  const sec013 = ruleOf('core/security.yaml', 'SEC-013');
+  const sec025 = ruleOf('core/security.yaml', 'SEC-025');
+
+  it('SEC-003 passes on https URLs, fails on plaintext http', () => {
+    const ok = fixture({ 'src/api.ts': 'export const BASE = "https://api.example.com/v1";\n' });
+    expect(evaluateAt(ok, sec003.check).status).toBe('PASS');
+    const bad = fixture({ 'src/api.ts': 'export const BASE = "http://api.example.com/v1";\n' });
+    const r = evaluateAt(bad, sec003.check);
+    expect(r.status).toBe('FAIL');
+    expect(r.locations[0]!.line).toBe(1);
+  });
+
+  it('SEC-003 still exempts localhost', () => {
+    const root = fixture({ 'src/api.ts': 'export const BASE = "http://localhost:3000/v1";\n' });
+    expect(evaluateAt(root, sec003.check).status).toBe('PASS');
+  });
+
+  it('SEC-005 passes parameterised queries, fails interpolation', () => {
+    const ok = fixture({
+      'src/db.py': 'cursor.execute("SELECT * FROM t WHERE id = %s", (user_id,))\n',
+    });
+    expect(evaluateAt(ok, sec005.check).status).toBe('PASS');
+    const bad = fixture({ 'src/db.py': 'q = "SELECT * FROM t WHERE id = %s" % user_id\n' });
+    expect(evaluateAt(bad, sec005.check).status).toBe('WRONG');
+    const concat = fixture({ 'src/db.py': 'q = "SELECT * FROM t" + user_input\n' });
+    expect(evaluateAt(concat, sec005.check).status).toBe('WRONG');
+  });
+
+  it('SEC-013 passes correct verify calls, fails bypasses', () => {
+    const mk = (line: string) => fixture({ 'src/auth.js': `${line}\n` });
+    expect(
+      evaluateAt(mk('jwt.verify(token, SECRET, { algorithms: ["RS256"] });'), sec013.check).status,
+    ).toBe('PASS');
+    expect(evaluateAt(mk('jwt.verify(token, SECRET);'), sec013.check).status).toBe('PASS');
+    expect(
+      evaluateAt(mk('const t = jwt.verify(token, "hardcoded-secret");'), sec013.check).status,
+    ).toBe('FAIL');
+    expect(
+      evaluateAt(mk('jwt.verify(token, secret, { algorithms: ["none"] });'), sec013.check).status,
+    ).toBe('FAIL');
+  });
+
+  it('SEC-025 passes adaptive hashing, fails its absence', () => {
+    const ok = fixture({ 'src/auth.js': 'const h = await bcrypt.hash(pw, 12);\n' });
+    expect(evaluateAt(ok, sec025.check).status).toBe('PASS');
+    const argon = fixture({ 'src/auth.js': 'const ok = await argon2.verify(hash, pw);\n' });
+    expect(evaluateAt(argon, sec025.check).status).toBe('PASS');
+    const plain = fixture({ 'src/auth.js': 'db.users.insert({ name, password: req.body.pw });\n' });
+    expect(evaluateAt(plain, sec025.check).status).toBe('MISSING');
+    const weak = fixture({ 'src/auth.js': 'const h = createHash("sha256").update(pw);\n' });
+    expect(evaluateAt(weak, sec025.check).status).toBe('MISSING');
+  });
+
+  it('SEC-002 does not flag log messages that mention secrets', () => {
+    const root = fixture({
+      'src/scan.js': [
+        "console.log('No unexpected secrets found.');",
+        'console.error(`${n} unexpected secret(s) found:`);',
+        'logger.info("scanning for passwords in the tree");',
+        'console.log("loaded", config);',
+      ].join('\n'),
+    });
+    expect(evaluateAt(root, sec002.check).status).toBe('PASS');
+  });
+
+  it('SEC-002 flags a secret actually being logged', () => {
+    const root = fixture({
+      'src/auth.js': 'console.log("password:", req.body.password);\n',
+    });
+    expect(evaluateAt(root, sec002.check).status).toBe('WRONG');
+  });
+
+  it('SEC-002 flags a token interpolated into a log line', () => {
+    const root = fixture({ 'src/svc.ts': 'logger.info(`token: ${t}`);\n' });
+    expect(evaluateAt(root, sec002.check).status).toBe('WRONG');
+  });
+
+  it('SEC-002 works for Python too', () => {
+    const root = fixture({ 'app.py': 'print("api_key=" + key)\n' });
+    expect(evaluateAt(root, sec002.check).status).toBe('WRONG');
+  });
+
+  it('SEC-006 does not flag regex.exec or DOM bodies', () => {
+    const sec006 = ruleOf('core/security.yaml', 'SEC-006');
+    const root = fixture({
+      'src/parse.ts': [
+        'const m = /```ya?ml\\n/.exec(body);',
+        'document.body.querySelector("a");',
+        'const r = evaluateRule(rule, ctx);',
+        'execFileSync("sh", ["-c", cmd], {});',
+      ].join('\n'),
+    });
+    expect(evaluateAt(root, sec006.check).status).toBe('PASS');
+  });
+
+  it('SEC-006 still flags eval and exec with user input', () => {
+    const sec006 = ruleOf('core/security.yaml', 'SEC-006');
+    const root = fixture({
+      'src/run.js': 'eval(userExpr);\nexec("ls " + req.query.path);\n',
+    });
+    expect(evaluateAt(root, sec006.check).status).toBe('WRONG');
+  });
+
+  it('SEC-002 catches a hardcoded credential but not an env lookup', () => {
+    const sec001 = ruleOf('core/security.yaml', 'SEC-001');
+    const bad = fixture({ 'src/config.ts': 'const api_key = "abcdefghijklmnop";\n' });
+    expect(evaluateAt(bad, sec001.check).status).toBe('FAIL');
+
+    const good = fixture({ 'src/config.ts': 'const api_key = process.env.API_KEY;\n' });
+    expect(evaluateAt(good, sec001.check).status).toBe('PASS');
+  });
+});
+
+describe('stacks/cli rules', () => {
+  it('CLI-002 recognises the process.exitCode entry-point style', () => {
+    const cli002 = ruleOf('stacks/cli.yaml', 'CLI-002');
+    const root = fixture({ 'src/cli.ts': 'process.exitCode = main(process.argv.slice(2));\n' });
+    expect(evaluateAt(root, cli002.check).status).toBe('PASS');
+  });
+
+  it('CLI-002 still recognises inline process.exit', () => {
+    const cli002 = ruleOf('stacks/cli.yaml', 'CLI-002');
+    const root = fixture({ 'src/cli.ts': 'process.exit(1);\n' });
+    expect(evaluateAt(root, cli002.check).status).toBe('PASS');
+  });
+});
+
+describe('stacks/swift rules', () => {
+  const sw005 = ruleOf('stacks/swift.yaml', 'SW-005');
+  const sw006 = ruleOf('stacks/swift.yaml', 'SW-006');
+
+  it('SW-005 passes when Validatable is present', () => {
+    const root = fixture({
+      'Package.swift':
+        '// swift-tools-version:5.9\nimport PackageDescription\nlet package = Package(name: "App", dependencies: [.package(url: "https://github.com/vapor/vapor.git", from: "4.0.0")], targets: [.target(name: "App")])',
+      'Sources/App/Models/User.swift':
+        'import Vapor\nstruct User: Validatable {\n  static func validations(_ validations: inout Validations) {}\n}\n',
+    });
+    expect(evaluateAt(root, sw005.check).status).toBe('PASS');
+  });
+
+  it('SW-005 fails when Validatable is absent', () => {
+    const root = fixture({
+      'Sources/App/Models/User.swift': 'struct User {\n  let name: String\n}\n',
+    });
+    expect(evaluateAt(root, sw005.check).status).toBe('MISSING');
+  });
+
+  it('SW-006 passes when CORSMiddleware is present', () => {
+    const root = fixture({
+      'Sources/App/Middleware.swift': 'import Vapor\napp.middleware.use(CORSMiddleware())\n',
+    });
+    expect(evaluateAt(root, sw006.check).status).toBe('PASS');
+  });
+
+  it('SW-006 fails when neither CORSMiddleware nor SecurityHeadersMiddleware are present', () => {
+    const root = fixture({
+      'Sources/App/Middleware.swift': 'import Vapor\napp.middleware.use(SomeOtherMiddleware())\n',
+    });
+    expect(evaluateAt(root, sw006.check).status).toBe('MISSING');
+  });
+});
+
+describe('oracle check loading (fail closed)', () => {
+  const pack = (check: string) => `
+id: test/pack
+title: Test
+rules:
+  - id: ORC-001
+    title: Oracle rule
+    section: S3
+    severity: HIGH
+    class: supply-chain
+    check:
+${check}
+    why: evidence
+    remediation: fix it
+`;
+
+  it('loads a valid SARIF oracle check', () => {
+    const warnings: string[] = [];
+    const p = parsePackText(
+      pack(`      kind: oracle
+      source: sarif
+      file: reports/codeql.sarif
+      value: 0`),
+      'test.yaml',
+      new Map(),
+      warnings,
+    );
+    expect(warnings).toEqual([]);
+    expect(p!.rules[0]!.check).toMatchObject({ kind: 'oracle', source: 'sarif', value: 0 });
+  });
+
+  it('rejects an oracle check with no file', () => {
+    const warnings: string[] = [];
+    const p = parsePackText(
+      pack(`      kind: oracle
+      source: sarif
+      value: 0`),
+      'test.yaml',
+      new Map(),
+      warnings,
+    );
+    expect(p!.rules).toHaveLength(0);
+    expect(warnings.some((w) => w.includes('missing "file"'))).toBe(true);
+  });
+
+  it('rejects an unknown oracle source', () => {
+    const warnings: string[] = [];
+    const p = parsePackText(
+      pack(`      kind: oracle
+      source: xml
+      file: x.xml
+      value: 0`),
+      'test.yaml',
+      new Map(),
+      warnings,
+    );
+    expect(p!.rules).toHaveLength(0);
+    expect(warnings.some((w) => w.includes('source must be'))).toBe(true);
+  });
+
+  it('rejects a json oracle with no path', () => {
+    const warnings: string[] = [];
+    const p = parsePackText(
+      pack(`      kind: oracle
+      source: json
+      file: cov.json
+      value: 80`),
+      'test.yaml',
+      new Map(),
+      warnings,
+    );
+    expect(p!.rules).toHaveLength(0);
+    expect(warnings.some((w) => w.includes('needs "path"'))).toBe(true);
+  });
+
+  it('rejects an oracle with a non-finite value', () => {
+    const warnings: string[] = [];
+    const p = parsePackText(
+      pack(`      kind: oracle
+      source: sarif
+      file: x.sarif
+      value: not-a-number`),
+      'test.yaml',
+      new Map(),
+      warnings,
+    );
+    expect(p!.rules).toHaveLength(0);
+    expect(warnings.some((w) => w.includes('finite "value"'))).toBe(true);
+  });
+});

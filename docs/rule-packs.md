@@ -419,7 +419,7 @@ see ADR-0012. The acceptance ritual before registering it in
 2. Audit one project WITH the problem and one WITHOUT it; both runs must
    behave (`usa audit --rules-dir` accepts an unregistered pack dir, so
    the review never pollutes the shipped registry).
-3. Add FP _and_ FN regression tests to `tests/rules.test.ts`.
+3. Add FP _and_ FN regression tests to `tests/integration/rules.test.ts`.
 4. Register the reviewed file in `rules/index.yaml` and watch the
    self-audit-adjacent gates (`check-docs` rule floor, e2e uniqueness)
    stay green.
