@@ -453,8 +453,42 @@ export type AskFn = (prompt: string) => string | null;
 export type PrintFn = (line: string) => void;
 
 /**
+ * Cap on one stdin answer line. Answers are short; piped input is not
+ * necessarily (`yes | usa live` is infinite) — CLI-004 bounds it instead of
+ * buffering until the process OOMs.
+ */
+export const MAX_STDIN_LINE_BYTES = 64 * 1024;
+
+/**
+ * Read one line from a byte source (`null` = end of input). Throws when the
+ * line exceeds maxBytes instead of buffering forever. Callers fail loudly
+ * (exit 2) on the throw; EOF still returns null so defaults apply.
+ */
+export function readCappedLine(
+  next: () => number | null,
+  maxBytes = MAX_STDIN_LINE_BYTES,
+): string | null {
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for (;;) {
+    const b = next();
+    if (b === null) return chunks.length === 0 ? null : Buffer.concat(chunks).toString('utf8');
+    if (b === 10) return Buffer.concat(chunks).toString('utf8');
+    if (b === 13) continue;
+    chunks.push(Buffer.from([b]));
+    total += 1;
+    if (total > maxBytes) {
+      throw new Error(`stdin line exceeds ${maxBytes} bytes — refusing to buffer unbounded input`);
+    }
+  }
+}
+
+/**
  * Blocking stdin line reader (see module note). Returns one line without the
  * trailing newline, or null on EOF. The prompt is written as-is to stdout.
+ * Read errors and over-long lines throw — both callers (live session,
+ * foundation init) turn that into a loud exit 2 instead of silently
+ * continuing on truncated input.
  */
 export function createStdinAsk(
   fd = 0,
@@ -463,19 +497,10 @@ export function createStdinAsk(
   const one = Buffer.alloc(1);
   return (prompt: string): string | null => {
     write(prompt);
-    const chunks: Buffer[] = [];
-    for (;;) {
-      let n: number;
-      try {
-        n = fs.readSync(fd, one, 0, 1, null);
-      } catch {
-        return null;
-      }
-      if (n === 0) return chunks.length === 0 ? null : Buffer.concat(chunks).toString('utf8');
-      const byte = one[0];
-      if (byte === 10) return Buffer.concat(chunks).toString('utf8');
-      if (byte !== 13) chunks.push(Buffer.from([byte as number]));
-    }
+    return readCappedLine(() => {
+      const n = fs.readSync(fd, one, 0, 1, null);
+      return n === 0 ? null : (one[0] as number);
+    });
   };
 }
 
@@ -517,23 +542,38 @@ function askInterviewQuestion(
   }
 }
 
+/**
+ * Resolve the file to create, or null when already handled: an existing
+ * file is left alone, and --dry-run prints the preview (same line shape as
+ * the CLI helper, duplicated here to avoid a cli→foundation import cycle).
+ */
+function foundationInitFile(
+  dir: string,
+  opts: FoundationInitOptions,
+  print: PrintFn,
+  error: PrintFn,
+): string | null {
+  const file = foundationFile(dir);
+  if (fs.existsSync(file)) {
+    error(`${file} already exists — leaving it alone.`);
+    return null;
+  }
+  // CLI-003: preview before prompting or writing.
+  if (opts.dryRun) {
+    print(`dry-run: would write ${file}`);
+    return null;
+  }
+  return file;
+}
+
 /** `usa foundation init`: interview (or defaults) → commented YAML. Sync. */
 export function runFoundationInit(opts: FoundationInitOptions): number {
   const print = opts.print ?? ((line: string) => console.log(line));
   const error = opts.error ?? ((line: string) => console.error(line));
   const dir = path.resolve(opts.dir);
-  const file = foundationFile(dir);
+  const file = foundationInitFile(dir, opts, print, error);
+  if (!file) return 0;
   try {
-    if (fs.existsSync(file)) {
-      error(`${file} already exists — leaving it alone.`);
-      return 0;
-    }
-    // CLI-003: preview before prompting or writing (same line shape as the
-    // CLI helper, duplicated here to avoid a cli→foundation import cycle).
-    if (opts.dryRun) {
-      print(`dry-run: would write ${file}`);
-      return 0;
-    }
     const projectName = opts.projectName ?? path.basename(dir);
     let config = detectFoundationDefaults(dir, projectName);
     if (!opts.nonInteractive) {

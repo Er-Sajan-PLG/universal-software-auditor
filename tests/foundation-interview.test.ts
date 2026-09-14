@@ -5,8 +5,10 @@ import path from 'node:path';
 import {
   ASK_ORDER,
   INTERVIEW_QUESTIONS,
+  MAX_STDIN_LINE_BYTES,
   applyInterviewAnswer,
   foundationFromAnswers,
+  readCappedLine,
   renderFoundationYaml,
   runFoundationInit,
   runFoundationShow,
@@ -269,5 +271,44 @@ describe('forgiving answers', () => {
     for (const id of ASK_ORDER) {
       expect(INTERVIEW_QUESTIONS.some((q) => q.id === id)).toBe(true);
     }
+  });
+});
+
+describe('readCappedLine (CLI-004)', () => {
+  /** Byte source over a string (UTF-8), then EOF. */
+  function source(text: string): () => number | null {
+    const bytes = Buffer.from(text, 'utf8');
+    let i = 0;
+    return () => (i < bytes.length ? (bytes[i++] as number) : null);
+  }
+
+  it('reads a plain line without the newline', () => {
+    expect(readCappedLine(source('hello\nrest'))).toBe('hello');
+  });
+
+  it('tolerates CRLF and bare-CR endings', () => {
+    expect(readCappedLine(source('a\r\n'))).toBe('a');
+    expect(readCappedLine(source('b\rc'))).toBe('bc');
+  });
+
+  it('returns null on immediate EOF, content on EOF after bytes', () => {
+    expect(readCappedLine(source(''))).toBeNull();
+    expect(readCappedLine(source('partial'))).toBe('partial');
+  });
+
+  it('counts bytes, not characters, toward the cap', () => {
+    // 'é' is 2 bytes: a 3-char string is 4 bytes, over a 3-byte cap.
+    expect(() => readCappedLine(source('aéc'), 3)).toThrow(/exceeds 3 bytes/);
+    expect(readCappedLine(source('aéc'), 4)).toBe('aéc');
+  });
+
+  it('throws instead of buffering an unbounded piped line', () => {
+    const infinite = () => 120; // 'x' forever, like `yes | usa live`
+    expect(() => readCappedLine(infinite, 16)).toThrow(/refusing to buffer unbounded input/);
+  });
+
+  it('the production cap is generous but finite', () => {
+    expect(MAX_STDIN_LINE_BYTES).toBeGreaterThanOrEqual(1024);
+    expect(readCappedLine(source('short answer\n'))).toBe('short answer');
   });
 });
