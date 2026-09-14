@@ -40,13 +40,6 @@ suppressions:
       keeps guarding its contents, and any added credential line fails the
       gate. Revisit if the file ever needs more than the address.
 
-  - rule: CICD-008
-    reason: >-
-      Deliberately no error tracking. USA runs on other people's machines and
-      reads their private source trees; phoning home to Sentry or Datadog would
-      be a privacy violation, not an observability win. Crashes are reported by
-      humans through GitHub issues instead.
-
   - rule: COMP-010
     reason: >-
       The root LICENSE file covers the entire repository under a single MIT
@@ -60,3 +53,71 @@ suppressions:
       through npm (and a composite action); risky changes gate on CI, review,
       and the release-please Release PR instead of runtime flags. Revisit the
       day the project ships a hosted service.
+
+  - rule: AI-007
+    reason: >-
+      No retrieval, no vector store, no tenants: source search finds no
+      embedding, vector-store, tenant, or retrieval machinery in src/ — USA
+      is a single-user local CLI over the user's own checkout, so there is
+      no cross-tenant boundary to isolate. Revisit the day retrieval is
+      added, at which point this suppression must burn.
+
+# Reviews — dated human attention (ADR-0023). A review never changes a
+# verdict; it records that someone looked, with evidence, and when to look
+# again. Stale reviews warn instead of silently rotting.
+reviews:
+  - rule: REPO-003
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Ran the history scan by hand 2026-09-14: every match is a known fake —
+      the tracked-exclude test fixture, the planted demo-app defect, and its
+      rendered examples in README and the sample reports. No live secrets, no
+      rotation indicated. Deliberately a review, not a suppression: a future
+      real leak must still fail loudly.
+
+  - rule: SUP-012
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Protection verified via API 2026-09-14: 6 required checks (Lint &
+      format, Test, Build, Validate rule packs, Docs & ADR hygiene, USA
+      audit), no force pushes, no deletions, CODEOWNERS review required,
+      stale reviews dismissed.
+
+  - rule: REL-001
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      SemVer holds in practice: package.json at 2.9.2, release-please maps
+      feat to minor and fix to patch (2.8.x line through 2.9.0 observed
+      across the session), tags match versions.
+
+  - rule: REL-002
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      Tags v2.8.0 through v2.9.2 present; release-please automation
+      (release-please-config.json plus the manifest) cuts a tag on every
+      release PR merge.
+
+  - rule: CICD-002
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      ci.yml runs Lint & format, Test (incl. typecheck via tsc and build via
+      the Build job), and Validate rule packs on pull_request and master
+      push — observed green on every PR through the 2.8 to 2.9 series.
+
+  - rule: DOC-001
+    reviewed: 2026-09-14
+    until: 2027-03-14
+    by: sajan
+    note: >-
+      README carries what (What USA adds, L206), install and run (Quick
+      start, L36), and contribute (Contributing, L316).
