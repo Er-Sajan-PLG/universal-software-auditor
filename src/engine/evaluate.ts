@@ -169,7 +169,7 @@ export function evaluateRule(rule: Rule, ctx: EvalContext): Finding {
  * finding stays active with the excused locations removed — a partial waiver
  * must not hide the rest.
  */
-function applySuppressionToFinding(
+export function applySuppressionToFinding(
   index: SuppressionIndex,
   ruleId: string,
   finding: Finding,
@@ -214,6 +214,16 @@ function queryGrep(project: Project, check: GrepCheck) {
 
 function checkManual(_check: Extract<Check, { kind: 'manual' }>, _h: CheckHelpers): CheckOutcome {
   return unknownOutcome('Requires judgement — no automated evidence recorded.');
+}
+
+function checkInvariant(
+  _check: Extract<Check, { kind: 'invariant' }>,
+  _h: CheckHelpers,
+): CheckOutcome {
+  // File context has no finding set: invariants evaluate in the audit's
+  // second pass, never here. UNKNOWN (not PASS) so a direct call can never
+  // launder an unevaluated composition into a clean verdict.
+  return unknownOutcome('Evaluated over the finding set, not files — see the audit second pass.');
 }
 
 function checkInfo(_check: Extract<Check, { kind: 'info' }>, _h: CheckHelpers): CheckOutcome {
@@ -578,6 +588,7 @@ const CHECK_HANDLERS: {
   [K in Check['kind']]: (check: Extract<Check, { kind: K }>, h: CheckHelpers) => CheckOutcome;
 } = {
   any_of: checkAnyOf,
+  invariant: checkInvariant,
   manual: checkManual,
   info: checkInfo,
   file_exists: checkFileExists,

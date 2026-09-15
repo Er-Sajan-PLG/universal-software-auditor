@@ -127,6 +127,28 @@ outcome (FAIL > WRONG > MISSING). For concepts satisfied by alternatives
 no single check expresses. Sub-checks parse through the same loader, so
 every guard applies to them.
 
+### `invariant`
+
+```yaml
+check:
+  kind: invariant
+  when:
+    all:
+      - { rule: SEC-003, status: [PASS] }
+      - { rule: SEC-004, status: [PASS] }
+  assert: { rule: SEC-018, status: [PASS] }
+```
+
+Findings about findings: evaluated in a second pass over the finding
+set (never over files). When `when` matches and `assert` does not, the
+invariant itself fails with the matched findings' locations. Silent
+(`NOT_APPLICABLE`, not even `UNKNOWN`) when `when` does not match, and
+missing rule ids read as `NOT_APPLICABLE` (fail closed toward silence).
+The `when` language is `all`/`any`/`not` over rule+status pairs only —
+no scripting. Invariants cannot be file-fixture-tested (there is nothing
+to put in files); they are covered by finding-set tests instead, and the
+coverage gate exempts them like `manual` rules.
+
 ### `grep_present` / `grep_absent`
 
 ```yaml

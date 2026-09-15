@@ -14,7 +14,15 @@ import { SEVERITY_LADDER } from './loader.js';
 import { MAX_FILE_BYTES, MAX_FILES, Project } from '../util/project.js';
 import { detect, loadDetectorFile } from '../detect/index.js';
 import { loadRulePacks, applyRuleOverrides } from './loader.js';
-import { evaluateRule, packApplies, ruleApplies, type EvalContext } from './evaluate.js';
+import {
+  applySuppressionToFinding,
+  evaluateRule,
+  packApplies,
+  ruleApplies,
+  type EvalContext,
+} from './evaluate.js';
+import { evaluateInvariant, invariantLocations } from './invariants.js';
+import { ruleAutomatability } from './automatability.js';
 import { buildSuppressionIndex, describeSuppression, unusedSuppressions } from './suppression.js';
 import {
   attachReviews,
@@ -575,13 +583,84 @@ function evaluatePacks(
   profile: MaturityProfile,
 ): ScoredRule[] {
   const evaluated: ScoredRule[] = [];
+  const invariants: RulePack['rules'][number][] = [];
   for (const pack of activePacks) {
     for (const rule of pack.rules) {
       if (!ruleApplies(rule, facts, depth, include.has(pack.id))) continue;
+      // Invariants read conclusions, not files: second pass, after every
+      // file rule has reported. Collect now, evaluate below.
+      if (rule.check.kind === 'invariant') {
+        invariants.push(rule);
+        continue;
+      }
       evaluated.push(scoreFinding(rule, ctx, profile));
     }
   }
+  for (const rule of invariants) {
+    evaluated.push(scoreInvariant(rule, ctx, profile, evaluated));
+  }
   return evaluated;
+}
+
+function scoreInvariant(
+  rule: RulePack['rules'][number],
+  ctx: EvalContext,
+  profile: MaturityProfile,
+  evaluated: ScoredRule[],
+): ScoredRule {
+  const check = rule.check;
+  if (check.kind !== 'invariant') {
+    throw new Error(`scoreInvariant called on non-invariant rule ${rule.id}`);
+  }
+  const byId = new Map(evaluated.map((e) => [e.finding.ruleId, e.finding.status]));
+  const findings = evaluated.map((e) => e.finding);
+  const outcome = evaluateInvariant(check.when, check.assert, byId);
+  const base = {
+    ruleId: rule.id,
+    title: rule.title,
+    section: rule.section,
+    sectionTitle: rule.sectionTitle ?? rule.section,
+    baseSeverity: rule.severity,
+    ruleClass: rule.ruleClass,
+    why: rule.why,
+    evidenceHint: rule.evidence,
+    remediation: rule.remediation,
+    references: rule.references,
+    automatability: ruleAutomatability(rule),
+    tags: rule.tags,
+  };
+  if (!outcome.applicable) {
+    return {
+      rule,
+      finding: {
+        ...base,
+        status: 'NOT_APPLICABLE',
+        severity: rule.severity,
+        dampened: false,
+        message: `Invariant inapplicable — ${outcome.detail}.`,
+        locations: [],
+      },
+    };
+  }
+  const finding: Finding = {
+    ...base,
+    status: outcome.passed ? 'PASS' : 'FAIL',
+    severity: rule.severity,
+    dampened: false,
+    message: outcome.passed
+      ? `Combination holds and ${check.assert.rule} agrees — ${outcome.detail}.`
+      : `Dangerous combination: ${outcome.detail}.`,
+    locations: outcome.passed ? [] : invariantLocations(check.when, findings),
+  };
+  if (!outcome.passed) {
+    applySuppressionToFinding(ctx.suppressions, rule.id, finding);
+    if (finding.status !== 'PASS') {
+      const { severity, dampened } = dampen(rule.severity, rule.ruleClass, profile);
+      finding.severity = severity;
+      finding.dampened = dampened;
+    }
+  }
+  return { rule, finding };
 }
 
 function scoreFinding(

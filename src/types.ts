@@ -166,6 +166,13 @@ export type Check =
   /** PASS when the command exits with `expect_exit` (default 0). Opt-in. */
   | { kind: 'command'; run: string; expect_exit?: number }
   /**
+   * PASS unless a dangerous *combination* of findings holds. Evaluated in a
+   * second pass over the finding set (never over files): when `when`
+   * matches and `assert` does not, the invariant itself fails. Silent
+   * (NOT_APPLICABLE, not even UNKNOWN) when `when` does not match.
+   */
+  | { kind: 'invariant'; when: InvariantCondition; assert: InvariantAssertion }
+  /**
    * Ingest machine evidence produced by an external scanner (ADR-0011) and
    * assert a numeric bound. Offline and read-only: it never mints findings,
    * only checks that an oracle the project already runs reported what the
@@ -214,6 +221,25 @@ export type Automatability = 'full' | 'assist' | 'manual';
 
 /** Evaluation cost tier, derived from the check kind (never hand-written). */
 export type RuleCost = 'low' | 'medium' | 'high';
+
+/** One clause of an invariant precondition: rule X is in one of these states. */
+export interface InvariantClause {
+  rule: string;
+  status: Status[];
+}
+
+/** Conjunction/disjunction/negation over clauses (no scripting — tiny by design). */
+export interface InvariantCondition {
+  all?: InvariantClause[];
+  any?: InvariantClause[];
+  not?: InvariantClause[];
+}
+
+/** The conclusion that must hold whenever `when` matches. */
+export interface InvariantAssertion {
+  rule: string;
+  status: Status[];
+}
 
 /** Every automatability level, weakest to strongest automation. */
 export const AUTOMATABILITY_LADDER: Automatability[] = ['manual', 'assist', 'full'];

@@ -494,3 +494,60 @@ rules:
     why: 'No adaptive hash found anywhere auth exists. Either passwords are stored weakly (or plainly), or hashing lives outside the scanned tree — both need a human to confirm.'
     remediation: 'Hash passwords with bcrypt (cost ≥12), scrypt, or argon2id at registration and verify on login. Never a plain digest, never reversible encryption.'
     references: ['CWE-916', 'ASVS-2.4.1', 'OWASP-Password-Storage-Cheat-Sheet']
+
+  # --------------------------------------- compositional invariants (INV-*)
+  # Each rule below passes in isolation and the system still fails: the
+  # knowledge lives BETWEEN findings, so these evaluate over the finding
+  # set (second pass), never over files. `when` is the dangerous
+  # combination; `assert` is the missing guard. Silent (NOT_APPLICABLE)
+  # when the combination does not hold — inapplicable, like applies_when
+  # for files, not a judgement call.
+  - id: INV-SEC-001
+    title: Encrypted transport is backed by security headers
+    section: S2
+    section_title: Security
+    severity: HIGH
+    class: security
+    check:
+      kind: invariant
+      when:
+        all:
+          - { rule: SEC-003, status: [PASS] }
+          - { rule: SEC-004, status: [PASS] }
+      assert: { rule: SEC-018, status: [PASS] }
+    why: 'TLS without HSTS and security headers leaves first-visit downgrade and header-class attacks open. Each transport rule passes alone; the composition is still exposed.'
+    remediation: 'Add HSTS (max-age ≥31536000; includeSubDomains) plus the SEC-018 header set on every TLS endpoint.'
+    references: ['CWE-319', 'ASVS-9.1.1']
+
+  - id: INV-SEC-002
+    title: Verified expiring tokens are brute-force guarded
+    section: S2
+    section_title: Security
+    severity: HIGH
+    class: security
+    check:
+      kind: invariant
+      when:
+        all:
+          - { rule: SEC-013, status: [PASS] }
+          - { rule: SEC-012, status: [PASS] }
+      assert: { rule: SEC-014, status: [PASS] }
+    why: 'Sound tokens with expiry but no rate limiting leave a credential-stuffing window: each token check passes, the login endpoint still takes unlimited guesses.'
+    remediation: 'Rate-limit failed authentication (see SEC-014) on every endpoint that accepts these tokens.'
+    references: ['CWE-307', 'ASVS-2.2.4']
+
+  - id: INV-SEC-003
+    title: Validated input is also encoded on output
+    section: S2
+    section_title: Security
+    severity: HIGH
+    class: security
+    check:
+      kind: invariant
+      when:
+        all:
+          - { rule: SEC-008, status: [PASS] }
+      assert: { rule: SEC-009, status: [PASS] }
+    why: 'Entry validation without exit encoding leaves stored and reflected injection paths: data validated once, rendered many times, in contexts the validator never saw.'
+    remediation: 'Encode on output for the target context (see SEC-009) everywhere validated data is rendered.'
+    references: ['CWE-116', 'ASVS-5.3.1']
