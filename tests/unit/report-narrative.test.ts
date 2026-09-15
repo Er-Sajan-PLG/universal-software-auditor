@@ -28,6 +28,7 @@ const baseReport = (
   schema: 'usa-report-v1',
   generatedAt: '2026-01-01T00:00:00.000Z',
   usaVersion: '2.6.0',
+  ruleset: 'test-ruleset',
   target: { path: '/tmp/demo-app', name: 'demo-app', commit: 'abc123456', ref: 'main' },
   detection: {
     maturity: 'prototype',

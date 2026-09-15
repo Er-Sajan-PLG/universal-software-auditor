@@ -672,6 +672,7 @@ export function trailer(report: AuditReport): string {
   lines.push('schema: usa-report-v1');
   lines.push(`generated_at: ${report.generatedAt}`);
   lines.push(`usa_version: ${report.usaVersion}`);
+  lines.push(`ruleset: ${report.ruleset}`);
   lines.push(`overall: ${report.score.overall}`);
   lines.push('sections:');
   for (const s of report.score.sections) {

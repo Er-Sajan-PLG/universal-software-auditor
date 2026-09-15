@@ -24,6 +24,7 @@ const baseReport = (findings: Finding[]): AuditReport => ({
   schema: 'usa-report-v1',
   generatedAt: '2026-09-08T00:00:00.000Z',
   usaVersion: '1.0.0',
+  ruleset: 'test-ruleset',
   target: { path: '/tmp/proj', name: 'proj', commit: 'abc1234567890', ref: 'main' },
   detection: {
     maturity: 'beta',

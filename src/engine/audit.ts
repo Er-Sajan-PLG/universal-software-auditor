@@ -25,6 +25,7 @@ import {
   type ReviewIndex,
 } from './review.js';
 import { loadFoundationFacts } from '../foundation/loader.js';
+import { fingerprintRulesDir } from './ruleset.js';
 import { loadSections } from './sections.js';
 import { loadProfiles, dampen, type MaturityProfile } from './maturity.js';
 import { loadConfig } from '../config.js';
@@ -594,6 +595,7 @@ function buildReport(
     schema: 'usa-report-v1',
     generatedAt: new Date().toISOString(),
     usaVersion: opts.usaVersion,
+    ruleset: fingerprintRulesDir(opts.rulesDir),
     target: {
       path: path.resolve(opts.target),
       name: path.basename(path.resolve(opts.target)) || opts.target,

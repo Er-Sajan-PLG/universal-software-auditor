@@ -39,6 +39,7 @@ export interface JsonReport {
   schema: typeof JSON_SCHEMA;
   generatedAt: string;
   usaVersion: string;
+  ruleset: string;
   target: AuditReport['target'];
   detection: AuditReport['detection'];
   options: AuditReport['options'];
@@ -77,6 +78,7 @@ export function toJsonReport(report: AuditReport): JsonReport {
     schema: JSON_SCHEMA,
     generatedAt: report.generatedAt,
     usaVersion: report.usaVersion,
+    ruleset: report.ruleset,
     target: report.target,
     detection: report.detection,
     options: report.options,

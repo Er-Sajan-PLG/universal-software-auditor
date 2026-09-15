@@ -383,6 +383,11 @@ export interface AuditReport {
   schema: 'usa-report-v1';
   generatedAt: string;
   usaVersion: string;
+  /** Content fingerprint of the rule tree (review 1, §35): same project +
+   *  same ruleset + same engine = same audit. Distinguishes a changed
+   *  project from changed rules when scores move between runs.
+   */
+  ruleset: string;
   target: {
     path: string;
     name: string;
