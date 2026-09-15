@@ -18,9 +18,9 @@
  *   node scripts/gen-asvs-coverage.mjs --check  # exit 1 if either is stale
  * Requires `dist/` (run `npm run build` first).
  */
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import prettier from 'prettier';
 import { parse as parseYaml } from 'yaml';
 import { loadRulePacks } from '../dist/engine/loader.js';
 import { ruleAutomatability } from '../dist/engine/automatability.js';
@@ -102,7 +102,8 @@ const md = renderMd(version, controls, cited);
 const snap = snapshot(cited);
 if (check) {
   const stale = [];
-  if (!fs.existsSync(OUT_MD) || fs.readFileSync(OUT_MD, 'utf8') !== md) stale.push(OUT_MD);
+  const wantMd = await prettier.format(md, { filepath: OUT_MD });
+  if (!fs.existsSync(OUT_MD) || fs.readFileSync(OUT_MD, 'utf8') !== wantMd) stale.push(OUT_MD);
   if (!fs.existsSync(OUT_SNAPSHOT) || fs.readFileSync(OUT_SNAPSHOT, 'utf8') !== snap) {
     stale.push(OUT_SNAPSHOT);
   }
@@ -111,12 +112,17 @@ if (check) {
     process.exit(1);
   }
 } else {
+  // The --check gate compares bytes and prettier owns markdown table
+  // padding, so both modes go through the same formatted form: write
+  // raw, format the file, and compare against the formatted bytes.
+  // (Comparing raw output against the committed file can never pass —
+  // that exact bug shipped in the first version of this script.)
   fs.writeFileSync(OUT_MD, md);
   fs.writeFileSync(OUT_SNAPSHOT, snap);
-  // The --check gate compares bytes and prettier owns markdown table
-  // padding, so the committed file must be the prettier-stable form —
-  // same doctrine as gen-cli-docs (which hand-shapes its output).
-  execFileSync('npx', ['prettier', '--write', OUT_MD, OUT_SNAPSHOT], { cwd: ROOT });
+  const formatted = await prettier.format(md, { filepath: OUT_MD });
+  fs.writeFileSync(OUT_MD, formatted);
+  const formattedSnap = await prettier.format(snap, { filepath: OUT_SNAPSHOT });
+  fs.writeFileSync(OUT_SNAPSHOT, formattedSnap);
   console.log(`wrote ${OUT_MD} (${controls.length} controls, ${cited.size} covered)`);
   console.log(`wrote ${OUT_SNAPSHOT}`);
 }
