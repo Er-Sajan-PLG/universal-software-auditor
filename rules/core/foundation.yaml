@@ -166,19 +166,26 @@ rules:
     class: correctness
     tags: ['pillar:testing']
     check:
-      kind: any_file
-      patterns:
-        - '.codecov.yml'
-        - '.codecov.yaml'
-        - 'codecov.yml'
-        - 'codecov.yaml'
-        - '**/vitest.config.*'
-        - '**/jest.config.*'
-        - '**/vitest.coverage.*'
-        - '**/.nycrc*'
-        - '**/coveragerc'
-        - '**/.coveragerc'
-        - '**/coverage.config.*'
+      kind: any_of
+      checks:
+        - kind: any_file
+          patterns:
+            - '.codecov.yml'
+            - '.codecov.yaml'
+            - 'codecov.yml'
+            - 'codecov.yaml'
+            - '**/vitest.config.*'
+            - '**/jest.config.*'
+            - '**/vitest.coverage.*'
+            - '**/.nycrc*'
+            - '**/coveragerc'
+            - '**/.coveragerc'
+            - '**/coverage.config.*'
+        # Python centralizes config in pyproject.toml — a coverage section
+        # there is the same commitment as a standalone file.
+        - kind: grep_present
+          pattern: '\[tool\.coverage|\[coverage:(run|report)'
+          include: ['pyproject.toml', 'setup.cfg', 'tox.ini']
     why: 'Coverage that is never configured is never collected; the config is the commitment that coverage runs somewhere.'
     remediation: 'Add a coverage config (e.g. codecov.yml or coverage settings in your test runner config).'
     references: ['NIST-SSDF-RV.1.1']

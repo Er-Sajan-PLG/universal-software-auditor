@@ -28,6 +28,7 @@ rules:
         - 'uv.lock'
         - 'pdm.lock'
         - 'Pipfile.lock'
+        - 'requirements*.txt'
         - 'Cargo.lock'
         - 'go.sum'
         - 'composer.lock'

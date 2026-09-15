@@ -1,10 +1,11 @@
 rule: FND-009
 negative:
+  # Pins the embedded-config branch in isolation: only pyproject matches,
+  # so any_of must reach (and pass) its second branch to go green.
   files:
-    codecov.yml: |
-      coverage:
-        status:
-          project: off
+    pyproject.toml: |
+      [tool.coverage.run]
+      branch = true
 positive:
   files:
     README.md: |

@@ -152,7 +152,7 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 
 **Score 0.7/10** · `██░░░░░░░░░░░░░░░░░░░░░░` · 1 passed / 15 open / 0 to review
 
-- 🚫 **A lockfile is committed** `SUP-001` — Not detected — no files matching package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock, poetry.lock, uv.lock, pdm.lock, Pipfile.lock, Cargo.lock, go.sum, composer.lock, Gemfile.lock, flake.lock.
+- 🚫 **A lockfile is committed** `SUP-001` — Not detected — no files matching package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock, poetry.lock, uv.lock, pdm.lock, Pipfile.lock, requirements*.txt, Cargo.lock, go.sum, composer.lock, Gemfile.lock, flake.lock.
   - 🪶 Downgraded HIGH → MEDIUM by the Prototype / Spike profile
   - 🛠️ Commit the lockfile for your package manager and install with the frozen/immutable flag in CI.
   - 📚 SLSA-Source · OpenSSF-Scorecard:Pinned-Dependencies · NIST-SSDF-PS.3.2
