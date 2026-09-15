@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { parse } from 'yaml';
 import type { Rule, Check } from '../src/types.js';
 import { loadRulePacks } from '../src/engine/loader.js';
@@ -71,7 +72,15 @@ export function loadFixtures(): { file: string; fixture: RuleFixture }[] {
     }));
 }
 
-/** Materialises a fixture case on disk and evaluates the rule's check. */
+/**
+ * Materialises a fixture case on disk and evaluates the rule's check.
+ *
+ * The fixture tree is a real one-commit git repo: `tracked_*` checks read
+ * git state, and without tracked files they pass vacuously (nothing
+ * tracked can match) — a fixture that cannot fail guards nothing. The
+ * auditor-mutation probes proved this: four tracked_absent fixtures stayed
+ * green under gutted patterns.
+ */
 export function evaluateFixture(
   check: Check,
   c: FixtureCase,
@@ -82,6 +91,15 @@ export function evaluateFixture(
     fs.mkdirSync(path.dirname(abs), { recursive: true });
     fs.writeFileSync(abs, content, 'utf8');
   }
+  const gitRun = (args: string[]): void => {
+    execFileSync('git', ['-c', 'user.email=fixture@test', '-c', 'user.name=fixture', ...args], {
+      cwd: root,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  };
+  gitRun(['init', '-q']);
+  gitRun(['add', '-A']);
+  gitRun(['commit', '-qm', 'fixture']);
   const project = new Project(root);
   const git = project.gitInfo();
   const { facts } = detect(project, loadDetectorFile(RULES_DIR), git, []);
