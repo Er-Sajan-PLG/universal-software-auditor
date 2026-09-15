@@ -354,6 +354,12 @@ function appendIndexWarnings(project: Project, warnings: string[]): void {
         'content checks could not see them',
     );
   }
+  if (project.skippedSymlinks > 0) {
+    warnings.push(
+      `${project.skippedSymlinks} symlink(s) skipped without traversal — ` +
+        'linked source is invisible to every check; materialize it to audit it',
+    );
+  }
 }
 
 /**

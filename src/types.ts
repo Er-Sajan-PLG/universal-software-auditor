@@ -127,7 +127,7 @@ export type FactOp =
 export type Check =
   | { kind: 'manual' }
   /** PASS when at least one of `files` exists. */
-  | { kind: 'file_exists'; files: string[] }
+  | { kind: 'file_exists'; files: string[]; non_empty?: boolean }
   /**
    * PASS when any sub-check passes (first PASS wins); otherwise the worst
    * outcome (FAIL > WRONG > MISSING). For concepts satisfied by

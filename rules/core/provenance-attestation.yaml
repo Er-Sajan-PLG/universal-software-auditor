@@ -55,6 +55,8 @@ rules:
     class: supply-chain
     check:
       kind: file_exists
+      # An empty signature file signs nothing — presence alone is not evidence.
+      non_empty: true
       files:
         - '**/*.sigstore'
         - '**/*.bundle'

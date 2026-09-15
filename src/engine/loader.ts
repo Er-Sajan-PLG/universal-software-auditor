@@ -355,7 +355,11 @@ function resolveRuleClass(r: YamlMap, where: string, id: string, warnings: strin
 const CHECK_BUILDERS: Record<string, (c: YamlMap) => Check> = {
   manual: () => ({ kind: 'manual' }),
   info: () => ({ kind: 'info' }),
-  file_exists: (c) => ({ kind: 'file_exists', files: toStringArray(c.files) }),
+  file_exists: (c) => ({
+    kind: 'file_exists',
+    files: toStringArray(c.files),
+    non_empty: c.non_empty === true ? true : undefined,
+  }),
   file_absent: (c) => ({ kind: 'file_absent', files: toStringArray(c.files) }),
   any_file: (c) => ({ kind: 'any_file', patterns: toStringArray(c.patterns ?? c.files) }),
   grep_present: (c) => grepCheck('grep_present', c),
