@@ -1,0 +1,39 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "xenos1996-usa-2.18.0.tgz",
+      "digest": {
+        "sha256": "393c93cef1446a2988f6e4e154aab3db308139fab5c810a2389011bb39ed2639"
+      }
+    }
+  ],
+  "predicateType": "https://slsa.dev/verification_summary/v1",
+  "predicate": {
+    "verifier": {
+      "id": "https://github.com/Er-Sajan-PLG/universal-software-auditor/.github/workflows/release.yml",
+      "version": {
+        "gh": "2.100.0"
+      }
+    },
+    "timeVerified": "2026-09-15T01:57:01Z",
+    "resourceUri": "https://registry.npmjs.org/@xenos1996/usa/-/usa-2.18.0.tgz",
+    "policy": {
+      "uri": "https://github.com/Er-Sajan-PLG/universal-software-auditor/blob/54e9c6b9ebb182495ab22b4b98bf9290b008211a/.github/workflows/release.yml",
+      "digest": {
+        "sha256": "8b57a2686b0edaec5e5da21cf974589d80342bf293f53f7463d7b212fbb565e0"
+      }
+    },
+    "inputAttestations": [
+      {
+        "uri": "https://api.github.com/repos/Er-Sajan-PLG/universal-software-auditor/attestations/sha256:393c93cef1446a2988f6e4e154aab3db308139fab5c810a2389011bb39ed2639",
+        "digest": {
+          "sha256": "d70d280888a58bb68106db1593892f5bb2c93d00b8932d9ef3f2b22ab3a808b4"
+        }
+      }
+    ],
+    "verificationResult": "PASSED",
+    "verifiedLevels": ["SLSA_BUILD_LEVEL_2"],
+    "slsaVersion": "1.1"
+  }
+}
