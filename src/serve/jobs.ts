@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { existsSync, realpathSync } from 'node:fs';
+import fs, { existsSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import type { AuditReport } from '../types.js';
 import type { MaturityProfile } from '../engine/maturity.js';
@@ -31,6 +31,8 @@ export interface ServeJob {
   finishedAt?: string;
   report?: AuditReport;
   profile?: MaturityProfile;
+  /** Rendered report (set for finished jobs when persistence is on). */
+  rendered?: { contentType: string; body: string };
   error?: string;
 }
 
@@ -65,12 +67,20 @@ export interface JobRunner {
     | Promise<{ report: AuditReport; profile: MaturityProfile }>;
 }
 
+export interface JobHooks {
+  /** Fires for every finished job (done or error), after status is set. */
+  onDone?: (job: ServeJob) => void;
+}
+
 export function createJobManager(
   runner: JobRunner,
   historyLimit = 20,
+  hooks: JobHooks = {},
 ): {
   submit: (options: ServeJobOptions, target: string) => { id: string } | { conflict: true };
   get: (id: string) => ServeJob | undefined;
+  list: () => ServeJob[];
+  restore: (jobs: ServeJob[]) => void;
 } {
   const jobs = new Map<string, ServeJob>();
   let running = false;
@@ -112,6 +122,7 @@ export function createJobManager(
             job.finishedAt = new Date().toISOString();
             running = false;
             prune();
+            hooks.onDone?.(job);
           }
         })();
       });
@@ -121,5 +132,109 @@ export function createJobManager(
     get(id: string): ServeJob | undefined {
       return jobs.get(id);
     },
+
+    list(): ServeJob[] {
+      return [...jobs.values()].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    },
+
+    restore(seed: ServeJob[]): void {
+      for (const job of seed) {
+        if (job.status !== 'running') jobs.set(job.id, job);
+      }
+      prune();
+    },
   };
+}
+
+/**
+ * File persistence for `--data-dir` (ADR-0040): one JSON file per finished
+ * job, pruned to the same bound as memory history. Only finished jobs are
+ * ever written — a crash leaves no partial record behind.
+ */
+export interface PersistedJob {
+  id: string;
+  status: JobStatus;
+  options: ServeJobOptions;
+  createdAt: string;
+  finishedAt?: string;
+  error?: string;
+  rendered?: { contentType: string; body: string };
+}
+
+export function persistJob(dir: string, job: ServeJob): void {
+  if (job.status === 'running') return;
+  const record: PersistedJob = {
+    id: job.id,
+    status: job.status,
+    options: job.options,
+    createdAt: job.createdAt,
+    finishedAt: job.finishedAt,
+    error: job.error,
+    rendered: job.rendered,
+  };
+  fs.writeFileSync(path.join(dir, `${job.id}.json`), `${JSON.stringify(record, null, 2)}\n`);
+}
+
+function readRecord(dir: string, file: string): PersistedJob {
+  const raw = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) as PersistedJob;
+  if (typeof raw.id !== 'string' || (raw.status !== 'done' && raw.status !== 'error')) {
+    throw new Error('not a job record');
+  }
+  return raw;
+}
+
+function listRecordFiles(dir: string): string[] {
+  try {
+    return fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Read back persisted jobs, skipping anything malformed with a loud
+ * warning instead of refusing to start — a corrupt file must not take
+ * down the server, but it must not pass silently either.
+ */
+export function loadPersisted(dir: string): ServeJob[] {
+  const out: ServeJob[] = [];
+  for (const f of listRecordFiles(dir)) {
+    try {
+      const raw = readRecord(dir, f);
+      out.push({
+        id: raw.id,
+        status: raw.status,
+        options: raw.options,
+        createdAt: raw.createdAt,
+        finishedAt: raw.finishedAt,
+        error: raw.error,
+        rendered: raw.rendered,
+      });
+    } catch (err) {
+      console.error(`serve: skipping unreadable job file ${f}: ${(err as Error).message}`);
+    }
+  }
+  return out;
+}
+
+/** Prune persisted files past the bound, oldest first (shared rule). */
+export function prunePersisted(dir: string, historyLimit: number): void {
+  const records: Array<{ id: string; createdAt: string }> = [];
+  for (const f of listRecordFiles(dir)) {
+    try {
+      const raw = readRecord(dir, f);
+      records.push({ id: raw.id, createdAt: raw.createdAt });
+    } catch {
+      // Malformed files are the loader's complaint, not the pruner's.
+    }
+  }
+  if (records.length <= historyLimit) return;
+  records.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+  for (const victim of records.slice(0, records.length - historyLimit)) {
+    try {
+      fs.rmSync(path.join(dir, `${victim.id}.json`));
+    } catch {
+      // Best effort: a leftover file is untidy, not a failure.
+    }
+  }
 }

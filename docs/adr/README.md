@@ -48,7 +48,7 @@ a changed decision gets a _new_ ADR that supersedes the old one).
 | 0037 | Two reports ship together: raw for machines, narrative for customers | Accepted   | —          |
 | 0038 | A root AGENTS.md carries the repo's operating manual                 | Accepted   | —          |
 | 0039 | Serve audits on localhost first, with the threat model written down  | Accepted   | —          |
-| 0039 | Serve audits on localhost first, with the threat model written down  | Accepted   | —          |
+| 0040 | Serve persists reports to disk only when asked                       | Accepted   | —          |
 
 ## Coverage map (what has no ADR, and why)
 

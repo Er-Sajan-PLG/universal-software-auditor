@@ -44,25 +44,40 @@ function fixtureTarget(): string {
 
 type Runner = Parameters<typeof createJobManager>[0];
 
-async function startTest(opts?: {
+interface TestServerOpts {
   roots?: string[];
   token?: string;
   runner?: Runner;
-}): Promise<{ base: string; token: string }> {
-  const roots = opts?.roots ?? [tmpDir()];
-  const token = opts?.token ?? TOKEN;
-  const runner: Runner =
-    opts?.runner ??
-    ((jobOptions, target) =>
-      auditAt(target, { depth: jobOptions.depth as 'quick' | 'standard' | 'deep' }));
+  dataDir?: string;
+  historyLimit?: number;
+}
+
+async function launchTestServer(
+  roots: string[],
+  token: string,
+  runner: Runner,
+  opts: TestServerOpts,
+): Promise<{ base: string; token: string }> {
   const { server, port } = await startServer({
     port: 0,
     token,
     roots,
-    manager: createJobManager(runner),
+    runner,
+    ...(opts.dataDir === undefined ? {} : { dataDir: opts.dataDir }),
+    ...(opts.historyLimit === undefined ? {} : { historyLimit: opts.historyLimit }),
   });
   servers.push(server);
   return { base: `http://127.0.0.1:${port}`, token };
+}
+
+async function startTest(opts: TestServerOpts = {}): Promise<{ base: string; token: string }> {
+  const roots = opts.roots ?? [tmpDir()];
+  const token = opts.token ?? TOKEN;
+  const runner: Runner =
+    opts.runner ??
+    ((jobOptions, target) =>
+      auditAt(target, { depth: jobOptions.depth as 'quick' | 'standard' | 'deep' }));
+  return launchTestServer(roots, token, runner, opts);
 }
 
 async function api(
@@ -199,5 +214,78 @@ describe('serve jobs', () => {
     const second = await api(base, 'POST', '/api/audits', token, { target });
     expect(second.code).toBe(409);
     await waitDone(base, token, first.json['id'] as string);
+  });
+});
+
+describe('serve persistence (ADR-0040)', () => {
+  it('lists audits without report bodies', async () => {
+    const target = fixtureTarget();
+    const { base, token } = await startTest({ roots: [path.dirname(target)] });
+    const started = await api(base, 'POST', '/api/audits', token, { target });
+    expect(started.code).toBe(202);
+    const done = await waitDone(base, token, started.json['id'] as string);
+    expect(done['status']).toBe('done');
+    const list = await api(base, 'GET', '/api/audits', token);
+    expect(list.code).toBe(200);
+    const audits = list.json['audits'] as Array<Record<string, unknown>>;
+    expect(audits).toHaveLength(1);
+    expect(audits[0]!['id']).toBe(started.json['id']);
+    expect(audits[0]!).not.toHaveProperty('report');
+  });
+
+  it('persists finished jobs and restores them on restart', async () => {
+    const target = fixtureTarget();
+    const dataDir = path.join(tmpDir(), 'data');
+    const first = await startTest({ roots: [path.dirname(target)], dataDir });
+    const started = await api(first.base, 'POST', '/api/audits', first.token, { target });
+    expect(started.code).toBe(202);
+    const id = started.json['id'] as string;
+    await waitDone(first.base, first.token, id);
+    const files = fs.readdirSync(dataDir).filter((f) => f.endsWith('.json'));
+    expect(files).toHaveLength(1);
+    // A fresh server over the same directory serves history without re-running.
+    const second = await startTest({ roots: [path.dirname(target)], dataDir });
+    const got = await api(second.base, 'GET', `/api/audits/${id}`, second.token);
+    expect(got.code).toBe(200);
+    expect(got.json['status']).toBe('done');
+    expect(typeof got.json['report']).toBe('string');
+  });
+
+  it('prunes persisted files past the shared bound', async () => {
+    const target = fixtureTarget();
+    const dataDir = path.join(tmpDir(), 'data');
+    const canned = auditAt(target);
+    const runner = () => canned;
+    const { base, token } = await startTest({
+      roots: [path.dirname(target)],
+      dataDir,
+      historyLimit: 2,
+      runner,
+    });
+    for (let i = 0; i < 3; i++) {
+      const started = await api(base, 'POST', '/api/audits', token, { target });
+      expect(started.code).toBe(202);
+      await waitDone(base, token, started.json['id'] as string);
+    }
+    const files = fs.readdirSync(dataDir).filter((f) => f.endsWith('.json'));
+    expect(files).toHaveLength(2);
+  });
+
+  it('starts despite a corrupt file, warning loudly', async () => {
+    const dataDir = tmpDir();
+    fs.writeFileSync(path.join(dataDir, 'garbage.json'), 'not json{{{', 'utf8');
+    const errs: string[] = [];
+    const orig = console.error;
+    console.error = (...a: unknown[]) => {
+      errs.push(a.join(' '));
+    };
+    try {
+      const { base, token } = await startTest({ dataDir });
+      const list = await api(base, 'GET', '/api/audits', token);
+      expect(list.code).toBe(200);
+    } finally {
+      console.error = orig;
+    }
+    expect(errs.join('\n')).toContain('garbage.json');
   });
 });

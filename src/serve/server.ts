@@ -6,7 +6,16 @@ import { renderJson } from '../report/json.js';
 import { renderMarkdown } from '../report/markdown.js';
 import { renderHtml } from '../report/html.js';
 import { DEPTHS, MATURITIES, DEFAULT_RULES_DIR, VERSION } from '../cli-args.js';
-import { createJobManager, resolveTarget, type ServeJob } from './jobs.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import {
+  createJobManager,
+  loadPersisted,
+  persistJob,
+  prunePersisted,
+  resolveTarget,
+  type ServeJob,
+} from './jobs.js';
 import { uiPage } from './ui.js';
 
 /**
@@ -75,7 +84,11 @@ export interface ServeOptions {
   port: number;
   token: string;
   roots: string[];
-  manager?: ReturnType<typeof createJobManager>;
+  /** Injected for tests; production runs the real audit engine. */
+  runner?: Parameters<typeof createJobManager>[0];
+  /** Persist finished jobs here (ADR-0040); unset means memory only. */
+  dataDir?: string;
+  historyLimit?: number;
 }
 
 export async function startServer(opts: ServeOptions): Promise<{
@@ -83,113 +96,56 @@ export async function startServer(opts: ServeOptions): Promise<{
   port: number;
   token: string;
 }> {
-  const manager =
-    opts.manager ??
-    createJobManager((jobOptions, target) => {
-      const config = loadConfig(target);
-      const { report, profile } = runAudit({
-        target,
-        rulesDir: DEFAULT_RULES_DIR,
-        depth: jobOptions.depth as 'quick' | 'standard' | 'deep',
-        profile: jobOptions.profile as 'auto',
-        config,
-        allowCommands: false,
-        usaVersion: VERSION,
+  const historyLimit = opts.historyLimit ?? 20;
+  const dataDir = opts.dataDir === undefined ? undefined : path.resolve(opts.dataDir);
+  if (dataDir !== undefined) {
+    try {
+      fs.mkdirSync(dataDir, { recursive: true });
+    } catch (err) {
+      throw new Error(`serve: cannot create data dir ${dataDir}: ${(err as Error).message}`, {
+        cause: err,
       });
-      return { report, profile };
-    });
-
-  const server = createServer((req, res) => {
-    void (async () => {
-      const url = new URL(req.url ?? '/', 'http://127.0.0.1');
-      if (req.method === 'GET' && url.pathname === '/') {
-        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-        res.end(uiPage());
-        return;
-      }
-      if (!checkAuth(req, opts.token)) {
-        sendJson(res, 401, { error: 'missing or invalid bearer token' });
-        return;
-      }
-      if (req.method === 'POST' && url.pathname === '/api/audits') {
-        let raw: string;
-        try {
-          raw = await readBody(req);
-        } catch {
-          sendJson(res, 413, { error: 'request body too large' });
-          return;
-        }
-        let body: Record<string, unknown>;
-        try {
-          body = JSON.parse(raw) as Record<string, unknown>;
-        } catch {
-          sendJson(res, 400, { error: 'request body must be JSON' });
-          return;
-        }
-        const target = body['target'];
-        const depth = body['depth'] ?? 'standard';
-        const profile = body['profile'] ?? 'auto';
-        const format = body['format'] ?? 'json';
-        if (typeof target !== 'string' || target.length === 0) {
-          sendJson(res, 400, { error: 'target (string) is required' });
-          return;
-        }
-        if (typeof depth !== 'string' || !DEPTHS.includes(depth as 'quick')) {
-          sendJson(res, 400, { error: `depth must be one of ${DEPTHS.join('|')}` });
-          return;
-        }
-        if (
-          typeof profile !== 'string' ||
-          (profile !== 'auto' && !MATURITIES.includes(profile as 'beta'))
-        ) {
-          sendJson(res, 400, { error: 'profile must be auto or a maturity stage' });
-          return;
-        }
-        if (typeof format !== 'string' || !(FORMATS as readonly string[]).includes(format)) {
-          sendJson(res, 400, { error: `format must be one of ${FORMATS.join('|')}` });
-          return;
-        }
-        let resolved: string;
-        try {
-          resolved = resolveTarget(target, opts.roots);
-        } catch (err) {
-          const message = (err as Error).message;
-          // Containment failures are authorization failures; a missing
-          // path is a bad request. Different status, same static shape.
-          sendJson(res, message.includes('escapes') ? 403 : 400, { error: message });
-          return;
-        }
-        const submitted = manager.submit({ target, depth, profile, format }, resolved);
-        if ('conflict' in submitted) {
-          sendJson(res, 409, { error: 'an audit is already running' });
-          return;
-        }
-        sendJson(res, 202, { id: submitted.id, status: 'running' });
-        return;
-      }
-      const auditMatch = /^\/api\/audits\/([0-9a-f]+)$/.exec(url.pathname);
-      if (req.method === 'GET' && auditMatch) {
-        const job = manager.get(auditMatch[1] as string);
-        if (!job) {
-          sendJson(res, 404, { error: 'unknown audit id' });
-          return;
-        }
-        const rendered = job.status === 'done' ? renderJobReport(job) : undefined;
-        sendJson(res, 200, {
-          id: job.id,
-          status: job.status,
-          createdAt: job.createdAt,
-          ...(job.finishedAt === undefined ? {} : { finishedAt: job.finishedAt }),
-          options: job.options,
-          ...(job.error === undefined ? {} : { error: job.error }),
-          ...(rendered === undefined
-            ? {}
-            : { contentType: rendered.contentType, report: rendered.body }),
+    }
+  }
+  const hooks =
+    dataDir === undefined
+      ? {}
+      : {
+          onDone: (job: ServeJob) => {
+            if (job.status === 'done' && job.report && job.profile) {
+              job.rendered = renderJobReport(job);
+            }
+            persistJob(dataDir, job);
+            prunePersisted(dataDir, historyLimit);
+          },
+        };
+  const manager = createJobManager(
+    opts.runner ??
+      ((jobOptions, target) => {
+        const config = loadConfig(target);
+        const { report, profile } = runAudit({
+          target,
+          rulesDir: DEFAULT_RULES_DIR,
+          depth: jobOptions.depth as 'quick' | 'standard' | 'deep',
+          profile: jobOptions.profile as 'auto',
+          config,
+          allowCommands: false,
+          usaVersion: VERSION,
         });
-        return;
-      }
-      sendJson(res, 404, { error: 'not found' });
-    })().catch((err: Error) => {
+        return { report, profile };
+      }),
+    historyLimit,
+    hooks,
+  );
+  if (dataDir !== undefined) manager.restore(loadPersisted(dataDir));
+  type JobManager = ReturnType<typeof createJobManager>;
+  const ctx: { manager: JobManager; token: string; roots: string[] } = {
+    manager,
+    token: opts.token,
+    roots: opts.roots,
+  };
+  const server = createServer((req, res) => {
+    handleRequest(req, res, ctx).catch((err: Error) => {
       if (!res.headersSent) sendJson(res, 500, { error: 'internal error' });
       console.error(`serve: request failed: ${err.message}`);
     });
@@ -204,4 +160,178 @@ export async function startServer(opts: ServeOptions): Promise<{
   const address = server.address();
   const port = typeof address === 'object' && address !== null ? address.port : opts.port;
   return { server, port, token: opts.token };
+}
+
+interface ValidBody {
+  target: string;
+  depth: string;
+  profile: string;
+  format: string;
+}
+
+function depthError(depth: unknown): string | null {
+  if (typeof depth !== 'string' || !DEPTHS.includes(depth as 'quick')) {
+    return `depth must be one of ${DEPTHS.join('|')}`;
+  }
+  return null;
+}
+
+function profileError(profile: unknown): string | null {
+  if (
+    typeof profile !== 'string' ||
+    (profile !== 'auto' && !MATURITIES.includes(profile as 'beta'))
+  ) {
+    return 'profile must be auto or a maturity stage';
+  }
+  return null;
+}
+
+function formatError(format: unknown): string | null {
+  if (typeof format !== 'string' || !(FORMATS as readonly string[]).includes(format)) {
+    return `format must be one of ${FORMATS.join('|')}`;
+  }
+  return null;
+}
+
+function validateAuditBody(
+  body: Record<string, unknown>,
+): { error: string } | { options: ValidBody } {
+  const target = body['target'];
+  if (typeof target !== 'string' || target.length === 0) {
+    return { error: 'target (string) is required' };
+  }
+  const depth = body['depth'] ?? 'standard';
+  const profile = body['profile'] ?? 'auto';
+  const format = body['format'] ?? 'json';
+  for (const err of [depthError(depth), profileError(profile), formatError(format)]) {
+    if (err) return { error: err };
+  }
+  return {
+    options: {
+      target,
+      depth: depth as string,
+      profile: profile as string,
+      format: format as string,
+    },
+  };
+}
+
+async function handlePostAudits(
+  req: IncomingMessage,
+  res: ServerResponse,
+  ctx: { manager: ReturnType<typeof createJobManager>; token: string; roots: string[] },
+): Promise<void> {
+  let raw: string;
+  try {
+    raw = await readBody(req);
+  } catch {
+    sendJson(res, 413, { error: 'request body too large' });
+    return;
+  }
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    sendJson(res, 400, { error: 'request body must be JSON' });
+    return;
+  }
+  const valid = validateAuditBody(body);
+  if ('error' in valid) {
+    sendJson(res, 400, { error: valid.error });
+    return;
+  }
+  let resolved: string;
+  try {
+    resolved = resolveTarget(valid.options.target, ctx.roots);
+  } catch (err) {
+    const message = (err as Error).message;
+    // Containment failures are authorization failures; a missing
+    // path is a bad request. Different status, same static shape.
+    sendJson(res, message.includes('escapes') ? 403 : 400, { error: message });
+    return;
+  }
+  const submitted = ctx.manager.submit({ ...valid.options }, resolved);
+  if ('conflict' in submitted) {
+    sendJson(res, 409, { error: 'an audit is already running' });
+    return;
+  }
+  sendJson(res, 202, { id: submitted.id, status: 'running' });
+}
+
+function jobSummary(j: ServeJob): Record<string, unknown> {
+  return {
+    id: j.id,
+    status: j.status,
+    createdAt: j.createdAt,
+    ...(j.finishedAt === undefined ? {} : { finishedAt: j.finishedAt }),
+    options: j.options,
+    ...(j.error === undefined ? {} : { error: j.error }),
+  };
+}
+
+function handleListAudits(
+  res: ServerResponse,
+  ctx: { manager: ReturnType<typeof createJobManager> },
+): void {
+  sendJson(res, 200, { audits: ctx.manager.list().map(jobSummary) });
+}
+
+function handleGetAudit(
+  res: ServerResponse,
+  ctx: { manager: ReturnType<typeof createJobManager> },
+  id: string,
+): void {
+  const job = ctx.manager.get(id);
+  if (!job) {
+    sendJson(res, 404, { error: 'unknown audit id' });
+    return;
+  }
+  // Restored jobs carry only the filed rendering; live jobs render.
+  const rendered = job.rendered ?? (job.status === 'done' ? renderJobReport(job) : undefined);
+  sendJson(res, 200, {
+    ...jobSummary(job),
+    ...(rendered === undefined ? {} : { contentType: rendered.contentType, report: rendered.body }),
+  });
+}
+
+/** Request URL against the loopback base (the server never sees another host). */
+function requestUrl(req: IncomingMessage): URL {
+  return new URL(req.url ?? '/', 'http://127.0.0.1');
+}
+
+async function handleRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  ctx: { manager: ReturnType<typeof createJobManager>; token: string; roots: string[] },
+): Promise<void> {
+  const url = requestUrl(req);
+  if (req.method === 'GET' && url.pathname === '/') {
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(uiPage());
+    return;
+  }
+  if (!checkAuth(req, ctx.token)) {
+    sendJson(res, 401, { error: 'missing or invalid bearer token' });
+    return;
+  }
+  if (req.method === 'POST' && url.pathname === '/api/audits') {
+    await handlePostAudits(req, res, ctx);
+    return;
+  }
+  if (req.method === 'GET' && url.pathname === '/api/audits') {
+    handleListAudits(res, ctx);
+    return;
+  }
+  const auditId = matchAuditId(url.pathname);
+  if (req.method === 'GET' && auditId) {
+    handleGetAudit(res, ctx, auditId);
+    return;
+  }
+  sendJson(res, 404, { error: 'not found' });
+}
+
+/** Extract a hex audit id from /api/audits/:id, or null. */
+function matchAuditId(pathname: string): string | null {
+  const match = /^\/api\/audits\/([0-9a-f]+)$/.exec(pathname);
+  return match?.[1] ?? null;
 }
