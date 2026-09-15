@@ -47,9 +47,15 @@ export function allRules(): Map<string, Rule> {
   return byId;
 }
 
-/** Rule ids that a fixture can honestly cover (deterministic kinds only). */
+/**
+ * Rule ids that a file fixture can honestly cover (deterministic file kinds
+ * only). `manual` needs a human; `invariant` needs a finding set — both are
+ * covered by their own harnesses, never by files.
+ */
 export function automatableRules(): Rule[] {
-  return [...allRules().values()].filter((r) => r.check.kind !== 'manual');
+  return [...allRules().values()].filter(
+    (r) => r.check.kind !== 'manual' && r.check.kind !== 'invariant',
+  );
 }
 
 /** Reads every fixture file in tests/fixtures/rules, sorted by filename. */

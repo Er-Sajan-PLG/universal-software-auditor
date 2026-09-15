@@ -38,34 +38,42 @@ export function automatabilityOf(check: Check): Automatability {
  * toward expensive. Used by `usa rules --facets` to make scaling a
  * sortable column instead of vibes.
  */
+/**
+ * Flat cost table: file-listing checks are cheap, content scans cost
+ * bytes, subprocesses and humans cost the most. A table, not branches —
+ * adding a kind means adding a line, and the budget stays flat.
+ */
+// Partial on purpose: a future kind missing here fails closed toward
+// expensive at runtime (and the costOf test pins that), instead of
+// silently rating unknown work cheap.
+const KIND_COST: Partial<Record<Check['kind'], RuleCost>> = {
+  file_exists: 'low',
+  file_absent: 'low',
+  any_file: 'low',
+  tracked_present: 'low',
+  tracked_absent: 'low',
+  count_min: 'low',
+  info: 'low',
+  grep_present: 'medium',
+  grep_absent: 'medium',
+  grep_wrong: 'medium',
+  grep_deprecated: 'medium',
+  file_lines_max: 'medium',
+  json_path: 'medium',
+  oracle: 'medium',
+  command: 'high',
+  manual: 'high',
+};
+
 export function costOf(check: Check): RuleCost {
-  switch (check.kind) {
-    case 'file_exists':
-    case 'file_absent':
-    case 'any_file':
-    case 'tracked_present':
-    case 'tracked_absent':
-    case 'count_min':
-    case 'info':
-      return 'low';
-    case 'grep_present':
-    case 'grep_absent':
-    case 'grep_wrong':
-    case 'grep_deprecated':
-    case 'file_lines_max':
-    case 'json_path':
-    case 'oracle':
-      return 'medium';
-    case 'command':
-    case 'manual':
-      return 'high';
-    case 'any_of':
-      return check.checks
-        .map(costOf)
-        .reduce((a, b) => (rankCost(a) >= rankCost(b) ? a : b), 'low' as RuleCost);
-    default:
-      return 'high';
+  if (check.kind === 'any_of') {
+    return check.checks
+      .map(costOf)
+      .reduce((a, b) => (rankCost(a) >= rankCost(b) ? a : b), 'low' as RuleCost);
   }
+  // Invariants decide over the already-computed finding set: no file I/O.
+  if (check.kind === 'invariant') return 'low';
+  return KIND_COST[check.kind] ?? 'high';
 }
 
 function rankCost(cost: RuleCost): number {

@@ -271,6 +271,16 @@ describe('costOf (rule facets)', () => {
     expect(costOf({ kind: 'manual' })).toBe('high');
   });
 
+  it('rates invariants low: decided over findings, never files', () => {
+    expect(
+      costOf({
+        kind: 'invariant',
+        when: { all: [{ rule: 'X', status: ['PASS'] }] },
+        assert: { rule: 'Y', status: ['PASS'] },
+      }),
+    ).toBe('low');
+  });
+
   it('takes the max across any_of branches and fails closed on unknown kinds', () => {
     expect(
       costOf({

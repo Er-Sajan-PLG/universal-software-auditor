@@ -6,12 +6,15 @@ import type {
   Automatability,
   Check,
   Depth,
+  InvariantClause,
+  InvariantCondition,
   OracleLevel,
   OracleOp,
   Rule,
   RuleClass,
   RulePack,
   Severity,
+  Status,
 } from '../types.js';
 import { validateAutomatability, validateCatalogue } from './automatability.js';
 
@@ -429,6 +432,110 @@ function parseAnyOf(c: YamlMap, where: string, warnings: string[]): Check | null
   return { kind: 'any_of', checks: subs };
 }
 
+const STATUSES = [
+  'PASS',
+  'FAIL',
+  'WRONG',
+  'MISSING',
+  'DEPRECATED',
+  'EXPERIMENTAL',
+  'UNKNOWN',
+  'NOT_APPLICABLE',
+] as const;
+
+function parseStatusList(raw: unknown, where: string, warnings: string[]): Status[] | null {
+  const list = Array.isArray(raw) ? raw : [raw];
+  const out: Status[] = [];
+  for (const s of list) {
+    if (typeof s === 'string' && (STATUSES as readonly string[]).includes(s)) {
+      out.push(s as Status);
+    } else {
+      warnings.push(`${where}: unknown status "${String(s)}" — clause ignored`);
+      return null;
+    }
+  }
+  return out;
+}
+
+function parseClause(raw: unknown, where: string, warnings: string[]): InvariantClause | null {
+  const c = asMap(raw);
+  const rule = str(c.rule);
+  if (!rule) {
+    warnings.push(`${where}: invariant clause missing "rule" — clause ignored`);
+    return null;
+  }
+  const status = parseStatusList(c.status ?? 'PASS', where, warnings);
+  if (!status) return null;
+  return { rule, status };
+}
+
+function parseClauseList(
+  raw: unknown,
+  where: string,
+  warnings: string[],
+): InvariantClause[] | null {
+  if (!Array.isArray(raw)) {
+    warnings.push(`${where}: expected a list of clauses — ignored`);
+    return null;
+  }
+  const out: InvariantClause[] = [];
+  for (const item of raw) {
+    const clause = parseClause(item, where, warnings);
+    if (!clause) return null;
+    out.push(clause);
+  }
+  return out;
+}
+
+/**
+ * Invariant parsing: `when` (all/any/not over rule+status) plus a required
+ * `assert`. Every malformed piece warns loudly and drops the rule — a
+ * composition that cannot be parsed must never silently pass.
+ */
+function parseInvariantWhen(
+  c: YamlMap,
+  where: string,
+  warnings: string[],
+): InvariantCondition | null {
+  const whenRaw = asMap(c.when ?? {});
+  const when: InvariantCondition = {};
+  for (const key of ['all', 'any', 'not'] as const) {
+    if (whenRaw[key] === undefined) continue;
+    const clauses = parseClauseList(whenRaw[key], `${where} > when.${key}`, warnings);
+    if (!clauses) return null;
+    when[key] = clauses;
+  }
+  if (when.all === undefined && when.any === undefined && when.not === undefined) {
+    warnings.push(`${where}: invariant has an empty precondition — rule ignored`);
+    return null;
+  }
+  return when;
+}
+
+function parseInvariantAssert(
+  c: YamlMap,
+  where: string,
+  warnings: string[],
+): { rule: string; status: Status[] } | null {
+  const assertRaw = asMap(c.assert ?? {});
+  const assertRule = str(assertRaw.rule);
+  if (!assertRule) {
+    warnings.push(`${where}: invariant missing assert.rule — rule ignored`);
+    return null;
+  }
+  const assertStatus = parseStatusList(assertRaw.status ?? 'PASS', `${where} > assert`, warnings);
+  if (!assertStatus) return null;
+  return { rule: assertRule, status: assertStatus };
+}
+
+function parseInvariant(c: YamlMap, where: string, warnings: string[]): Check | null {
+  const when = parseInvariantWhen(c, where, warnings);
+  if (!when) return null;
+  const assert = parseInvariantAssert(c, where, warnings);
+  if (!assert) return null;
+  return { kind: 'invariant', when, assert };
+}
+
 function parseCheck(raw: unknown, where: string, warnings: string[]): Check | null {
   const c = asMap(raw);
   const kind = str(c.kind);
@@ -437,6 +544,7 @@ function parseCheck(raw: unknown, where: string, warnings: string[]): Check | nu
     return null;
   }
   if (kind === 'any_of') return parseAnyOf(c, where, warnings);
+  if (kind === 'invariant') return parseInvariant(c, where, warnings);
   const build = CHECK_BUILDERS[kind];
   if (!build) {
     warnings.push(`${where}: unsupported check kind "${String(c.kind)}"`);

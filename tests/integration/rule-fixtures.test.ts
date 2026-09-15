@@ -106,14 +106,16 @@ describe('rule fixtures — coverage gate', () => {
     ).toEqual([]);
   });
 
-  it('manual rules are exempt and never have fixtures', () => {
-    const manualIds = new Set(
-      [...allRules().values()].filter((r) => r.check.kind === 'manual').map((r) => r.id),
+  it('manual and invariant rules are exempt and never have file fixtures', () => {
+    const exemptIds = new Set(
+      [...allRules().values()]
+        .filter((r) => r.check.kind === 'manual' || r.check.kind === 'invariant')
+        .map((r) => r.id),
     );
     for (const { fixture } of fixtures) {
       expect(
-        manualIds.has(fixture.rule),
-        `${fixture.rule} is a manual rule and cannot be fixture-tested`,
+        exemptIds.has(fixture.rule),
+        `${fixture.rule} cannot be file-fixture-tested (manual needs a human, invariant needs a finding set)`,
       ).toBe(false);
     }
   });
