@@ -10,6 +10,7 @@ import { cmdFoundation, cmdLive, cmdModels } from './cli-session.js';
 import { cmdDiff, cmdVerifyReport } from './cli-reports.js';
 import { cmdBootstrap, cmdInit, cmdLearn } from './cli-scaffold.js';
 import { cmdEvolve } from './cli-evolve.js';
+import { cmdServe } from './cli-serve.js';
 
 /** Dispatch only: every command lives in its own cli-*.ts module. */
 /* -------------------------------------------------------------------- main -- */
@@ -30,6 +31,7 @@ const COMMANDS: Record<string, (args: Args) => number | Promise<number>> = {
   categories: cmdCategories,
   live: cmdLive,
   models: cmdModels,
+  serve: cmdServe,
 };
 
 /** Global --help/--version, resolved before dispatch. Returns null to continue. */
