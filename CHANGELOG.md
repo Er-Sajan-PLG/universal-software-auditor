@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.20.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.19.1...v2.20.0) (2026-09-15)
+
+
+### Features
+
+* **rules:** stewardship facets, evaluation cost, facets report ([#130](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/130)) ([c74e660](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/c74e6603a46c1a51efa975e846f8fbb93749a287))
+
 ## [2.19.1](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.19.0...v2.19.1) (2026-09-15)
 
 
