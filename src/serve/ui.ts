@@ -33,6 +33,9 @@ pre { white-space: pre-wrap; word-break: break-word; background: rgba(127,127,12
 </form>
 <div id="status"></div>
 <div id="result"></div>
+<h2>History</h2>
+<button id="refresh" type="button">Refresh</button>
+<div id="history"></div>
 <script>
 (function () {
   var form = document.getElementById('run');
@@ -54,6 +57,29 @@ pre { white-space: pre-wrap; word-break: break-word; background: rgba(127,127,12
       return r.json().then(function (body) { return { code: r.status, body: body }; });
     });
   }
+  function loadHistory() {
+    var history = document.getElementById('history');
+    clear(history);
+    api('/api/audits').then(function (got) {
+      if (got.code !== 200) { line(history, 'p', 'History: ' + (got.body.error || got.code)); return; }
+      (got.body.audits || []).forEach(function (a) {
+        var row = line(history, 'div', '');
+        var link = document.createElement('a');
+        link.href = '#';
+        link.textContent = a.id.slice(0, 8) + ' — ' + a.status + ' — ' + a.options.target;
+        link.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          api('/api/audits/' + a.id).then(function (one) {
+            if (one.code !== 200) { say('Error: ' + (one.body.error || one.code)); return; }
+            say(one.body.status === 'done' ? 'Done.' : one.body.status + '.');
+            if (one.body.status === 'done') render(one.body);
+          }).catch(function (err) { say('Request failed: ' + err); });
+        });
+        row.appendChild(link);
+      });
+    }).catch(function (err) { line(history, 'p', 'History failed: ' + err); });
+  }
+  document.getElementById('refresh').addEventListener('click', loadHistory);
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
     clear(result);
@@ -74,6 +100,7 @@ pre { white-space: pre-wrap; word-break: break-word; background: rgba(127,127,12
           if (got.body.status === 'error') { say('Audit failed: ' + got.body.error); return; }
           say('Done.');
           render(got.body);
+          loadHistory();
         }).catch(function (err) { clearInterval(timer); say('Request failed: ' + err); });
       }, 1000);
     }).catch(function (err) { say('Request failed: ' + err); });

@@ -89,6 +89,7 @@ serve options
   --port <n>          Port to listen on (default 0 = ephemeral, printed at startup)
   --token <t>         Bearer token for /api/* (default: generated and printed once)
   --allow-root <dir>  Auditable root, repeatable (default: working directory)
+  --data-dir <dir>    Persist finished audits here (default: memory only)
 
 audit options
   --dry-run           Print the report path that would be written and exit
