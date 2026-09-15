@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.23.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.22.0...v2.23.0) (2026-09-15)
+
+
+### Features
+
+* **tests:** auditor mutation probes over every rule fixture ([#139](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/139)) ([e71aa19](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/e71aa191f93707e734ebb86b127f91afe4c0d46a))
+
 ## [2.22.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.21.0...v2.22.0) (2026-09-15)
 
 
