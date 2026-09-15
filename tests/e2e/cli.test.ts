@@ -349,3 +349,14 @@ describe('--dry-run (CLI-003)', () => {
     expect(logs.join('\n')).toContain('dry-run: nothing would be written');
   });
 });
+
+describe('usa rules --facets', () => {
+  it('reports ownership, review, and cost coverage without fixed counts', () => {
+    const r = run(['rules', '--facets']);
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('Facet coverage across');
+    expect(r.out).toMatch(/\d+ rules/);
+    expect(r.out).toContain('owner:');
+    expect(r.out).toContain('cost:');
+  });
+});

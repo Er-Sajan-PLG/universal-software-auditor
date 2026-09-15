@@ -250,7 +250,29 @@ function assembleRule(
     tags: optStrArray(r.tags),
     automatability: resolveAutomatability(r, id, check, warnings),
     catalogue: resolveRuleCatalogue(r, id, pack, warnings),
+    owner: optText(r.owner),
+    lastReviewed: resolveReviewDate(r, id, warnings),
   };
+}
+
+/**
+ * Stewardship date (YYYY-MM-DD). Malformed values warn loudly and drop —
+ * a deadline no one can read must not look like freshness (same doctrine
+ * as the audit's own review handling, ADR-0023).
+ */
+function resolveReviewDate(r: YamlMap, id: string, warnings: string[]): string | undefined {
+  const raw = optText(r.last_reviewed);
+  if (raw === undefined) return undefined;
+  if (!/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(raw)) {
+    warnings.push(`${id}: last_reviewed "${raw}" is not YYYY-MM-DD — stewardship unknown`);
+    return undefined;
+  }
+  const parsed = new Date(`${raw}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== raw) {
+    warnings.push(`${id}: last_reviewed "${raw}" is not a real date — stewardship unknown`);
+    return undefined;
+  }
+  return raw;
 }
 
 function resolveAutomatability(

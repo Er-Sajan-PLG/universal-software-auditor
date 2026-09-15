@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import path from 'node:path';
 import {
   automatabilityOf,
+  costOf,
   ruleAutomatability,
   validateAutomatability,
   parseCatalogue,
@@ -256,5 +257,70 @@ describe('catalogueCoverage (shipped rules)', () => {
       if (row.catalogue === '(uncatalogued)') continue;
       expect(validateCatalogue(row.catalogue)).toBeNull();
     }
+  });
+});
+
+describe('costOf (rule facets)', () => {
+  it('tiers file-listing checks low, content scans medium, subprocesses and humans high', () => {
+    expect(costOf({ kind: 'file_exists', files: ['x'] })).toBe('low');
+    expect(costOf({ kind: 'any_file', patterns: ['x'] })).toBe('low');
+    expect(costOf({ kind: 'count_min', patterns: ['x'], min: 1 })).toBe('low');
+    expect(costOf({ kind: 'grep_present', pattern: 'x', include: ['y'] })).toBe('medium');
+    expect(costOf({ kind: 'file_lines_max', patterns: ['x'], max_lines: 1 })).toBe('medium');
+    expect(costOf({ kind: 'command', run: 'x' })).toBe('high');
+    expect(costOf({ kind: 'manual' })).toBe('high');
+  });
+
+  it('takes the max across any_of branches and fails closed on unknown kinds', () => {
+    expect(
+      costOf({
+        kind: 'any_of',
+        checks: [
+          { kind: 'file_exists', files: ['x'] },
+          { kind: 'grep_present', pattern: 'x', include: ['y'] },
+        ],
+      }),
+    ).toBe('medium');
+    expect(costOf({ kind: 'future-kind' } as unknown as Check)).toBe('high');
+  });
+});
+
+describe('stewardship facets (owner, last_reviewed)', () => {
+  function packWith(lines: string[]): {
+    pack: ReturnType<typeof parsePackText>;
+    warnings: string[];
+  } {
+    const warnings: string[] = [];
+    const pack = parsePackText(
+      [
+        'id: demo',
+        'title: Demo',
+        'section: S1',
+        'rules:',
+        '  - id: D-1',
+        '    title: t',
+        '    severity: LOW',
+        '    class: style',
+        '    check: { kind: file_exists, files: [x] }',
+        ...lines,
+      ].join('\n'),
+      'demo.yaml',
+      new Map(),
+      warnings,
+    );
+    return { pack, warnings };
+  }
+
+  it('parses owner and a valid review date', () => {
+    const { pack, warnings } = packWith(['    owner: stewards', '    last_reviewed: 2026-09-15']);
+    expect(warnings).toEqual([]);
+    expect(pack?.rules[0]?.owner).toBe('stewards');
+    expect(pack?.rules[0]?.lastReviewed).toBe('2026-09-15');
+  });
+
+  it('drops malformed dates loudly instead of storing them', () => {
+    const { pack, warnings } = packWith(['    last_reviewed: sometime']);
+    expect(warnings.length).toBeGreaterThan(0);
+    expect(pack?.rules[0]?.lastReviewed).toBeUndefined();
   });
 });

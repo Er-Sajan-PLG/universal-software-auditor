@@ -62,6 +62,10 @@ learn options
   --out <file>        Output YAML file (default learn-suggestions.yaml)
   --min-severity <s>  Minimum severity to consider (CRITICAL|HIGH|MEDIUM|LOW|FUTURE, default MEDIUM)
 
+rules options
+  --section <id>      Show one section only (e.g. S2)
+  --facets            Facet coverage: ownership, review dates, evaluation cost
+
 standards options
   --format <fmt>      md | json                       (default md)
   --rules-dir <dir>   Rule pack directory             (default bundled rules/)

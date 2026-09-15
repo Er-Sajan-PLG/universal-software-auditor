@@ -52,22 +52,24 @@ rules:
 
 ## Rule fields
 
-| Field          | Required | Notes                                                    |
-| -------------- | -------- | -------------------------------------------------------- |
-| `id`           | ✅       | Convention: `<PREFIX>-<NNN>`, e.g. `SEC-007`             |
-| `title`        | ✅       | Imperative and specific: "Tokens and sessions expire"    |
-| `section`      | ✅       | `S1`…`S16`                                               |
-| `severity`     | ✅       | `CRITICAL` \| `HIGH` \| `MEDIUM` \| `LOW` \| `FUTURE`    |
-| `class`        | ✅       | See below                                                |
-| `check`        | ✅       | See below                                                |
-| `weight`       |          | Overrides the severity default                           |
-| `applies_when` |          | Predicate over detected facts                            |
-| `depths`       |          | `[quick]` / `[standard]` / `[deep]`; omit for all        |
-| `why`          |          | Shown in the report and the judgement queue              |
-| `evidence`     |          | **Required for `manual` checks** — what proof looks like |
-| `remediation`  |          | The fix                                                  |
-| `references`   |          | Standard IDs: `CWE-89`, `ASVS-5.3.4`, `OWASP-LLM01:2026` |
-| `tags`         |          | Free-form                                                |
+| Field           | Required | Notes                                                    |
+| --------------- | -------- | -------------------------------------------------------- |
+| `id`            | ✅       | Convention: `<PREFIX>-<NNN>`, e.g. `SEC-007`             |
+| `title`         | ✅       | Imperative and specific: "Tokens and sessions expire"    |
+| `section`       | ✅       | `S1`…`S16`                                               |
+| `severity`      | ✅       | `CRITICAL` \| `HIGH` \| `MEDIUM` \| `LOW` \| `FUTURE`    |
+| `class`         | ✅       | See below                                                |
+| `check`         | ✅       | See below                                                |
+| `weight`        |          | Overrides the severity default                           |
+| `applies_when`  |          | Predicate over detected facts                            |
+| `depths`        |          | `[quick]` / `[standard]` / `[deep]`; omit for all        |
+| `why`           |          | Shown in the report and the judgement queue              |
+| `evidence`      |          | **Required for `manual` checks** — what proof looks like |
+| `remediation`   |          | The fix                                                  |
+| `references`    |          | Standard IDs: `CWE-89`, `ASVS-5.3.4`, `OWASP-LLM01:2026` |
+| `tags`          |          | Free-form                                                |
+| `owner`         |          | Steward (person or team) — absent means unclaimed        |
+| `last_reviewed` |          | Stewardship date (`YYYY-MM-DD`); malformed warns loudly  |
 
 ### `class` drives dampening
 

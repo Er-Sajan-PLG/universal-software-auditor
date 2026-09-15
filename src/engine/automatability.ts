@@ -1,4 +1,4 @@
-import type { Automatability, Check, Rule } from '../types.js';
+import type { Automatability, Check, Rule, RuleCost } from '../types.js';
 import { AUTOMATABILITY_LADDER } from '../types.js';
 
 /**
@@ -29,6 +29,49 @@ export function automatabilityOf(check: Check): Automatability {
     default:
       return 'full';
   }
+}
+
+/**
+ * Evaluation cost tier, derived from the check kind the same way
+ * automatability is: file-listing checks are cheap, content scans cost
+ * bytes, subprocesses and humans cost the most. Unknown kinds fail closed
+ * toward expensive. Used by `usa rules --facets` to make scaling a
+ * sortable column instead of vibes.
+ */
+export function costOf(check: Check): RuleCost {
+  switch (check.kind) {
+    case 'file_exists':
+    case 'file_absent':
+    case 'any_file':
+    case 'tracked_present':
+    case 'tracked_absent':
+    case 'count_min':
+    case 'info':
+      return 'low';
+    case 'grep_present':
+    case 'grep_absent':
+    case 'grep_wrong':
+    case 'grep_deprecated':
+    case 'file_lines_max':
+    case 'json_path':
+    case 'oracle':
+      return 'medium';
+    case 'command':
+    case 'manual':
+      return 'high';
+    case 'any_of':
+      return check.checks
+        .map(costOf)
+        .reduce((a, b) => (rankCost(a) >= rankCost(b) ? a : b), 'low' as RuleCost);
+    default:
+      return 'high';
+  }
+}
+
+function rankCost(cost: RuleCost): number {
+  if (cost === 'high') return 3;
+  if (cost === 'medium') return 2;
+  return 1;
 }
 
 /** The effective automatability of a rule: explicit override, else derived. */
