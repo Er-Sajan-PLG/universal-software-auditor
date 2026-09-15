@@ -161,6 +161,20 @@ export interface PersistedJob {
   rendered?: { contentType: string; body: string };
 }
 
+/**
+ * Resolve a job record path inside the data dir (SEC-010, same shape as
+ * Store.pathFor): ids are hex by construction, but the join is still
+ * proved contained rather than assumed safe.
+ */
+function jobFile(dir: string, id: string): string {
+  const base = path.resolve(dir);
+  const file = path.resolve(base, `${id}.json`);
+  if (path.relative(base, file).startsWith(`..${path.sep}`)) {
+    throw new Error('serve: job address escapes the data directory');
+  }
+  return file;
+}
+
 export function persistJob(dir: string, job: ServeJob): void {
   if (job.status === 'running') return;
   const record: PersistedJob = {
@@ -172,7 +186,7 @@ export function persistJob(dir: string, job: ServeJob): void {
     error: job.error,
     rendered: job.rendered,
   };
-  fs.writeFileSync(path.join(dir, `${job.id}.json`), `${JSON.stringify(record, null, 2)}\n`);
+  fs.writeFileSync(jobFile(dir, job.id), `${JSON.stringify(record, null, 2)}\n`);
 }
 
 function readRecord(dir: string, file: string): PersistedJob {
@@ -232,7 +246,7 @@ export function prunePersisted(dir: string, historyLimit: number): void {
   records.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
   for (const victim of records.slice(0, records.length - historyLimit)) {
     try {
-      fs.rmSync(path.join(dir, `${victim.id}.json`));
+      fs.rmSync(jobFile(dir, victim.id));
     } catch {
       // Best effort: a leftover file is untidy, not a failure.
     }

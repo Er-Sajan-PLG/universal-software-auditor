@@ -61,15 +61,28 @@ function projectFinding(f: Finding): JsonFinding {
     message: f.message,
     locations: f.locations,
   };
+  copyOptionalFields(f, out);
+  return out;
+}
+
+/** Optional finding fields ride along only when present (keeps the JSON lean). */
+function copyOptionalFields(f: Finding, out: JsonFinding): void {
+  copyTextFields(f, out);
+  copyStructuredFields(f, out);
+}
+
+function copyTextFields(f: Finding, out: JsonFinding): void {
   if (f.suppressedReason) out.suppressedReason = f.suppressedReason;
   if (f.remediation) out.remediation = f.remediation;
   if (f.why) out.why = f.why;
   if (f.evidenceHint) out.evidenceHint = f.evidenceHint;
+}
+
+function copyStructuredFields(f: Finding, out: JsonFinding): void {
   if (f.references && f.references.length > 0) out.references = f.references;
   if (f.tags && f.tags.length > 0) out.tags = f.tags;
   if (f.automatability) out.automatability = f.automatability;
   if (f.review) out.review = f.review;
-  return out;
 }
 
 /** Projects an AuditReport into the stable JSON shape. */
