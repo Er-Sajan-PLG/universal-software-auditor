@@ -22,7 +22,9 @@ rules:
       patterns:
         [
           'ARCHITECTURE.md',
+          'architecture.md',
           'docs/ARCHITECTURE.md',
+          'docs/architecture.md',
           'docs/architecture/**',
           'docs/design/**',
           'docs/overview.md',

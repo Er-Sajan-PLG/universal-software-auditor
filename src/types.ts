@@ -128,6 +128,13 @@ export type Check =
   | { kind: 'manual' }
   /** PASS when at least one of `files` exists. */
   | { kind: 'file_exists'; files: string[] }
+  /**
+   * PASS when any sub-check passes (first PASS wins); otherwise the worst
+   * outcome (FAIL > WRONG > MISSING). For concepts satisfied by
+   * alternatives no single check expresses — e.g. coverage configured in
+   * a standalone file OR embedded in pyproject.toml.
+   */
+  | { kind: 'any_of'; checks: Check[] }
   /** PASS when none of `files` exist (fail → MISSING/FAIL). */
   | { kind: 'file_absent'; files: string[] }
   /** PASS when at least one file matches `patterns`. */

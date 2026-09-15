@@ -3,6 +3,8 @@ negative:
   files:
     docs/ARCHITECTURE.md: |
       # Architecture
+    docs/architecture.md: |
+      # Architecture
 positive:
   files:
     README.md: |

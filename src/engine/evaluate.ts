@@ -537,10 +537,30 @@ function describeOracle(check: Extract<Check, { kind: 'oracle' }>): string {
   return parts.join(' ');
 }
 
+/** Worst-first rank for combining sub-check outcomes (any_of). */
+function rankStatus(status: Status): number {
+  if (status === 'FAIL') return 3;
+  if (status === 'WRONG') return 2;
+  if (status === 'MISSING') return 1;
+  return 0;
+}
+
+function checkAnyOf(check: Extract<Check, { kind: 'any_of' }>, h: CheckHelpers): CheckOutcome {
+  let worst: CheckOutcome | undefined;
+  for (const sub of check.checks) {
+    const handler = CHECK_HANDLERS[sub.kind] as (check: Check, h: CheckHelpers) => CheckOutcome;
+    const out = handler(sub, h);
+    if (out.status === 'PASS') return out;
+    if (!worst || rankStatus(out.status) > rankStatus(worst.status)) worst = out;
+  }
+  return worst ?? h.missing('any_of: no sub-checks to evaluate');
+}
+
 /** One check kind per entry — adding a kind means adding a line, not a branch. */
 const CHECK_HANDLERS: {
   [K in Check['kind']]: (check: Extract<Check, { kind: K }>, h: CheckHelpers) => CheckOutcome;
 } = {
+  any_of: checkAnyOf,
   manual: checkManual,
   info: checkInfo,
   file_exists: checkFileExists,

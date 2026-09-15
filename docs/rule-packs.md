@@ -104,6 +104,24 @@ check:
   patterns: ['README.md', 'readme.md', 'README.rst']
 ```
 
+### `any_of`
+
+```yaml
+check:
+  kind: any_of
+  checks:
+    - kind: any_file
+      patterns: ['codecov.yml']
+    - kind: grep_present
+      pattern: '\[tool\.coverage'
+      include: ['pyproject.toml']
+```
+
+PASS when any sub-check passes (first PASS wins); otherwise the worst
+outcome (FAIL > WRONG > MISSING). For concepts satisfied by alternatives
+no single check expresses. Sub-checks parse through the same loader, so
+every guard applies to them.
+
 ### `grep_present` / `grep_absent`
 
 ```yaml
