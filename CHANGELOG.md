@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.19.1](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.19.0...v2.19.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **rules:** close Python gaps, add any_of check kind ([#127](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/127)) ([0eba197](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/0eba19733860b7d5cb22f83863d3511ed05beee3))
+
 ## [2.19.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.18.0...v2.19.0) (2026-09-15)
 
 
