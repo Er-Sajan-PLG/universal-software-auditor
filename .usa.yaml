@@ -234,6 +234,43 @@ reviews:
       Live transcripts intentionally overwrite — each session is new input,
       not a repeated operation.
 
+  - rule: REPO-015
+    reviewed: 2026-09-15
+    until: 2027-03-15
+    by: sajan
+    note: >-
+      Last twenty commits all conventional and descriptive (release-please
+      releases, feat/fix/docs/chore with scopes); the commitlint hook plus
+      the Conventional commits CI job make anything else unmergeable.
+
+  - rule: DEP-004
+    reviewed: 2026-09-15
+    until: 2027-03-15
+    by: sajan
+    note: >-
+      One runtime dependency (yaml) — redundancy is structurally
+      impossible. Dev dependencies are single-purpose each; no two
+      libraries do the same job.
+
+  - rule: DEP-006
+    reviewed: 2026-09-15
+    until: 2027-03-15
+    by: sajan
+    note: >-
+      SPDX inventory from the CycloneDX SBOM 2026-09-15: MIT, ISC,
+      Apache-2.0, BSD-2/3-Clause, BlueOak, Python-2.0 — no GPL/AGPL
+      anywhere. Weakest copyleft is MPL-2.0 (lightningcss, transitive dev
+      dependency via vitest, never shipped). No disclosure obligations.
+
+  - rule: NODE-008
+    reviewed: 2026-09-15
+    until: 2027-03-15
+    by: sajan
+    note: >-
+      ESM throughout, verified 2026-09-15: package.json type module, zero
+      require( calls in src, every relative import carries its extension.
+      No CJS anywhere to conflict with.
+
   - rule: CICD-003
     reviewed: 2026-09-14
     until: 2027-03-14
