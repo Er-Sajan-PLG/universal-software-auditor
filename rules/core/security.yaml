@@ -37,7 +37,7 @@ rules:
       flags: i
     why: 'Hardcoded credentials leak through every clone, fork, and CI log. Rotation after exposure is mandatory, not optional.'
     remediation: 'Move to environment variables backed by a secret manager; rotate anything that was ever committed.'
-    references: ['CWE-798', 'ASVS-2.10.4', 'OWASP-A02:2021']
+    references: ['CWE-798', 'ASVS-13.3.1', 'OWASP-A02:2021']
 
   - id: SEC-002
     title: Sensitive data is not written to logs
@@ -122,7 +122,7 @@ rules:
       flags: i
     why: 'String-built SQL is the oldest and most reliable way to lose a database. Parameterise or use a query builder.'
     remediation: 'Use parameterised queries ($1, ?, :name) or the ORM query API. Never interpolate user input into SQL text.'
-    references: ['CWE-89', 'ASVS-5.3.4', 'OWASP-A03:2021']
+    references: ['CWE-89', 'ASVS-1.2.4', 'OWASP-A03:2021']
 
   - id: SEC-006
     title: No unsafe dynamic code execution
@@ -158,7 +158,7 @@ rules:
       exclude: ['**/*.test.*', '**/*.spec.*', '**/scripts/**']
     why: 'Command injection with user-controlled input is full remote code execution, usually unauthenticated.'
     remediation: 'Use execFile with an argument array (no shell), or a library call. If unavoidable, allowlist the inputs.'
-    references: ['CWE-78', 'ASVS-5.3.8']
+    references: ['CWE-78', 'ASVS-1.2.5']
 
   - id: SEC-008
     title: User input is validated at a trust boundary
@@ -211,7 +211,7 @@ rules:
       exclude: ['**/*.test.*', '**/*.spec.*', '**/scripts/**', '**/tools/**']
     why: '`../../etc/passwd` is still the single most reliable bug class in file-serving code.'
     remediation: 'Resolve the path, then verify it is inside the intended base directory before touching the disk.'
-    references: ['CWE-22', 'ASVS-12.5.1']
+    references: ['CWE-22', 'ASVS-13.4.7']
 
   # ------------------------------------------------------------------ auth
   - id: SEC-011
@@ -348,7 +348,7 @@ rules:
       flags: i
     why: '`Access-Control-Allow-Origin: *` lets any site read authenticated responses from your API.'
     remediation: 'Allowlist exact origins; only use * for genuinely public, unauthenticated assets.'
-    references: ['CWE-942', 'ASVS-14.5.3']
+    references: ['CWE-942', 'ASVS-3.4.2']
 
   - id: SEC-018
     title: Security headers are set
@@ -367,7 +367,7 @@ rules:
       flags: i
     why: 'Four headers turn whole classes of browser attack off. They cost about six lines.'
     remediation: 'Use helmet (Node) or equivalent; add HSTS (max-age ≥31536000; includeSubDomains), X-Content-Type-Options: nosniff, Referrer-Policy, and a CSP.'
-    references: ['ASVS-14.4.3', 'OWASP-Secure-Headers']
+    references: ['ASVS-3.4.3', 'OWASP-Secure-Headers']
 
   - id: SEC-019
     title: CSRF protection for cookie-based sessions
@@ -435,7 +435,7 @@ rules:
       An upload endpoint that trusts the client's Content-Type is a remote code execution endpoint with extra steps.
     evidence: 'Upload handler: allowed MIME allowlist, max size, and where the file is written (outside the web root).'
     remediation: 'Allowlist extensions AND sniff content; cap size; store outside the served directory; serve from a separate origin.'
-    references: ['CWE-434', 'ASVS-12.5.2']
+    references: ['CWE-434', 'ASVS-5.3.1']
 
   - id: SEC-023
     title: PII is identified and protected at rest
@@ -534,7 +534,7 @@ rules:
       assert: { rule: SEC-014, status: [PASS] }
     why: 'Sound tokens with expiry but no rate limiting leave a credential-stuffing window: each token check passes, the login endpoint still takes unlimited guesses.'
     remediation: 'Rate-limit failed authentication (see SEC-014) on every endpoint that accepts these tokens.'
-    references: ['CWE-307', 'ASVS-2.2.4']
+    references: ['CWE-307', 'ASVS-6.3.3']
 
   - id: INV-SEC-003
     title: Validated input is also encoded on output

@@ -142,7 +142,7 @@ rules:
       flags: i
     why: 'A hardcoded production URL means the only way to run staging is to edit source.'
     remediation: 'Read every environment-specific value from configuration; keep defaults that are safe for local dev.'
-    references: ['12-Factor:Config', 'ASVS-14.1.3']
+    references: ['12-Factor:Config']
 
   - id: ARCH-008
     title: Side effects are isolated and testable

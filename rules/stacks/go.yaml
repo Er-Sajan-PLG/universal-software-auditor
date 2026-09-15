@@ -115,7 +115,7 @@ rules:
       flags: i
     why: 'Sprintf-built SQL is textbook injection.'
     remediation: 'Use placeholders: db.QueryContext(ctx, "SELECT ... WHERE id = $1", id).'
-    references: ['CWE-89', 'ASVS-5.3.4']
+    references: ['CWE-89', 'ASVS-1.2.4']
 
   - id: GO-008
     title: HTTP servers set timeouts

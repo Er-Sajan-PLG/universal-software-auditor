@@ -26,7 +26,7 @@ rules:
       flags: i
     why: 'Without a version in the path or header, every breaking change is a coordinated deploy across every client.'
     remediation: 'Prefix routes with /v1 (or use a version header); never break an existing version in place.'
-    references: ['ASVS-14.1.3', 'API-Design']
+    references: ['API-Design']
 
   - id: API-002
     title: Request timeouts are configured
