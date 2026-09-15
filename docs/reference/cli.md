@@ -145,7 +145,7 @@ examples
    REPO-017   MEDIUM   maintainability  Concern separation at the root
    REPO-018   LOW      documentation    Agent instruction file present (AGENTS.md / CLAUDE.md)
 
-## core/security — Security (25 rules)
+## core/security — Security (28 rules)
    Universal security baseline. Severity is never dampened here below CRITICAL, and security-class rules carry the heaviest multiplier in the score. USA is not a penetration test — it finds the doors that were left open.
 
    SEC-001    CRITICAL security         No hardcoded credentials in source
@@ -173,6 +173,9 @@ examples
    SEC-023    HIGH     compliance       PII is identified and protected at rest
    SEC-024    MEDIUM   compliance       Secrets and PII are redacted in logs and telemetry
    SEC-025    HIGH     security         Adaptive password hashing is present where auth exists
+   INV-SEC-001 HIGH     security         Encrypted transport is backed by security headers
+   INV-SEC-002 HIGH     security         Verified expiring tokens are brute-force guarded
+   INV-SEC-003 HIGH     security         Validated input is also encoded on output
 
 ## core/supply-chain — Supply Chain & Build Provenance (17 rules)
    Promoted to its own section in USA. You can write perfect code and still ship someone else's backdoor: these controls cover the path from a contributor's editor to the artifact your users run. Aligned with SLSA v1.2, NIST SSDF (SP 800-218), and the OpenSSF Scorecard.
@@ -548,5 +551,5 @@ examples
    SW-005     HIGH     security         Request validation uses Validatable or a validation library
    SW-006     MEDIUM   security         Security headers middleware is configured
 
-312 rule(s) across 32 pack(s).
+315 rule(s) across 32 pack(s).
 ```
