@@ -297,6 +297,8 @@ export class Project {
     } else if (entry.isFile()) {
       this.dirCache.add(relDir);
       this.files.push(rel);
+    } else if (entry.isSymbolicLink()) {
+      this.skippedSymlinks += 1;
     }
   }
 
