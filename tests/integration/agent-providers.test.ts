@@ -84,8 +84,18 @@ describe('preset table sanity', () => {
     'openrouter',
     'ollama',
     'lmstudio',
+    'google',
     'custom',
   ];
+
+  it('google preset points at the Gemini OpenAI-compatibility endpoint', () => {
+    const google = PROVIDER_PRESETS['google'];
+    expect(google?.baseURL).toBe('https://generativelanguage.googleapis.com/v1beta/openai/');
+    expect(google?.apiKeyEnv).toBe('GEMINI_API_KEY');
+    expect(google?.defaultModel).toBe('gemini-3.5-flash');
+    expect(google?.defaultReasoningEffort).toBeUndefined();
+    expect(google?.fetchModels).toBe(true);
+  });
 
   it('nvidia preset points at NIM with max reasoning', () => {
     const nvidia = PROVIDER_PRESETS['nvidia'];
@@ -126,7 +136,15 @@ describe('preset table sanity', () => {
     expect(PROVIDER_PRESETS['ollama']?.apiKeyEnv).toBe('');
     expect(PROVIDER_PRESETS['lmstudio']?.apiKeyEnv).toBe('');
     expect(PROVIDER_PRESETS['custom']?.apiKeyEnv).toBe('');
-    for (const id of ['deepseek', 'groq', 'mistral', 'nvidia', 'together', 'openrouter']) {
+    for (const id of [
+      'deepseek',
+      'groq',
+      'mistral',
+      'nvidia',
+      'together',
+      'openrouter',
+      'google',
+    ]) {
       expect(PROVIDER_PRESETS[id]?.apiKeyEnv, id).toMatch(/_KEY$/);
     }
   });
@@ -186,10 +204,14 @@ describe('loadProviderConfig', () => {
     expect(() => loadProviderConfig('nope')).toThrow(/Unknown LLM provider "nope"/);
   });
 
-  it('PROPOSED native transports (anthropic/gemini) throw "not implemented"', () => {
-    for (const id of ['anthropic', 'gemini', 'google']) {
+  it('PROPOSED native transports (anthropic/vertex/bedrock) throw "not implemented"', () => {
+    for (const id of ['anthropic', 'vertex', 'bedrock']) {
       expect(() => loadProviderConfig(id)).toThrow(/PROPOSED, not implemented/);
     }
+  });
+
+  it('the retired gemini alias guides to google', () => {
+    expect(() => loadProviderConfig('gemini')).toThrow(/Unknown LLM provider "gemini"/);
   });
 
   it('custom without caller baseURL/model throws loudly', () => {
