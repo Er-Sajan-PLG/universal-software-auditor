@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { Rule } from './types.js';
+import type { Rule, RuleCost, RulePack } from './types.js';
 import { detect } from './detect/index.js';
 import { loadDetectorFile } from './detect/index.js';
 import { Project } from './util/project.js';
@@ -9,7 +9,8 @@ import type { Catalogue } from './engine/catalogues.js';
 import { categoryCoverage, loadCategories } from './engine/categories.js';
 import { loadConfig } from './config.js';
 import { ruleAutomatability } from './engine/automatability.js';
-import { DEFAULT_RULES_DIR, list, str, type Args } from './cli-args.js';
+import { DEFAULT_RULES_DIR, bool, list, str, type Args } from './cli-args.js';
+import { costOf } from './engine/automatability.js';
 
 /** Read-only catalogue queries: detect, rules, explain, standards, categories. */
 /* ----------------------------------------------------------------- detect -- */
@@ -60,6 +61,10 @@ export function cmdRules(args: Args): number {
   }
   const rulesDir = path.resolve(str(args, 'rules-dir', DEFAULT_RULES_DIR) ?? DEFAULT_RULES_DIR);
   const { packs } = loadRulePacks(rulesDir);
+  if (bool(args, 'facets')) {
+    printFacets(packs);
+    return 0;
+  }
   const filter = str(args, 'section');
   let total = 0;
   for (const pack of packs) {
@@ -76,6 +81,44 @@ export function cmdRules(args: Args): number {
   }
   console.log(`\n${total} rule(s) across ${packs.length} pack(s).`);
   return 0;
+}
+
+/**
+ * Facet coverage: ownership, review dates, and evaluation cost across the
+ * knowledge base. The point is governing the rules, not admiring them —
+ * an empty owner column is a staffing question, a heavy cost column is a
+ * scaling question.
+ */
+function printFacets(packs: RulePack[]): void {
+  let total = 0;
+  let owned = 0;
+  let reviewed = 0;
+  const cost = { low: 0, medium: 0, high: 0 };
+  const byClass = new Map<string, { n: number; owned: number; cost: RuleCost[] }>();
+  for (const pack of packs) {
+    for (const r of pack.rules) {
+      total += 1;
+      if (r.owner) owned += 1;
+      if (r.lastReviewed) reviewed += 1;
+      cost[costOf(r.check)] += 1;
+      const c = byClass.get(r.ruleClass) ?? { n: 0, owned: 0, cost: [] as RuleCost[] };
+      c.n += 1;
+      if (r.owner) c.owned += 1;
+      c.cost.push(costOf(r.check));
+      byClass.set(r.ruleClass, c);
+    }
+  }
+  const pct = (a: number, b: number): string => (b === 0 ? '—' : `${Math.round((100 * a) / b)}%`);
+  console.log(`Facet coverage across ${total} rules in ${packs.length} packs:`);
+  console.log(`  owner:          ${owned} (${pct(owned, total)})`);
+  console.log(`  last_reviewed:  ${reviewed} (${pct(reviewed, total)})`);
+  console.log(`  cost:           low ${cost.low} · medium ${cost.medium} · high ${cost.high}`);
+  for (const [cls, c] of [...byClass.entries()].sort()) {
+    const heavy = c.cost.filter((k) => k !== 'low').length;
+    console.log(
+      `  ${cls.padEnd(16)} ${c.n} rules · owner ${pct(c.owned, c.n)} · costly ${pct(heavy, c.n)}`,
+    );
+  }
 }
 
 /* ---------------------------------------------------------------- explain -- */

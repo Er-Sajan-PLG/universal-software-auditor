@@ -212,6 +212,9 @@ export type OracleOp = 'at_most' | 'at_least' | 'equals';
  */
 export type Automatability = 'full' | 'assist' | 'manual';
 
+/** Evaluation cost tier, derived from the check kind (never hand-written). */
+export type RuleCost = 'low' | 'medium' | 'high';
+
 /** Every automatability level, weakest to strongest automation. */
 export const AUTOMATABILITY_LADDER: Automatability[] = ['manual', 'assist', 'full'];
 
@@ -231,6 +234,13 @@ export interface Rule {
   why?: string;
   /** Required proof. Mandatory for `manual` checks (RULE 4). */
   evidence?: string;
+  /**
+   * Stewardship facets (rule governance): who owns this rule and when it
+   * was last reviewed. Optional — absent means unclaimed, which the facets
+   * report surfaces instead of hiding.
+   */
+  owner?: string;
+  lastReviewed?: string;
   remediation?: string;
   references?: string[];
   tags?: string[];
