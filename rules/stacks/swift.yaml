@@ -99,4 +99,4 @@ rules:
       include: ['**/*.swift']
     why: 'Missing security headers exposes the app to clickjacking, MIME sniffing, and other browser attacks.'
     remediation: 'Add SecurityHeadersMiddleware to the middleware chain with appropriate policies.'
-    references: ['ASVS-14.4.3', 'OWASP-Secure-Headers']
+    references: ['ASVS-3.4.3', 'OWASP-Secure-Headers']

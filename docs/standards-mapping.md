@@ -141,7 +141,7 @@ them (internal heuristics, tooling hints, or conceptual attributions) fall in th
 
 | Catalogue                                          | Rules | Fully automated | Assisted | Manual |
 | -------------------------------------------------- | ----- | --------------- | -------- | ------ |
-| OWASP ASVS (`asvs@5.0.0`)                          | 15    | 9               | 0        | 6      |
+| OWASP ASVS (`asvs@5.0.0`)                          | 13    | 7               | 0        | 6      |
 | OpenSSF Best Practices (CII) (`cii@1.0`)           | 7     | 5               | 0        | 2      |
 | CIS Benchmarks (`cis@1.8`)                         | 6     | 6               | 0        | 0      |
 | MITRE CWE (`cwe@4.19`)                             | 56    | 46              | 1        | 9      |
@@ -154,7 +154,7 @@ them (internal heuristics, tooling hints, or conceptual attributions) fall in th
 | NIST SSDF (SP 800-218) (`ssdf@1.1`)                | 25    | 15              | 1        | 9      |
 | Smart Contract Weakness Classification (`swc@1.0`) | 6     | 4               | 0        | 2      |
 | WCAG (`wcag@2.2`)                                  | 9     | 2               | 0        | 7      |
-| (uncatalogued) (`(uncatalogued)`)                  | 100   | 64              | 1        | 35     |
+| (uncatalogued) (`(uncatalogued)`)                  | 102   | 66              | 1        | 35     |
 
 <!-- usa:end standards-coverage -->
 

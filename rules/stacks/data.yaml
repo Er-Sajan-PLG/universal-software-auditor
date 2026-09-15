@@ -46,7 +46,7 @@ rules:
       flags: i
     why: 'Relations enforced only in application code are relations that drift out of sync the first time someone writes a script.'
     remediation: 'Declare constraints at the DB level; add a periodic orphan-row check if you cannot.'
-    references: ['ASVS-5.3.4']
+    references: ['ASVS-1.2.4']
 
   - id: DATA-003
     title: Indexes exist on queried columns
@@ -118,7 +118,7 @@ rules:
       flags: i
     why: 'A half-applied write is worse than a failed one: the data looks fine until someone reconciles it.'
     remediation: 'Wrap related writes in a transaction; make the operation idempotent so retries are safe.'
-    references: ['ASVS-5.3.4']
+    references: ['ASVS-1.2.4']
 
   - id: DATA-008
     title: No SELECT * in hot paths

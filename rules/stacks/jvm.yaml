@@ -80,7 +80,7 @@ rules:
       flags: i
     why: 'String-concatenated JPQL is exactly as injectable as raw SQL.'
     remediation: 'Use named parameters (:name) or the Criteria API. Never build a query string from input.'
-    references: ['CWE-89', 'ASVS-5.3.4']
+    references: ['CWE-89', 'ASVS-1.2.4']
 
   - id: JVM-005
     title: Nullability is explicit
@@ -131,7 +131,7 @@ rules:
       exclude: ['**/src/test/**', '**/test/**']
     why: 'Java deserialisation gadget chains are one of the most reliable RCE vectors in existence.'
     remediation: 'Use JSON with an explicit schema and no polymorphic default typing; validate before binding.'
-    references: ['CWE-502', 'ASVS-5.5.1']
+    references: ['CWE-502', 'ASVS-1.5.2']
 
   - id: JVM-008
     title: JVM/container memory limits are respected

@@ -87,7 +87,7 @@ rules:
     evidence: 'dev / staging / production configuration, and confirmation that dev cannot reach production data.'
     why: 'Testing in production is a slogan, not a strategy.'
     remediation: 'At minimum: local + staging + production, with separate credentials and datasets per environment.'
-    references: ['NIST-SSDF-PO.5', 'ASVS-14.1.3']
+    references: ['NIST-SSDF-PO.5']
 
   - id: CICD-006
     title: Infrastructure is defined as code

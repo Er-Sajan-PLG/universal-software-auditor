@@ -108,11 +108,11 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 - 🔴 **No hardcoded credentials in source** `SEC-001` — 2 occurrence(s): `api_key: 'example_key_not_real_12345',` at src/config.js:3 (+1 more).
   - 📍 `src/config.js:3`, `src/config.js:4`
   - 🛠️ Move to environment variables backed by a secret manager; rotate anything that was ever committed.
-  - 📚 CWE-798 · ASVS-2.10.4 · OWASP-A02:2021
+  - 📚 CWE-798 · ASVS-13.3.1 · OWASP-A02:2021
 - ⚠️ **SQL is not built by string concatenation** `SEC-005` — 1 instance(s) of an incorrect implementation: `'SELECT * FROM orders WHERE id = ' + orderId,` at src/db.js:15.
   - 📍 `src/db.js:15`
   - 🛠️ Use parameterised queries ($1, ?, :name) or the ORM query API. Never interpolate user input into SQL text.
-  - 📚 CWE-89 · ASVS-5.3.4 · OWASP-A03:2021
+  - 📚 CWE-89 · ASVS-1.2.4 · OWASP-A03:2021
 - 🔴 **No plaintext HTTP endpoints in configuration** `SEC-003` — 2 occurrence(s): `endpoint: 'http://api.internal.example.com/v1/orders',` at src/config.js:5 (+1 more).
   - 📍 `src/config.js:5`, `src/legacy.js:5`
   - 🪶 Downgraded HIGH → MEDIUM by the Prototype / Spike profile
@@ -130,7 +130,7 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 - 🚫 **Security headers are set** `SEC-018` — Not detected — pattern not found in **/*.{ts,tsx,js,jsx,mjs,cjs,py,go,rs,java,kt,yml,yaml,json,conf,nginx,toml}.
   - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
   - 🛠️ Use helmet (Node) or equivalent; add HSTS (max-age ≥31536000; includeSubDomains), X-Content-Type-Options: nosniff, Referrer-Policy, and a CSP.
-  - 📚 ASVS-14.4.3 · OWASP-Secure-Headers
+  - 📚 ASVS-3.4.3 · OWASP-Secure-Headers
 - ⚠️ **Errors do not leak internals to clients** `SEC-020` — 1 instance(s) of an incorrect implementation: `res.status(500).json({ error: err.message });` at src/server.js:14.
   - 📍 `src/server.js:14`
   - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
@@ -283,11 +283,11 @@ Expected band for **Prototype / Spike**: 30–65 — **within the expected band*
 - 🚫 **Multi-step writes are transactional** `DATA-007` — Not detected — pattern not found in **/*.{ts,js,py,go,rs,java,kt,rb,php}.
   - 🪶 Downgraded HIGH → MEDIUM by the Prototype / Spike profile
   - 🛠️ Wrap related writes in a transaction; make the operation idempotent so retries are safe.
-  - 📚 ASVS-5.3.4
+  - 📚 ASVS-1.2.4
 - 🚫 **Foreign keys / relations are defined** `DATA-002` — Not detected — pattern not found in **/*.{sql,prisma,py,ts,js,go,rs,java,kt,rb,php}.
   - 🪶 Downgraded MEDIUM → LOW by the Prototype / Spike profile
   - 🛠️ Declare constraints at the DB level; add a periodic orphan-row check if you cannot.
-  - 📚 ASVS-5.3.4
+  - 📚 ASVS-1.2.4
 - 🚫 **List queries are paginated** `DATA-005` — Not detected — pattern not found in **/*.{ts,tsx,js,py,go,rs,java,kt,rb,php,graphql,sql}.
   - 🪶 Downgraded HIGH → LOW by the Prototype / Spike profile
   - 🛠️ Enforce a default and maximum page size on every list endpoint; prefer cursor pagination.
@@ -641,7 +641,7 @@ Rule packs skipped as not applicable (15): core/provenance-attestation, stacks/p
 schema: usa-report-v1
 generated_at: 2026-01-01T00:00:00.000Z
 usa_version: 2.23.0
-ruleset: 0913071d753d2cf7212643977ec9db347e43c09f797fc6580c1b3400c4af44bd
+ruleset: 30f4745629a27b14995d23088a9e2fb592830c225a849f408bd024bb5e83c209
 overall: 37.3
 sections:
   S1: {score: 7.2, open: 4, review: 2}

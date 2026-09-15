@@ -7,7 +7,7 @@
 # the single place a standard's version is recorded.
 #
 # `prefixes` are matched case-insensitively against the start of each reference
-# (e.g. `ASVS-2.10.4` matches the `ASVS` prefix). `usa standards` reports how
+# (e.g. `ASVS-13.3.1` matches the `ASVS` prefix). `usa standards` reports how
 # many rules draw from each catalogue and how many the engine can fully decide.
 #
 # Adding a standard: give it a stable `id`, a human `name`, a `version`, and the
