@@ -93,6 +93,18 @@ in the current working directory, never the target being audited.
   the PR body.
 - Never amend a failed commit and re-push over hooks; create a new
   commit. Never force-push shared branches.
+- Commit often as local savepoints on your branch, even mid-task —
+  uncommitted work dies on any `reset --hard`, rebase, or checkout
+  mishap, and that loss has happened here before. Savepoints are not
+  shipping: push and merge only when a significant, related, reviewable
+  whole is complete. Prefer small reviewable PRs; large diffs need an
+  explicit review before merging and must stay the exception, not the
+  habit.
+- Before ANY destructive operation (`reset --hard`, `checkout --`,
+  `clean -fd`, branch deletes, stash drops): back up first — a WIP
+  commit, a stash push with a name, or a patch file. No exceptions.
+  Verifying the backup exists (`git stash list`, `git log`) is part of
+  the operation, not optimism about it.
 
 ## Tests
 
