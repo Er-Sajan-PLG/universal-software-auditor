@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import type {
   Check,
   Depth,
@@ -224,7 +226,22 @@ function checkFileExists(
 ): CheckOutcome {
   const found = check.files.flatMap((f) => h.project.glob([f]));
   if (found.length === 0) return h.missing(`none of [${check.files.join(', ')}] found`);
-  return h.pass(`found ${found.slice(0, 5).join(', ')}`, found.slice(0, 5).map(toLocation));
+  // An empty marker file is substantively absent (an empty .gitignore
+  // ignores nothing). Size, not content: binary artifacts with bytes
+  // still count, unreadable files fail open toward present.
+  const solid = check.non_empty
+    ? found.filter((f) => {
+        try {
+          return fs.statSync(path.join(h.project.root, f)).size > 0;
+        } catch {
+          return true;
+        }
+      })
+    : found;
+  if (solid.length === 0) {
+    return h.missing(`all matches empty: [${found.slice(0, 5).join(', ')}] carry no content`);
+  }
+  return h.pass(`found ${solid.slice(0, 5).join(', ')}`, solid.slice(0, 5).map(toLocation));
 }
 
 function checkFileAbsent(

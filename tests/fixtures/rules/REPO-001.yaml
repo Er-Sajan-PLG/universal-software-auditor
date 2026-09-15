@@ -5,7 +5,7 @@ negative:
       node_modules/
       dist/
 positive:
+  # An empty .gitignore ignores nothing: presence without content is MISSING.
   files:
-    src/index.ts: |
-      export const x = 1;
+    .gitignore: ''
   expect: MISSING

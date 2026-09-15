@@ -15,7 +15,7 @@ rules:
     section_title: Repository & Project Structure
     severity: CRITICAL
     class: security
-    check: { kind: file_exists, files: ['.gitignore'] }
+    check: { kind: file_exists, files: ['.gitignore'], non_empty: true }
     why: >
       Without a .gitignore the next `git add -A` commits node_modules, build
       output, and — sooner or later — a .env file.
@@ -240,7 +240,7 @@ rules:
     section_title: Repository & Project Structure
     severity: LOW
     class: style
-    check: { kind: file_exists, files: ['.editorconfig'] }
+    check: { kind: file_exists, files: ['.editorconfig'], non_empty: true }
     why: 'Kills tabs-vs-spaces diffs before they start, across every editor.'
     remediation: 'Add a 6-line .editorconfig (charset, EOL, indent style/size, trailing whitespace, final newline).'
 

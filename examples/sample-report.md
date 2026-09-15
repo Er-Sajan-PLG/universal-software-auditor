@@ -641,6 +641,7 @@ Rule packs skipped as not applicable (15): core/provenance-attestation, stacks/p
 schema: usa-report-v1
 generated_at: 2026-01-01T00:00:00.000Z
 usa_version: 2.20.0
+ruleset: dc53586ca13a9652e4520259ba66cfb4938bea96690c4414563125cc9090cd0e
 overall: 37.3
 sections:
   S1: {score: 7.2, open: 4, review: 2}

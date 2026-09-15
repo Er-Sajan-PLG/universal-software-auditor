@@ -74,6 +74,17 @@ overall = 100 × Σ (creditᵢ × sectionWeight) / Σ (weightᵢ × sectionWeigh
 Rule-level weighting, rather than averaging section scores, means a section with
 three rules cannot swing the total as hard as one with thirty.
 
+### What the score does not prove
+
+Determinism is reproducibility, nothing more: the same tree plus the same
+ruleset yields the same report, so a score can be re-derived and disputed
+on equal footing. It does not imply completeness (unseen code, skipped
+files, and rules that never existed are all outside the number),
+correctness (a wrong rule scores wrongly with perfect determinism), or
+validity (the number measures the ruleset's view of the tree, not the
+tree). Read every score with its confidence, its warnings, and its
+judgement queue — the number alone is a summary, not a verdict.
+
 ### Section weights
 
 Security, supply chain, and testing carry the heaviest multipliers — a repo that

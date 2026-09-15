@@ -355,7 +355,11 @@ function resolveRuleClass(r: YamlMap, where: string, id: string, warnings: strin
 const CHECK_BUILDERS: Record<string, (c: YamlMap) => Check> = {
   manual: () => ({ kind: 'manual' }),
   info: () => ({ kind: 'info' }),
-  file_exists: (c) => ({ kind: 'file_exists', files: toStringArray(c.files) }),
+  file_exists: (c) => ({
+    kind: 'file_exists',
+    files: toStringArray(c.files),
+    non_empty: c.non_empty === true ? true : undefined,
+  }),
   file_absent: (c) => ({ kind: 'file_absent', files: toStringArray(c.files) }),
   any_file: (c) => ({ kind: 'any_file', patterns: toStringArray(c.patterns ?? c.files) }),
   grep_present: (c) => grepCheck('grep_present', c),
@@ -406,6 +410,25 @@ const CHECK_BUILDERS: Record<string, (c: YamlMap) => Check> = {
   }),
 };
 
+/**
+ * Composite check: sub-checks parse through parseCheck itself, so every
+ * guard (empty patterns, oracle problems, nested any_of) applies to them
+ * exactly as to top-level checks.
+ */
+function parseAnyOf(c: YamlMap, where: string, warnings: string[]): Check | null {
+  const raws = Array.isArray(c.checks) ? c.checks : [];
+  const subs: Check[] = [];
+  for (const rawSub of raws) {
+    const sub = parseCheck(rawSub, `${where} > any_of`, warnings);
+    if (sub) subs.push(sub);
+  }
+  if (subs.length === 0) {
+    warnings.push(`${where}: any_of has no valid sub-checks — rule ignored`);
+    return null;
+  }
+  return { kind: 'any_of', checks: subs };
+}
+
 function parseCheck(raw: unknown, where: string, warnings: string[]): Check | null {
   const c = asMap(raw);
   const kind = str(c.kind);
@@ -413,22 +436,7 @@ function parseCheck(raw: unknown, where: string, warnings: string[]): Check | nu
     warnings.push(`${where}: check missing "kind"`);
     return null;
   }
-  if (kind === 'any_of') {
-    // Composite: sub-checks parse through this same function, so every
-    // guard (empty patterns, oracle problems, nested any_of) applies to
-    // them exactly as to top-level checks.
-    const raws = Array.isArray(c.checks) ? c.checks : [];
-    const subs: Check[] = [];
-    for (const rawSub of raws) {
-      const sub = parseCheck(rawSub, `${where} > any_of`, warnings);
-      if (sub) subs.push(sub);
-    }
-    if (subs.length === 0) {
-      warnings.push(`${where}: any_of has no valid sub-checks — rule ignored`);
-      return null;
-    }
-    return { kind: 'any_of', checks: subs };
-  }
+  if (kind === 'any_of') return parseAnyOf(c, where, warnings);
   const build = CHECK_BUILDERS[kind];
   if (!build) {
     warnings.push(`${where}: unsupported check kind "${String(c.kind)}"`);

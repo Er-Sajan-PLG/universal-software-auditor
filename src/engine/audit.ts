@@ -24,7 +24,8 @@ import {
   reviewOverdueDays,
   type ReviewIndex,
 } from './review.js';
-import { loadFoundationFacts } from '../foundation/loader.js';
+import { loadFoundationFacts, loadFoundationStage } from '../foundation/loader.js';
+import { fingerprintRulesDir } from './ruleset.js';
 import { loadSections } from './sections.js';
 import { loadProfiles, dampen, type MaturityProfile } from './maturity.js';
 import { loadConfig } from '../config.js';
@@ -132,6 +133,7 @@ export function runAudit(options: AuditOptions): AuditOutcome {
   const profiles = loadProfiles(opts.rulesDir);
   const maturity = resolveMaturity(opts.profile, config.maturity, detection.maturity, warnings);
   const profile = profiles[maturity];
+  assertStageAspiration(opts.target, detection.maturity, warnings);
 
   const ctx: EvalContext = {
     project,
@@ -297,6 +299,30 @@ function appendUnusedSuppressionWarnings(
 }
 
 /**
+ * Rank for the declared-vs-detected check (ADR-0041). Legacy is unranked:
+ * a retiring system plays a different game and gets no aspiration warning.
+ */
+const STAGE_RANK: Record<string, number> = { prototype: 0, mvp: 1, beta: 2, production: 3 };
+
+/**
+ * ADR-0041: declared stage above detected maturity is aspiration beyond
+ * evidence — one loud line, zero moved bars. Severity keeps following
+ * detected maturity (never the declaration), so claiming `prototype` buys
+ * no leniency and claiming `production` buys no strictness.
+ */
+function assertStageAspiration(target: string, detected: string, warnings: string[]): void {
+  const declared = loadFoundationStage(target);
+  if (declared === undefined) return;
+  const want = STAGE_RANK[declared];
+  const have = STAGE_RANK[detected];
+  if (want === undefined || have === undefined || want <= have) return;
+  warnings.push(
+    `declared stage ${declared} exceeds detected maturity ${detected} — grading follows detected; ` +
+      `pass --profile ${declared} to be held to the declared bar explicitly`,
+  );
+}
+
+/**
  * Declared intent becomes detection facts. The loader throws on a broken
  * file (fail closed); the audit converts that into a warning and proceeds
  * without intent facts — a malformed promise must be loud, but it must not
@@ -352,6 +378,12 @@ function appendIndexWarnings(project: Project, warnings: string[]): void {
     warnings.push(
       `${project.skippedLarge} file(s) skipped for exceeding ${MAX_FILE_BYTES} bytes — ` +
         'content checks could not see them',
+    );
+  }
+  if (project.skippedSymlinks > 0) {
+    warnings.push(
+      `${project.skippedSymlinks} symlink(s) skipped without traversal — ` +
+        'linked source is invisible to every check; materialize it to audit it',
     );
   }
 }
@@ -588,6 +620,7 @@ function buildReport(
     schema: 'usa-report-v1',
     generatedAt: new Date().toISOString(),
     usaVersion: opts.usaVersion,
+    ruleset: fingerprintRulesDir(opts.rulesDir),
     target: {
       path: path.resolve(opts.target),
       name: path.basename(path.resolve(opts.target)) || opts.target,

@@ -231,6 +231,13 @@ export class Project {
   truncated = false;
   /** Files skipped for exceeding MAX_FILE_BYTES (counted once each). */
   skippedLarge = 0;
+  /**
+   * Symlinked entries skipped without traversal (counted once each).
+   * Symlinks are never followed — a circular or escaping link cannot hang
+   * or exfiltrate the audit — but a tree whose source arrives via links
+   * would otherwise audit thin air, so the count surfaces as a warning.
+   */
+  skippedSymlinks = 0;
 
   constructor(root: string, extraIgnores: string[] = [], limits: ProjectLimits = {}) {
     this.root = path.resolve(root);
@@ -290,6 +297,8 @@ export class Project {
     } else if (entry.isFile()) {
       this.dirCache.add(relDir);
       this.files.push(rel);
+    } else if (entry.isSymbolicLink()) {
+      this.skippedSymlinks += 1;
     }
   }
 

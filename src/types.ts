@@ -127,7 +127,7 @@ export type FactOp =
 export type Check =
   | { kind: 'manual' }
   /** PASS when at least one of `files` exists. */
-  | { kind: 'file_exists'; files: string[] }
+  | { kind: 'file_exists'; files: string[]; non_empty?: boolean }
   /**
    * PASS when any sub-check passes (first PASS wins); otherwise the worst
    * outcome (FAIL > WRONG > MISSING). For concepts satisfied by
@@ -383,6 +383,11 @@ export interface AuditReport {
   schema: 'usa-report-v1';
   generatedAt: string;
   usaVersion: string;
+  /** Content fingerprint of the rule tree (review 1, §35): same project +
+   *  same ruleset + same engine = same audit. Distinguishes a changed
+   *  project from changed rules when scores move between runs.
+   */
+  ruleset: string;
   target: {
     path: string;
     name: string;

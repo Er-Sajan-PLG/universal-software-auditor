@@ -50,6 +50,8 @@ rules:
     applies_when: { fact: 'swift:executable' }
     check:
       kind: file_exists
+      # An empty resolved file pins nothing.
+      non_empty: true
       files: ['Package.resolved']
     why: 'An unpinned Package.swift resolves newest compatibles at build time. Scoped to executable targets: libraries must NOT commit Package.resolved (the resolver ignores it for library products).'
     remediation: 'Commit Package.resolved so every build resolves identically.'

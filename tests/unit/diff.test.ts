@@ -27,6 +27,7 @@ function md(findings: Finding[], overall: number, at = '2026-06-01T00:00:00.000Z
     schema: 'usa-report-v1',
     generatedAt: at,
     usaVersion: '1.0.0',
+    ruleset: 'test-ruleset',
     target: { path: '/p', name: 'p' },
     detection: {
       maturity: 'beta',

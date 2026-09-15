@@ -96,7 +96,10 @@ check: { kind: file_exists, files: ['.gitignore'] }
 check: { kind: file_absent, files: ['.env', '*.pem'] }
 ```
 
-`file_absent` fails with locations when something is found.
+`file_absent` fails with locations when something is found. `file_exists`
+accepts `non_empty: true` — an empty marker file (zero-byte `.gitignore`,
+empty signature) counts as absent, because presence without content
+proves nothing.
 
 ### `any_file`
 
