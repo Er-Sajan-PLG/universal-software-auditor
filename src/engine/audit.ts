@@ -24,7 +24,7 @@ import {
   reviewOverdueDays,
   type ReviewIndex,
 } from './review.js';
-import { loadFoundationFacts } from '../foundation/loader.js';
+import { loadFoundationFacts, loadFoundationStage } from '../foundation/loader.js';
 import { fingerprintRulesDir } from './ruleset.js';
 import { loadSections } from './sections.js';
 import { loadProfiles, dampen, type MaturityProfile } from './maturity.js';
@@ -133,6 +133,7 @@ export function runAudit(options: AuditOptions): AuditOutcome {
   const profiles = loadProfiles(opts.rulesDir);
   const maturity = resolveMaturity(opts.profile, config.maturity, detection.maturity, warnings);
   const profile = profiles[maturity];
+  assertStageAspiration(opts.target, detection.maturity, warnings);
 
   const ctx: EvalContext = {
     project,
@@ -295,6 +296,30 @@ function appendUnusedSuppressionWarnings(
       `suppression for ${describeSuppression(s)} matched no finding — remove it or fix the target`,
     );
   }
+}
+
+/**
+ * Rank for the declared-vs-detected check (ADR-0041). Legacy is unranked:
+ * a retiring system plays a different game and gets no aspiration warning.
+ */
+const STAGE_RANK: Record<string, number> = { prototype: 0, mvp: 1, beta: 2, production: 3 };
+
+/**
+ * ADR-0041: declared stage above detected maturity is aspiration beyond
+ * evidence — one loud line, zero moved bars. Severity keeps following
+ * detected maturity (never the declaration), so claiming `prototype` buys
+ * no leniency and claiming `production` buys no strictness.
+ */
+function assertStageAspiration(target: string, detected: string, warnings: string[]): void {
+  const declared = loadFoundationStage(target);
+  if (declared === undefined) return;
+  const want = STAGE_RANK[declared];
+  const have = STAGE_RANK[detected];
+  if (want === undefined || have === undefined || want <= have) return;
+  warnings.push(
+    `declared stage ${declared} exceeds detected maturity ${detected} — grading follows detected; ` +
+      `pass --profile ${declared} to be held to the declared bar explicitly`,
+  );
 }
 
 /**

@@ -87,6 +87,27 @@ export function parseFoundationYamlText(text: string, file: string): FoundationC
   };
 }
 
+/**
+ * The declared stage, or undefined when no foundation file (or no stage)
+ * exists. Malformed files return undefined silently — the parallel
+ * loadFoundationFacts call already warns about the malformation, and one
+ * loud line per broken file is enough.
+ */
+export function loadFoundationStage(target: string): string | undefined {
+  const file = foundationFile(path.resolve(target));
+  let text: string;
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch {
+    return undefined;
+  }
+  try {
+    return parseFoundationYamlText(text, file).stage;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Parse + top-level shape checks, in the order a human debugs them. */
 function readYamlDoc(text: string, file: string): Record<string, unknown> {
   let raw: unknown;
