@@ -47,46 +47,78 @@ function mutateFileList(
   return 'files' in check ? { ...check, files: value } : { ...check, patterns: value };
 }
 
-function mutateCheck(check: Check, mode: Mode): Check | null {
+function mutateCount(check: Extract<Check, { kind: 'count_min' }>, mode: Mode): Check {
+  return { ...check, min: mode === 'blind' ? 999999 : 0 };
+}
+
+function mutateLines(check: Extract<Check, { kind: 'file_lines_max' }>, mode: Mode): Check {
+  return { ...check, max_lines: mode === 'blind' ? 0 : 999999999 };
+}
+
+function mutateJson(check: Extract<Check, { kind: 'json_path' }>, mode: Mode): Check | null {
+  // Saturate has no generic form (it needs a path that resolves in the
+  // fixture's files); blind alone must flip the negative case.
+  return mode === 'blind' ? { ...check, path: 'zzz.nonexistent.path' } : null;
+}
+
+function mutateAnyOf(check: Extract<Check, { kind: 'any_of' }>, mode: Mode): Check | null {
+  // Blind every branch (no rescuer left). Saturate has no generic form —
+  // blinding already flips every negative case, which all any_of rules have.
+  if (mode !== 'blind') return null;
+  const subs: Check[] = [];
+  for (const sub of check.checks) {
+    const mutated = mutateCheck(sub, mode);
+    if (!mutated) return null;
+    subs.push(mutated);
+  }
+  return { ...check, checks: subs };
+}
+
+/** Pattern checks share one mutator; undefined means "not a pattern check". */
+function mutatePatternKind(check: Check, mode: Mode): Check | null | undefined {
   switch (check.kind) {
     case 'grep_present':
     case 'grep_absent':
     case 'grep_wrong':
     case 'grep_deprecated':
       return mutateGrep(check, mode);
+    default:
+      return undefined;
+  }
+}
+
+/** File-list checks share one mutator; undefined means "not a file check". */
+function mutateFileKind(check: Check, mode: Mode): Check | null | undefined {
+  switch (check.kind) {
     case 'file_exists':
     case 'file_absent':
     case 'any_file':
     case 'tracked_present':
     case 'tracked_absent':
       return mutateFileList(check, mode);
+    default:
+      return undefined;
+  }
+}
+
+/** Blind/saturate one check; null when the kind cannot be mutated offline. */
+function mutateCheck(check: Check, mode: Mode): Check | null {
+  const byPattern = mutatePatternKind(check, mode);
+  if (byPattern !== undefined) return byPattern;
+  const byFile = mutateFileKind(check, mode);
+  if (byFile !== undefined) return byFile;
+  switch (check.kind) {
     case 'count_min':
-      return { ...check, min: mode === 'blind' ? 999999 : 0 };
+      return mutateCount(check, mode);
     case 'file_lines_max':
-      return { ...check, max_lines: mode === 'blind' ? 0 : 999999999 };
+      return mutateLines(check, mode);
     case 'json_path':
-      // Saturate has no generic form (it needs a path that resolves in the
-      // fixture's files); blind alone must flip the negative case.
-      return mode === 'blind' ? { ...check, path: 'zzz.nonexistent.path' } : null;
+      return mutateJson(check, mode);
     case 'any_of':
-      // Blind every branch (no rescuer left); saturate every branch
-      // (first PASS wins immediately). A branch that cannot be mutated
-      // in this mode poisons the whole mutation — skip honestly.
-      if (mode === 'blind') {
-        const subs: Check[] = [];
-        for (const sub of check.checks) {
-          const mutated = mutateCheck(sub, mode);
-          if (!mutated) return null;
-          subs.push(mutated);
-        }
-        return { ...check, checks: subs };
-      }
-      return null;
-    case 'command':
-    case 'oracle':
-    case 'manual':
-    case 'invariant':
-    case 'info':
+      return mutateAnyOf(check, mode);
+    default:
+      // command/oracle need live systems, manual/invariant/info have no
+      // file fixtures by design — documented at the top of this file.
       return null;
   }
 }
