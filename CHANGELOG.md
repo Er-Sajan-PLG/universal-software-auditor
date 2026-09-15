@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.25.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.24.0...v2.25.0) (2026-09-15)
+
+
+### Features
+
+* **tests:** evil python, go, and container recall siblings ([#145](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/145)) ([64df5b9](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/64df5b9a9f0c64b94dad7cd20fbdcdca0c711ce2))
+
 ## [2.24.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.23.0...v2.24.0) (2026-09-15)
 
 
