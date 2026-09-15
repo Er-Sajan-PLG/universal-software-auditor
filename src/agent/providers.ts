@@ -105,6 +105,17 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     freeTier: true,
     fetchModels: true,
   },
+  google: {
+    id: 'google',
+    label: 'Google Gemini',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    apiKeyEnv: 'GEMINI_API_KEY',
+    // A stable flash default: preview model ids (including the 3.1 Pro
+    // preview) can be shut down with little notice, so the default stays
+    // GA while `usa models --provider google` lists what is live today.
+    defaultModel: 'gemini-3.5-flash',
+    fetchModels: true,
+  },
   ollama: {
     id: 'ollama',
     label: 'Ollama (local)',
@@ -138,7 +149,7 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
 };
 
 /** Names of explicitly PROPOSED-but-unimplemented native transports. */
-const UNIMPLEMENTED_TRANSPORTS = new Set(['anthropic', 'google', 'gemini', 'vertex', 'bedrock']);
+const UNIMPLEMENTED_TRANSPORTS = new Set(['anthropic', 'vertex', 'bedrock']);
 
 /** Resolve a provider id to its preset, or throw naming what exists. */
 function findPreset(providerId: string): ProviderPreset {
