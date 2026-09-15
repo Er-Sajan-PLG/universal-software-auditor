@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.20.0...v2.21.0) (2026-09-15)
+
+
+### Features
+
+* reviews-driven hardening batch (non_empty, symlinks, ruleset, stage warning, evil pilot) ([#133](https://github.com/Er-Sajan-PLG/universal-software-auditor/issues/133)) ([3355635](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/33556352cb768a63dfd98b8ba7d414f0fb2ffc9c))
+
 ## [2.20.0](https://github.com/Er-Sajan-PLG/universal-software-auditor/compare/v2.19.1...v2.20.0) (2026-09-15)
 
 
