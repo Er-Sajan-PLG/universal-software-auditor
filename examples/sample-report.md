@@ -8,7 +8,7 @@
 | **Path** | `/home/user/universal-software-auditor/examples/demo-app` |
 | **Commit** | n/a (detached) |
 | **Date** | 2026-01-01T00:00:00.000Z |
-| **USA version** | 2.26.0 |
+**USA version** | 2.26.0 |
 | **Detected type** | unclassified |
 | **Platform** | server |
 | **Stack** | javascript, express |
