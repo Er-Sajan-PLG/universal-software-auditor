@@ -63,14 +63,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Create Release PR or publish
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
           version: pnpm run version-packages
           publish: pnpm run release
           commit: 'chore(master): release'
           title: 'chore(master): release'
+          create-github-releases: true
+          # Without this, `changeset publish` writes versions but never tags —
+          # and the tag is what wakes publish.yml for the GPR mirror, SBOM and
+          # provenance legs. A silent no-tag is the failure mode here.
+          push-git-tags: true
+          # The docs are explicit: passing GITHUB_TOKEN via `env:` does NOT
+          # reach the action. It must come through this input.
+          github-token: ${{ secrets.CHANGESETS_TOKEN }}
         env:
-          GITHUB_TOKEN: ${{ secrets.CHANGESETS_TOKEN }}
           # Provenance is public, verifiable build metadata on the registry —
           # what USA's own S3 rules demand of others (SUP-005..007, S3).
           NPM_CONFIG_PROVENANCE: 'true'
@@ -78,7 +85,5 @@ jobs:
           # repo-root .npmrc points @xenos1996 at GPR, and a scoped mapping
           # beats a bare --registry flag (v2.8.1 failed exactly that way).
           npm_config_@xenos1996:registry: 'https://registry.npmjs.org'
-          # --access public is mandatory: scoped packages default to
-          # restricted. changesets/action reads publishConfig, so the flag
-          # lives in package.json instead of here.
+          # OIDC, not a long-lived token.
           NODE_AUTH_TOKEN: ''
