@@ -320,8 +320,8 @@ Rule packs are the easiest high-value contribution — one YAML file, no TypeScr
 ```bash
 git clone https://github.com/Er-Sajan-PLG/universal-software-auditor
 cd universal-software-auditor
-npm install && npm test
-npm run usa -- audit .       # run the CLI from source
+pnpm install && pnpm test
+pnpm run usa -- audit .       # run the CLI from source
 ```
 
 Agents and humans doing repo work: read `AGENTS.md` first — it holds

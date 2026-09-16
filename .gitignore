@@ -31,6 +31,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Stray lockfiles from other package managers. pnpm-lock.yaml is the one
+# this repo commits; an accidental `npm install` here must not re-introduce
+# a second source of truth for the dependency graph.
+package-lock.json
+yarn.lock
+
 # Test artifacts
 test-results/
 coverage/

@@ -16,7 +16,7 @@
  * Usage:
  *   node scripts/gen-asvs-coverage.mjs          # regenerate doc + snapshot
  *   node scripts/gen-asvs-coverage.mjs --check  # exit 1 if either is stale
- * Requires `dist/` (run `npm run build` first).
+ * Requires `dist/` (run `pnpm run build` first).
  */
 import fs from 'node:fs';
 import path from 'node:path';

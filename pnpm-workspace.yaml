@@ -1,0 +1,8 @@
+# The workspace map. Today it holds exactly one package — this repo root,
+# which ships `@xenos1996/usa`. The `packages/*` glob is deliberately present
+# before the first package lands under it: `pnpm -r` then no-ops gracefully
+# now and picks baby packages up automatically the day they are born, with no
+# CI change required. See docs/release.md ("Monorepo growth").
+packages:
+  - '.'
+  - 'packages/*'

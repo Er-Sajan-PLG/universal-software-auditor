@@ -8,7 +8,7 @@
  * Usage:
  *   node scripts/gen-cli-docs.mjs          # regenerate docs/reference/cli.md
  *   node scripts/gen-cli-docs.mjs --check  # exit 1 if the committed file is stale
- * Requires `dist/` (run `npm run build` first).
+ * Requires `dist/` (run `pnpm run build` first).
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -21,7 +21,7 @@ function run(args) {
   try {
     return execFileSync('node', ['dist/cli.js', ...args], { encoding: 'utf8', cwd: ROOT });
   } catch {
-    console.error('gen-cli-docs: dist/cli.js failed — run `npm run build` first.');
+    console.error('gen-cli-docs: dist/cli.js failed — run `pnpm run build` first.');
     process.exit(2);
   }
 }

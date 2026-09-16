@@ -15,7 +15,7 @@
  * Usage:
  *   node scripts/gen-sample-report.mjs          # write the file
  *   node scripts/gen-sample-report.mjs --check  # exit 1 if stale (CI)
- * Requires `dist/` (run `npm run build` first).
+ * Requires `dist/` (run `pnpm run build` first).
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -36,7 +36,7 @@ function generate() {
       maxBuffer: 64 * 1024 * 1024,
     });
   } catch {
-    console.error('gen-sample-report: audit failed — run `npm run build` first.');
+    console.error('gen-sample-report: audit failed — run `pnpm run build` first.');
     process.exit(2);
   }
   const raw = fs.readFileSync(tmp, 'utf8');

@@ -177,16 +177,16 @@ improvement — the thing a single audit can never do.
 
 USA audits itself with the full stack — copy what fits:
 
-| Workflow              | What it does                                                                                                                                                                                                                                                |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`              | lint+format+typecheck · Vitest with coverage thresholds · build + CLI smoke · rule-pack validation · npm audit + gitleaks + license scan · **hygiene** (`check-adrs` + `check-docs`) · **resync** (regenerates + pushes `cli.md`/`sample-report.md` on PRs) |
-| `self-audit.yml`      | `usa audit . --depth deep --fail-on critical` on every PR, score as PR comment                                                                                                                                                                              |
-| `scorecard.yml`       | OpenSSF Scorecard monthly + on push (API-verified hygiene; SARIF to Security tab)                                                                                                                                                                           |
-| `automerge.yml`       | Dependabot patch/minor auto-merge once CI is green (majors stay manual)                                                                                                                                                                                     |
-| `gitleaks-pin.yml`    | Monthly check that the curl-pinned gitleaks binary in `ci.yml` is current (no bot watches it) — opens a deduped issue when stale                                                                                                                            |
-| `release.yml`         | Tag push `v*` → OIDC trusted publishing (no long-lived token) + `--provenance` + CycloneDX SBOM artifact                                                                                                                                                    |
-| `release-please.yml`  | Conventional commits → open Release PR (bump + CHANGELOG as reviewable diff); merging it cuts the tag that fires `release.yml`                                                                                                                              |
-| `commits` in `ci.yml` | Lints PR commit messages (commitlint) — releases are computed from history, so history must parse                                                                                                                                                           |
+| Workflow              | What it does                                                                                                                                                                                                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ci.yml`              | lint+format+typecheck · Vitest with coverage thresholds · build + CLI smoke · rule-pack validation · **changeset gate** (shipped paths need a note) · npm audit + gitleaks + license scan · **hygiene** (`check-adrs` + `check-docs`) · **resync** (regenerates + pushes `cli.md`/`sample-report.md` on PRs) |
+| `self-audit.yml`      | `usa audit . --depth deep --fail-on critical` on every PR, score as PR comment                                                                                                                                                                                                                               |
+| `scorecard.yml`       | OpenSSF Scorecard monthly + on push (API-verified hygiene; SARIF to Security tab)                                                                                                                                                                                                                            |
+| `automerge.yml`       | Dependabot patch/minor auto-merge once CI is green (majors stay manual)                                                                                                                                                                                                                                      |
+| `gitleaks-pin.yml`    | Monthly check that the curl-pinned gitleaks binary in `ci.yml` is current (no bot watches it) — opens a deduped issue when stale                                                                                                                                                                             |
+| `release.yml`         | `changesets/action`: opens the Version Packages PR, then publishes via OIDC trusted publishing (no long-lived token) + `--provenance`                                                                                                                                                                        |
+| `publish.yml`         | Tag push `v*` → GPR mirror + CycloneDX SBOM artifact + Artifact Attestations + `provenance/` filing PR. Manual dispatch also publishes to npmjs if the release leg wedged.                                                                                                                                   |
+| `commits` in `ci.yml` | Lints PR commit messages (commitlint) — the CHANGELOG is assembled from them, so history must parse                                                                                                                                                                                                          |
 
 Release setup note: trusted publishing needs a one-time owner step on
 npmjs.com (package Settings → Trusted Publisher → this repo + workflow)
@@ -210,20 +210,26 @@ markers encode author intent.
 
 1. Land PRs with Conventional Commits titles (`feat:`, `fix:`, `docs:`,
    `refactor:` …) — squash-merge so the title becomes the commit.
-   `feat` → minor bump, `fix` → patch, `BREAKING CHANGE:` footer → major.
-   Anything else (docs, chore, test) rides along without bumping.
-2. release-please keeps one open **Release PR** updated: version bump in
-   `package.json` + CHANGELOG entries, as a diff you review like code.
-3. Merge the Release PR → tag `vX.Y.Z` is cut → `release.yml` publishes
-   via OIDC with provenance + SBOM. Tags are the release act; never push
-   `v*` tags by hand (first bootstrap tag `v1.0.0` excepted).
-4. release-please itself authenticates with a fine-grained PAT
-   (`RELEASE_PLEASE_TOKEN`, repo-scoped: Contents, PRs, Issues
-   read+write) — **not** `GITHUB_TOKEN`. Tags pushed by `GITHUB_TOKEN`
-   do not trigger downstream workflows, so with the default token the
-   tag lands, the GitHub Release is created… and `release.yml` never
-   fires. Nothing reaches npm. This failure is silent by design
-   (loop prevention) — the PAT is load-bearing, not optional.
+2. If the PR touches a shipped path (`src/`, `rules/`, `templates/`,
+   `action.yml`, `package.json`), add a release note: `pnpm changeset`,
+   then pick the bump (`patch` / `minor` / `major`) and write one line
+   explaining it. The `changesets` job in `ci.yml` fails a PR that changes
+   shipped files without one. Chore/docs/ci/test PRs skip the gate.
+3. `changesets/action` in `release.yml` keeps one open **Version Packages PR**
+   updated: version bump in `package.json` + CHANGELOG entries, as a diff
+   you review like code.
+4. Merge that PR → the same workflow sees the notes consumed and runs
+   `changeset publish`: npmjs via OIDC with provenance, then tag `vX.Y.Z`.
+   Tags are the release act; never push `v*` tags by hand (first bootstrap
+   tag `v1.0.0` excepted).
+5. The tag fires `publish.yml`: GPR mirror + SBOM + attestations +
+   `provenance/` bundle PR.
+6. `changesets/action` authenticates with a fine-grained PAT
+   (`CHANGESETS_TOKEN`, repo-scoped: Contents + PRs read+write) — **not**
+   `GITHUB_TOKEN`. A version commit pushed by `GITHUB_TOKEN` does not
+   trigger downstream workflows, so with the default token the bump lands,
+   the tag is created… and `publish.yml` never fires. Nothing reaches
+   GitHub Packages. The PAT is load-bearing, not optional.
 
 ## Choosing a depth in CI
 
