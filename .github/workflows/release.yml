@@ -44,7 +44,7 @@ jobs:
           token: ${{ secrets.CHANGESET_TOKEN }}
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.34.5
 
