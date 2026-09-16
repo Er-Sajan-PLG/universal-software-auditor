@@ -8,41 +8,84 @@ something breaks. It is the durable memory of the sessions that built it.
 ## The chain (normal operation — nothing to do)
 
 ```
-conventional commit on master
-        │  feat → minor · fix → patch · BREAKING CHANGE → major
-        │  (docs/chore/test ride along without bumping)
+change a shipped file (src/, rules/, templates/, action.yml)
+        │  add a note: pnpm changeset
+        │  patch → 2.25.1 → 2.25.2 · minor → 2.26.0 · major → 3.0.0
         ▼
-release-please opens/updates ONE Release PR
+release.yml runs changesets/action → opens/updates ONE
+  "chore(master): release" PR
   (version bump + CHANGELOG entries as a reviewable diff)
         │  human merges it  ← the only manual step, and it is code review
         ▼
-tag vX.Y.Z cut automatically
+the same workflow sees no notes left and publishes via
+  `changeset publish`: OIDC → npmjs (+ provenance), then tags vX.Y.Z
         ▼
-release.yml publishes: OIDC → npmjs (+ provenance + SBOM artifact),
-then mirrors the same tarball to GitHub Packages as `@xenos1996/usa`
-(same scope both channels; GPR maps scopes to GitHub identities, so the
-mirror authenticates with a `write:packages` PAT minted on the scope-owning
-account, stored as the `GPR_TOKEN` secret — never `GITHUB_TOKEN`, whose
-cross-account writes are rejected)
+the tag fires publish.yml:
+  • mirrors the same tarball to GitHub Packages as `@xenos1996/usa`
+    (same scope both channels; GPR maps scopes to GitHub identities, so the
+    mirror authenticates with a `write:packages` PAT minted on the
+    scope-owning account, stored as the `GPR_TOKEN` secret — never
+    `GITHUB_TOKEN`, whose cross-account writes are rejected)
+  • emits the CycloneDX SBOM artifact
+  • attests the tarball, then files bundle + VSA under provenance/ via PR
 ```
 
-What you do: write conventional titles, review PRs, merge the Release PR.
-Everything else — bump arithmetic, CHANGELOG entries, tags, publishing,
-provenance, SBOM — happens on its own.
+What you do: write conventional titles, add a changeset when a shipped
+path moves, review PRs, merge the Version Packages PR. Everything else —
+bump arithmetic, CHANGELOG entries, tags, publishing, provenance, SBOM —
+happens on its own.
+
+## Why changesets and not release-please
+
+release-please reads commit history and guesses the bump. That works while
+there is exactly one package, and breaks the day there are two: a `fix:` in
+the history does not say _which_ package it fixes, so the guess becomes
+wrong and the human gate becomes a human correction pass.
+
+changesets inverts it: the author states the intent (`patch` for `@usa/cli`,
+`minor` for `@usa/engine`) in a file that is part of the diff. The tool
+obeys. For one package this is slightly more work per PR; for N packages it
+is the only thing that stays correct. See "Monorepo growth" below.
+
+The cost is one new habit, enforced by the `changesets` job in `ci.yml`: a
+PR touching a shipped path must add `.changeset/<name>.md` or fail with
+instructions. A chore/docs/ci/test PR touches no shipped path and passes
+untouched.
+
+## Monorepo growth (when a second package is born)
+
+The workspace already declares `packages/*` in `pnpm-workspace.yaml`, so
+nothing in CI has to change on the day the first baby package lands under
+it. What to do then:
+
+1. Give it a `package.json` with its own `name` (same `@xenos1996` scope),
+   `version: 0.0.0`, and a `version` script if it needs one.
+2. Add it to `.changeset/config.json` if it should be versioned
+   independently — the empty `fixed`/`linked` arrays mean nothing moves
+   together by default, which is the point.
+3. That is all. `pnpm install --frozen-lockfile`, `pnpm -r` build/test, the
+   changeset gate, and `changeset publish` already cover it: the gate checks
+   `packages/`, and `changeset publish` publishes every package whose note
+   was consumed.
+
+What you would NOT do: resurrect release-please. It cannot express
+per-package intent, which is the whole reason this repo moved.
 
 ## One-time setups (done — do not redo unless broken)
 
-| #   | Setup                                                         | Where / state                                              |
-| --- | ------------------------------------------------------------- | ---------------------------------------------------------- |
-| 1   | Package exists on npmjs as `@xenos1996/usa` (scoped: the      | Created by a one-time manual publish of 2.0.1 (see below). |
-|     | bare name `usa` is blocked by the typosquat filter)           | Never republish a version.                                 |
-| 2   | OIDC trusted publisher (org `Er-Sajan-PLG`, repo              | Package page → Settings → Trusted Publisher.               |
-|     | `universal-software-auditor`, workflow `release.yml`, no env) | Exact basename — full paths do not match.                  |
-| 3   | Trusted publisher may **publish directly**                    | Same page (checkbox). Without it, PUTs 404.                |
-| 4   | Publishing access: strictest (2FA required, no bypass tokens) | Same page. OIDC works with either option.                  |
-| 5   | `RELEASE_PLEASE_TOKEN`: fine-grained PAT, this repo only —    | Repo Settings → Secrets → Actions. **Check its expiry**    |
-|     | Contents + PRs + Issues read+write                            | (Settings → Developer settings → Tokens): when it lapses,  |
-|     |                                                               | Release PRs silently stop appearing. Rotate yearly.        |
+| #   | Setup                                                         | Where / state                                               |
+| --- | ------------------------------------------------------------- | ----------------------------------------------------------- |
+| 1   | Package exists on npmjs as `@xenos1996/usa` (scoped: the      | Created by a one-time manual publish of 2.0.1 (see below).  |
+|     | bare name `usa` is blocked by the typosquat filter)           | Never republish a version.                                  |
+| 2   | OIDC trusted publisher (org `Er-Sajan-PLG`, repo              | Package page → Settings → Trusted Publisher.                |
+|     | `universal-software-auditor`, workflow `release.yml`, no env) | Exact basename — full paths do not match.                   |
+| 3   | Trusted publisher may **publish directly**                    | Same page (checkbox). Without it, PUTs 404.                 |
+| 4   | Publishing access: strictest (2FA required, no bypass tokens) | Same page. OIDC works with either option.                   |
+| 5   | `CHANGESET_TOKEN`: fine-grained PAT, this repo only —         | Repo Settings → Secrets → Actions. **Check its expiry**     |
+|     | Contents + PRs read+write                                     | (Settings → Developer settings → Tokens): when it lapses,   |
+|     |                                                               | the Version Packages PR silently stops appearing. Rotate    |
+|     |                                                               | yearly. (Was `RELEASE_PLEASE_TOKEN`; the secret was renamed |
+|     |                                                               | on migration — create the new name, then delete the old.)   |
 
 The bootstrap token used for the first manual publish is deleted. No
 static credential that can publish exists anymore — only OIDC (CI) and
@@ -58,7 +101,7 @@ Publisher is configured. So the first publish of a new name is manual:
 
 ```bash
 # from a clean checkout of the tag you intend to ship
-git checkout v2.0.1 && npm ci && npm run build
+git checkout v2.0.1 && pnpm install --frozen-lockfile && pnpm run build
 npm login                              # owner account, 2FA
 npm publish --access public            # creates the package (manual, once)
 npm view @xenos1996/usa version        # → 2.0.1
@@ -84,39 +127,48 @@ not "fix" the duplicate-version error; it is the fail-closed contract.
 - **PAT expiry** — the one thing that silently breaks releases. Check the
   date when the reminder fires; generate a replacement with identical
   scope, swap the secret, delete the old token.
-- **First-run review of each Release PR** — read the CHANGELOG diff;
-  release-please derives it from titles, so a sloppy title ships a sloppy
-  note. Fix by amending the title before merge (it recalculates).
+- **First-run review of each Version Packages PR** — read the CHANGELOG
+  diff. It is assembled from the changeset notes you wrote, so a note that
+  said nothing produces a note that says nothing. Fix the note file on your
+  own PR before it merges; editing the Version Packages PR fights the
+  generator.
 - **Scorecard / Security tab** — glance monthly; the workflow already runs.
 
 ## Troubleshooting (every failure hit so far, in order)
 
-| Symptom                                                | Cause                                                                                 | Fix                                                                                                          |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `403 … too similar to existing packages` on publish    | npm typosquat filter on the bare name                                                 | Scoped name (`@xenos1996/usa`). Decided, shipped.                                                            |
-| `bin[usa]` "invalid and removed" warning on publish    | npm v12 rejects `./`-prefixed bin targets; tarball ships with **no executable**       | `bin` value is `dist/cli.js` (no prefix). Never re-add `./`.                                                 |
-| `npm sbom -o` → `EUNKNOWNCONFIG`                       | No `-o` flag exists; SBOM goes to stdout                                              | Redirect: `npm sbom … > sbom.cdx.json`, after a clean `npm ci` (partial trees fail with `ESBOMPROBLEMS`).    |
-| PUT 404 with provenance signed fine                    | Runner npm too old for the registry OIDC exchange (needs npm ≥ 11.5.1 / Node ≥ 22.14) | `release.yml` pins Node 24 + `npm@^11.15.0` floor. Do not downgrade.                                         |
-| PUT 404 on a **brand-new** package, provenance fine    | Trusted publishing cannot create a package that does not exist yet                    | One-time manual `npm publish` first, then configure Trusted Publisher. See bootstrap section above.          |
-| `You cannot publish over the previously published …`   | Re-running a tag whose version is already on the registry (e.g. after a manual        | **Expected / success.** OIDC works; the registry is fail-closed on duplicates. Verify with the next version. |
-|                                                        | first publish). Not an error to "fix".                                                |                                                                                                              |
-| Tag cut, GitHub Release created, **nothing published** | Tags pushed by `GITHUB_TOKEN` never fire downstream workflows (loop prevention)       | release-please uses the PAT, never the default token.                                                        |
-| Release PR lint red on `CHANGELOG.md`                  | release-please writes double blank lines; prettier wants single                       | `CHANGELOG.md` is prettier-ignored (machine-written).                                                        |
-| `Unable to resolve action ossf/scorecard-action@v2`    | Upstream publishes no `v2` major tag                                                  | Pinned exact `v2.4.4`. Check for newer semver occasionally.                                                  |
-| Installed bin exits 0 and prints **nothing**           | Entry guard compared `import.meta.url` to `file://${argv[1]}`; under npm's bin        | Resolve `argv[1]` with `fs.realpathSync` before comparing. Regression-tested in `tests/e2e/cli.test.ts`.     |
-|                                                        | symlink those never match, so `main()` never ran                                      |                                                                                                              |
-| `npx @xenos1996/usa …` → `usa: command not found`      | Run from **inside the USA repo**: npx sees cwd's `package.json` is the same package,  | Run `npx` from any other directory, or `npm install -g @xenos1996/usa`, or use `npm run usa -- …` in-repo.   |
-|                                                        | skips the registry install, and there is no local `.bin/usa`                          |                                                                                                              |
-| `usat --help` audited the repo                         | Arg parser files `--flags`, never positionals; the switch cases were dead code        | Fixed in `cli.ts` with regression tests. Do not reintroduce flag handling without a test.                    |
-| `SEC-003` failing on `https://` URLs (pre-1.0 history) | Pattern used `https?://` for a plaintext-HTTP rule                                    | Fixed to `http://`; rule carries a `NOTE:` comment. See `tests/integration/rules.test.ts`.                   |
+| Symptom                                                | Cause                                                                                 | Fix                                                                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `403 … too similar to existing packages` on publish    | npm typosquat filter on the bare name                                                 | Scoped name (`@xenos1996/usa`). Decided, shipped.                                                               |
+| `bin[usa]` "invalid and removed" warning on publish    | npm v12 rejects `./`-prefixed bin targets; tarball ships with **no executable**       | `bin` value is `dist/cli.js` (no prefix). Never re-add `./`.                                                    |
+| `npm sbom -o` → `EUNKNOWNCONFIG`                       | No `-o` flag exists; SBOM goes to stdout                                              | Redirect: `npm sbom … > sbom.cdx.json`, after a clean `pnpm install` (partial trees fail with `ESBOMPROBLEMS`). |
+| PUT 404 with provenance signed fine                    | Runner npm too old for the registry OIDC exchange (needs npm ≥ 11.5.1 / Node ≥ 22.14) | `release.yml` pins Node 24 + `npm@^11.15.0` floor. Do not downgrade.                                            |
+| PUT 404 on a **brand-new** package, provenance fine    | Trusted publishing cannot create a package that does not exist yet                    | One-time manual `npm publish` first, then configure Trusted Publisher. See bootstrap section above.             |
+| `You cannot publish over the previously published …`   | Re-running a tag whose version is already on the registry (e.g. after a manual        | **Expected / success.** OIDC works; the registry is fail-closed on duplicates. Verify with the next version.    |
+|                                                        | first publish). Not an error to "fix".                                                |                                                                                                                 |
+| Tag cut, GitHub Release created, **nothing published** | Tags pushed by `GITHUB_TOKEN` never fire downstream workflows (loop prevention)       | changesets/action uses the PAT, never the default token.                                                        |
+| Version Packages PR never appears                      | `CHANGESET_TOKEN` expired, or the PR has no changeset notes to consume                | Rotate the PAT. If it is not the PAT, the PR genuinely changes nothing shippable.                               |
+| Release PR lint red on `CHANGELOG.md`                  | `changelog-github` writes double blank lines; prettier wants single                   | `CHANGELOG.md` is prettier-ignored (machine-written).                                                           |
+| `Unable to resolve action ossf/scorecard-action@v2`    | Upstream publishes no `v2` major tag                                                  | Pinned exact `v2.4.4`. Check for newer semver occasionally.                                                     |
+| Installed bin exits 0 and prints **nothing**           | Entry guard compared `import.meta.url` to `file://${argv[1]}`; under npm's bin        | Resolve `argv[1]` with `fs.realpathSync` before comparing. Regression-tested in `tests/e2e/cli.test.ts`.        |
+|                                                        | symlink those never match, so `main()` never ran                                      |                                                                                                                 |
+| `npx @xenos1996/usa …` → `usa: command not found`      | Run from **inside the USA repo**: npx sees cwd's `package.json` is the same package,  | Run `npx` from any other directory, or `npm install -g @xenos1996/usa`, or use `pnpm run usa -- …` in-repo.     |
+|                                                        | skips the registry install, and there is no local `.bin/usa`                          |                                                                                                                 |
+| `usat --help` audited the repo                         | Arg parser files `--flags`, never positionals; the switch cases were dead code        | Fixed in `cli.ts` with regression tests. Do not reintroduce flag handling without a test.                       |
+| `SEC-003` failing on `https://` URLs (pre-1.0 history) | Pattern used `https?://` for a plaintext-HTTP rule                                    | Fixed to `http://`; rule carries a `NOTE:` comment. See `tests/integration/rules.test.ts`.                      |
 
 ## Manual fallback
 
 If automation ever wedges: Actions → **Release** → Run workflow (on
-`master`) publishes whatever `package.json` holds. Safe to re-run — a
-duplicate version fails closed at the registry with nothing mutated.
-Never push `v*` tags by hand; the tag is the release act and belongs to
-release-please (bootstrap tag `v1.0.0` excepted).
+`master`) walks the same version-or-publish path by hand. Safe to re-run —
+a duplicate version fails closed at the registry with nothing mutated.
+Never push `v*` tags by hand; the tag belongs to `changeset publish`
+(bootstrap tag `v1.0.0` excepted).
+
+If the npmjs leg specifically is stuck — the notes were consumed but the
+registry never got the tarball — use Actions → **Publish** → Run workflow.
+That leg publishes on dispatch only (tag pushes skip it, because the
+scheduled path already did the job) and then continues to the GPR mirror,
+SBOM, and provenance steps.
 
 ## Rollback (un-shipping a bad release)
 
@@ -195,10 +247,17 @@ mismatch detail; exit-2 errors stay loud.
 
 ## Decisions with permanent consequences
 
-- **No moving `v1` tag.** It would retrigger `release.yml` (`v*` matches)
+- **No moving `v1` tag.** It would retrigger `publish.yml` (`v*` matches)
   and fail on the duplicate version. Docs pin exact versions instead.
 - **No semantic-release.** Rule-pack content keeps its human gate; fully
   automatic publishing is the wrong risk profile here (see ROADMAP.md).
+- **changesets, not release-please.** Per-package intent has to be stated
+  by the author to survive a second package. Reverting this to
+  history-guessing would re-break the moment `packages/*` is populated.
+- **pnpm, not npm.** `strict-peer-dependencies` makes a missing peer a hard
+  error instead of a hoisted accident, and the workspace globs make package
+  two a no-op for CI. The `.npmrc` scope mapping and its publish-time
+  scoped override keep the GPR mirror working unchanged.
 - **npmjs is the source of truth; GitHub Packages is a mirror.** Old
   versions were never backfilled to GPR — two sources of truth for dead
   versions is worse than a thin Packages tab for one cycle.

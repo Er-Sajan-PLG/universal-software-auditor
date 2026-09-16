@@ -9,7 +9,7 @@
  * Usage:
  *   node scripts/sync-docs.mjs          # rewrite docs in place
  *   node scripts/sync-docs.mjs --check  # exit 1 if any doc is out of sync (CI)
- * Requires `dist/` for the CLI-help facts (run `npm run build` first).
+ * Requires `dist/` for the CLI-help facts (run `pnpm run build` first).
  */
 import fs from 'node:fs';
 import path from 'node:path';

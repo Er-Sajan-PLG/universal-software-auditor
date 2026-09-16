@@ -37,6 +37,11 @@ Automation and governance:
       trailer hygiene).
 - [x] **release-please + commitlint** — reviewable Release PRs (version +
       CHANGELOG + tag atomically); human gate kept on rule-content releases.
+      Superseded by the pnpm + changesets migration below (single-package
+      history-guessing does not survive a second package).
+- [x] **pnpm workspace + changesets** — author-declared bumps survive
+      `packages/*` growth; workspace globs are already in place, so package
+      two is a `package.json` and nothing else. See `docs/release.md`.
 - [x] **Trusted publishing + npm provenance + SBOM** — OIDC (no long-lived
       `NPM_TOKEN`), `--provenance`, CycloneDX SBOM artifact on every release.
 - [x] **Generated CLI reference + diff gate** — `docs/reference/cli.md`

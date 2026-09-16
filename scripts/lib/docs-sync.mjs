@@ -90,7 +90,7 @@ export function cliHelp() {
       cwd: ROOT,
     }).trimEnd();
   } catch {
-    console.error('docs-sync: `node dist/cli.js --help` failed — run `npm run build` first.');
+    console.error('docs-sync: `node dist/cli.js --help` failed — run `pnpm run build` first.');
     process.exit(2);
   }
 }
@@ -103,7 +103,7 @@ export function cliRules() {
       cwd: ROOT,
     }).trimEnd();
   } catch {
-    console.error('docs-sync: `node dist/cli.js rules` failed — run `npm run build` first.');
+    console.error('docs-sync: `node dist/cli.js rules` failed — run `pnpm run build` first.');
     process.exit(2);
   }
 }
@@ -123,7 +123,7 @@ export function standardsRows() {
     );
   } catch {
     console.error(
-      'docs-sync: `node dist/cli.js standards --format json` failed — run `npm run build` first.',
+      'docs-sync: `node dist/cli.js standards --format json` failed — run `pnpm run build` first.',
     );
     process.exit(2);
   }
@@ -302,7 +302,7 @@ export function docFiles() {
     (f) =>
       !f.startsWith('experiments/') &&
       !f.startsWith('examples/demo-app/') &&
-      f !== 'CHANGELOG.md' && // machine-written by release-please
+      f !== 'CHANGELOG.md' && // machine-written by `changeset version`
       f !== 'examples/sample-report.md' && // generated audit output
       f !== 'docs/reference/cli.md', // generated CLI reference
   );

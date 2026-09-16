@@ -112,7 +112,7 @@ Each iteration consists of:
    - Must be tested (unit/integration)
    - Must be registered in the capability registry
 6. **Test** the capability on both positive and negative fixtures.
-7. **Run regression** to ensure existing functionality is intact (`npm test`).
+7. **Run regression** to ensure existing functionality is intact (`pnpm test`).
 8. **Permanently integrate** – commit the changes, update documentation, and record the new USA state.
 9. **Re‑audit** the target to measure improvement.
 10. **Log** the new completeness, capability count, and remaining gaps.

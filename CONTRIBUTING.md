@@ -23,27 +23,27 @@ TypeScript, no build step. If you have ever run an audit checklist and thought
 ```bash
 git clone https://github.com/Er-Sajan-PLG/universal-software-auditor
 cd universal-software-auditor
-npm install
+pnpm install
 
-npm test                 # vitest
-npm run lint             # eslint
-npm run typecheck        # tsc --noEmit
-npm run format           # prettier --write
+pnpm test                 # vitest
+pnpm run lint             # eslint
+pnpm run typecheck        # tsc --noEmit
+pnpm run format           # prettier --write
 ```
 
 Run the CLI from source:
 
 ```bash
-npm run usa -- detect .
-npm run usa -- audit . --depth deep
-npm run usa -- rules --section S2
-npm run usa -- explain SEC-001
+pnpm run usa -- detect .
+pnpm run usa -- audit . --depth deep
+pnpm run usa -- rules --section S2
+pnpm run usa -- explain SEC-001
 ```
 
 Or build and run the compiled output:
 
 ```bash
-npm run build && node dist/cli.js audit .
+pnpm run build && node dist/cli.js audit .
 ```
 
 ## Adding a rule
@@ -85,11 +85,11 @@ CI enforces most of this (see `tests/e2e.test.ts`).
 | Gate              | Rule                                                                                                                            | Where                         |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
 | Complexity budget | Functions stay at cyclomatic complexity ≤ 10 (warn-only). Over? Split: one branch = one function, dispatch tables over switches | `eslint.config.mjs`           |
-| Coverage ratchet  | Thresholds sit at the measured number and only rise (`vitest.config.ts`). Lowering a threshold needs an ADR-level reason        | `npm run test:cov`            |
+| Coverage ratchet  | Thresholds sit at the measured number and only rise (`vitest.config.ts`). Lowering a threshold needs an ADR-level reason        | `pnpm run test:cov`           |
 | Rule fixtures     | Every automatable rule ships a `tests/fixtures/rules/<ID>.yaml` fixture; the coverage gate fails an untested rule (ADR-0017)    | `tests/rule-fixtures.test.ts` |
-| ADR hygiene       | Filenames sequential, title numbers match, Date + Status present, index complete                                                | `npm run docs:adrs`           |
-| Doc governance    | Fact markers synced; links + anchors resolve; every doc indexed; version pins current; no banned stale strings (ADR-0020)       | `npm run docs:check`          |
-| CLI reference     | `docs/reference/cli.md` is generated — never hand-edit it; regenerate and commit                                                | `npm run docs:cli`            |
+| ADR hygiene       | Filenames sequential, title numbers match, Date + Status present, index complete                                                | `pnpm run docs:adrs`          |
+| Doc governance    | Fact markers synced; links + anchors resolve; every doc indexed; version pins current; no banned stale strings (ADR-0020)       | `pnpm run docs:check`         |
+| CLI reference     | `docs/reference/cli.md` is generated — never hand-edit it; regenerate and commit                                                | `pnpm run docs:cli`           |
 
 ### Documentation is generated where it can be
 
@@ -100,9 +100,9 @@ by hand. In a doc, write a fact as a marker and it keeps itself correct:
 Rules: <!-- usa:fact rules -->315<!-- /usa:fact -->
 ```
 
-- `npm run docs:sync` rewrites every marker from source (also runs on commit via
+- `pnpm run docs:sync` rewrites every marker from source (also runs on commit via
   the husky hook, so you rarely call it by hand).
-- `npm run docs:check` fails CI if a marker, claim, link, anchor, version pin, or
+- `pnpm run docs:check` fails CI if a marker, claim, link, anchor, version pin, or
   index entry has drifted — run it before pushing.
 - A fact count is a **mirror**: edit the source (the YAML/code), not the number.
 - **Full contract:** [docs/writing-docs.md](docs/writing-docs.md) — read this
@@ -123,8 +123,8 @@ A rule that fires on its own documentation is worse than no rule. Test against t
 projects:
 
 ```bash
-npm run usa -- audit ~/code/project-with-the-problem
-npm run usa -- audit ~/code/project-without-it
+pnpm run usa -- audit ~/code/project-with-the-problem
+pnpm run usa -- audit ~/code/project-without-it
 ```
 
 The second run must stay clean. Then add a case to `tests/`:
@@ -143,17 +143,24 @@ it('does not flag an env-var reference as a hardcoded credential', () => {
 - Commits: [Conventional Commits](https://www.conventionalcommits.org/) —
   `feat(rules): add Bun runtime checks`, `fix(detect): requirements.txt is a not prose file`
 - **Enforced, not asked:** a commit-msg hook runs commitlint, and CI lints
-  every PR commit. This is load-bearing — release-please computes version
-  bumps and CHANGELOG entries from history, so a non-conventional message
-  is silently excluded from releases.
+  every PR commit. Conventional format keeps history readable and supplies
+  the CHANGELOG entry text.
+- **The bump is declared, not inferred.** Add a release note with
+  `pnpm changeset` whenever your PR touches a shipped path (`src/`,
+  `rules/`, `templates/`, `action.yml`, `package.json`). Pick `patch`,
+  `minor`, or `major` and write one line explaining why. The `changesets`
+  CI job fails a shipped-path PR without a note; docs/chore/ci/test PRs
+  that touch nothing shippable need none.
 - Squash-merge PRs with a conventional title: the title becomes the commit
-  release-please reads. `feat` → minor, `fix` → patch,
-  `BREAKING CHANGE:` footer → major; docs/chore/test ride along unbumped.
+  in history, and the changeset you added decides the version.
+  `feat`/`fix` convention still applies for readability.
+- Never hand-edit `CHANGELOG.md` or the version in `package.json` — the
+  Version Packages PR owns both.
 
 ## Pull requests
 
 1. Branch from `master`.
-2. Run `npm test && npm run lint && npm run typecheck && npm run format:check`.
+2. Run `pnpm test && pnpm run lint && pnpm run typecheck && pnpm run format:check`.
 3. Fill in the PR template — especially the **false-positive check**.
 4. If the change affects the report structure, paste a before/after excerpt.
 

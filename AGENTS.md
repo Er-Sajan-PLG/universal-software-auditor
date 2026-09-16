@@ -14,10 +14,12 @@ habit: **the tool audits itself** — every PR runs USA on its own tree,
 and the gates below enforce what it preaches. If a change would fail
 `usa audit .`, it does not merge.
 
-Key facts: Node with strict TypeScript, vitest suites, ESLint +
-Prettier, release-please releases, Conventional Commits (they drive
-version bumps). The engine (`src/engine/`) evaluates data-driven rule
-packs (`rules/`); the CLI (`src/cli.ts`) is a thin driver over it.
+Key facts: Node with strict TypeScript, vitest suites, ESLint + Prettier,
+**pnpm workspace** (one package today, `packages/*` reserved for the next),
+**changesets** releases (author states the bump, the tool obeys),
+Conventional Commits (they feed the CHANGELOG). The engine
+(`src/engine/`) evaluates data-driven rule packs (`rules/`); the CLI
+(`src/cli.ts`) is a thin driver over it.
 
 ## The Loop (make-or-break — follow it for every change)
 
@@ -25,9 +27,13 @@ packs (`rules/`); the CLI (`src/cli.ts`) is a thin driver over it.
    `chore/<topic>`, or `docs/<topic>`. Never commit to `master` directly.
 2. **Implement** (see Code conventions). Prefer editing existing files;
    new files only with reason. Keep diffs minimal.
-3. **Local gates, all green, before pushing**: `npm run typecheck`,
-   `npm run lint`, `npm run format:check`, `npm test`,
-   `npm run docs:all`. No exceptions — CI runs the same gates and more.
+   2b. **Release note**: if the change touches a shipped path (`src/`,
+   `rules/`, `templates/`, `action.yml`, `package.json`), run
+   `pnpm changeset` and write one line explaining the bump. The
+   `changesets` CI job fails a shipped-path PR without one.
+3. **Local gates, all green, before pushing**: `pnpm run typecheck`,
+   `pnpm run lint`, `pnpm run format:check`, `pnpm test`,
+   `pnpm run docs:all`. No exceptions — CI runs the same gates and more.
 4. **Commit** with a Conventional Commits subject
    (`fix:`, `feat:`, `chore:`, `docs:` …). Body lines must stay within a
    hundred characters or the commit-msg hook rejects the commit;
@@ -35,26 +41,26 @@ packs (`rules/`); the CLI (`src/cli.ts`) is a thin driver over it.
    (ESLint + Prettier on staged files) — a red hook means fix, not bypass.
 5. **Push, open a PR** (fill in the template: what, why, type of change).
    Squash-merge when green, delete the branch.
-6. **CI must be fully green before merge.** Eleven-plus checks including
+6. **CI must be fully green before merge.** Twelve-plus checks including
    Test, Lint & format, USA audit (self-audit, fail-on-critical),
    Security scans, CodeQL, Docs & ADR hygiene, Resync generated docs,
-   Validate rule packs, Conventional commits, Build.
+   Validate rule packs, Conventional commits, Changeset present, Build.
 7. **Merging needs the branch-protection conditions**, not just green
    checks: CODEOWNERS review (`*` owned by the maintainer) and required
    status checks. `gh pr merge` failing with "use administrator
    privileges" means a condition is unmet — get the review, do not pass
    `--admin`. This repo does not bypass its own protection; neither do you.
-8. **After merge: follow through.** `fix:`/`feat:` commits make
-   release-please open a Release PR. Shepherd it (see Release machinery),
-   watch the tag run, verify the registries.
+8. **After merge: follow through.** A consumed changeset makes
+   changesets/action open the Version Packages PR. Shepherd it (see
+   Release machinery), watch the tag run, verify the registries.
 
 ## Bot pushes and the approval limbo (you will hit this weekly)
 
-Runs triggered by bot pushes (release-please branches, dependabot
-branches, workflow-created branches) land in CI with every check stuck at
-`action_required` and `gh pr checks` reporting nothing. This is GitHub's
-approval quarantine, not a failure. As the maintainer, re-run the four
-stuck workflows by ID (`gh run rerun <id>`), wait, and the checks go
+Runs triggered by bot pushes (changesets Version Packages branches,
+dependabot branches, workflow-created branches) land in CI with every check
+stuck at `action_required` and `gh pr checks` reporting nothing. This is
+GitHub's approval quarantine, not a failure. As the maintainer, re-run the
+four stuck workflows by ID (`gh run rerun <id>`), wait, and the checks go
 green. Do not "fix" anything first — there is nothing broken.
 
 Related: dependabot **major** bumps never automerge (correctly). Review
@@ -67,26 +73,32 @@ comment there says so.
 ## Commands (the gates, exactly)
 
 ```bash
-npm run typecheck      # tsc --noEmit, strict
-npm run lint           # eslint . (complexity budget: max 10 per function)
-npm run format:check   # prettier --check . (write with :format)
-npm test               # vitest run, full suite
-npm run test:cov       # with coverage (thresholds enforced, see below)
-npm run build          # tsc emit to dist/
-npm run docs:all       # all four doc gates (see Docs hygiene)
-npm run self-audit     # build + `usa audit . --out AUDIT.md`
+pnpm run typecheck      # tsc --noEmit, strict
+pnpm run lint           # eslint . (complexity budget: max 10 per function)
+pnpm run format:check   # prettier --check . (write with :format)
+pnpm test               # vitest run, full suite
+pnpm run test:cov       # with coverage (thresholds enforced, see below)
+pnpm run build          # tsc emit to dist/
+pnpm run docs:all       # all four doc gates (see Docs hygiene)
+pnpm run self-audit     # build + `usa audit . --out AUDIT.md`
+pnpm changeset          # write a release note (shipped changes)
 ```
 
-`npm run usa -- …` runs the CLI from source without building
-(`node --experimental-strip-types`). `AUDIT.md` is gitignored and lands
-in the current working directory, never the target being audited.
+Install once with `pnpm install` (lockfile is `pnpm-lock.yaml`; CI uses
+`--frozen-lockfile`). `pnpm run usa -- …` runs the CLI from source without
+building (`node --experimental-strip-types`). `AUDIT.md` is gitignored and
+lands in the current working directory, never the target being audited.
 
 ## Commits and versioning
 
-- Conventional Commits drive release-please: `feat:` → minor,
-  `fix:` → patch, `perf:` → patch; `chore:`, `docs:`, `ci:`, `test:`
-  release nothing. Anything not matching the format is invisible to the
-  release — the hook and the Conventional commits CI job enforce this.
+- Conventional Commits are still mandatory (the hook and the
+  Conventional commits CI job enforce the format), but they no longer
+  compute the bump: **the changeset does**. `feat:`/`fix:` titles keep the
+  history readable and feed the CHANGELOG entry text; the declared bump is
+  whatever `.changeset/*.md` says.
+- Every PR touching a shipped path adds a note via `pnpm changeset`.
+  `chore:`, `docs:`, `ci:`, `test:` PRs that touch no shipped path need
+  none, and the `changesets` job says so explicitly when it fires.
 - Keep the subject imperative and scoped (`fix(live): …`).
   Multi-line bodies are allowed but every line must fit the hook's
   length limit; when in doubt, ship subject-only and put rationale in
@@ -159,11 +171,11 @@ init` leave existing files alone with a message). The store is
 
 ## Docs hygiene (CI enforces all of it)
 
-- `npm run docs:all` runs four gates: ADR hygiene, docs governance
+- `pnpm run docs:all` runs four gates: ADR hygiene, docs governance
   (claim scanner), CLI reference sync, sample-report sync. All four must
   pass locally before pushing.
 - `docs/reference/cli.md` and the sample reports are **generated** — edit
-  the sources (help text, generators), rebuild (`npm run build` — CLI
+  the sources (help text, generators), rebuild (`pnpm run build` — CLI
   facts come from `dist/`, and a stale `dist/` bakes stale facts), then
   regenerate and commit the result. The Resync job pushes generated-doc
   fixes back to PR branches itself.
@@ -192,9 +204,14 @@ self-audit validates it.
 
 ## Release machinery (read before touching)
 
-- release-please (PAT `RELEASE_PLEASE_TOKEN`, never `GITHUB_TOKEN` —
-  token-triggered pushes do not fire downstream workflows) opens Release
-  PRs from `feat:`/`fix:` commits. Merge them; the tag run publishes.
+- changesets/action (PAT `CHANGESET_TOKEN`, never `GITHUB_TOKEN` —
+  token-triggered pushes do not fire downstream workflows) keeps one
+  **Version Packages PR** updated from the `.changeset/*.md` notes in
+  merged PRs. Merge it: the same workflow then publishes and tags.
+- Two workflows, two jobs. `release.yml` = version + publish to npmjs.
+  `publish.yml` = the tag follower: GPR mirror, SBOM, attestation,
+  `provenance/` PR. Do not merge them back — a tag push and a branch push
+  need different permissions and different failure isolation.
 - Two registries: npmjs (source of truth, OIDC trusted publishing —
   no long-lived token) and the GitHub Packages mirror (classic PAT
   `GPR_TOKEN` minted on the scope-owning account, because the repo owner
@@ -208,11 +225,13 @@ self-audit validates it.
   gate), and filed under `provenance/` (`v*.sigstore.json` +
   `v*.vsa.json`) through a normal PR — SUP-022/SUP-023 stay green that
   way. Never push `v*` tags by hand.
-- If automation wedges, Actions → Release → Run workflow (dispatch)
-  publishes whatever `package.json` holds; duplicate versions fail
-  closed at the registry. Rollback is documented in `docs/release.md`
-  (deprecate + repoint, delete release, delete mirror version) and has
-  never been exercised — keep it that way by shipping carefully.
+- If automation wedges, Actions → Release → Run workflow (dispatch) walks
+  the version-or-publish path by hand; duplicate versions fail closed at
+  the registry. If only the npmjs leg is stuck, Actions → **Publish** →
+  Run workflow publishes on dispatch. Rollback is documented in
+  `docs/release.md` (deprecate + repoint, delete release, delete mirror
+  version) and has never been exercised — keep it that way by shipping
+  carefully.
 - Secrets live in GitHub settings, never the tree. `.env` is gitignored
   (the CLI loads it for provider keys; the environment always wins).
   GPR reads need a token even for public packages. On any suspected
@@ -220,7 +239,7 @@ self-audit validates it.
 
 ## Self-audit loop
 
-Run `usa audit .` (or `npm run self-audit`) and read it like a reviewer:
+Run `usa audit .` (or `pnpm run self-audit`) and read it like a reviewer:
 fix HIGHs, record or suppress the rest with evidence, work the
 judgement queue per ADR-0023 (assisted items get settled with
 `--allow-commands`; judgement items get reasoning). The CI gate fails

@@ -1,156 +1,89 @@
 name: Release
 
+# The release act. changesets/action does one of two things depending on
+# state, never both:
+#
+#   notes present  → `changeset version`: bump package.json, write CHANGELOG,
+#                    open/update the "Version Packages" PR. Human reviews and
+#                    merges it — that review is the release gate.
+#   notes consumed → `changeset publish`: publish to npmjs via OIDC trusted
+#                    publishing, then tag `vX.Y.Z`.
+#
+# The tag makes `publish.yml` fire, which mirrors to GitHub Packages and
+# files the Sigstore bundle. The PAT is load-bearing — a version commit
+# pushed by GITHUB_TOKEN never fires downstream workflows.
+#
+# TOKEN: fine-grained PAT (repo secret CHANGESET_TOKEN), NOT GITHUB_TOKEN.
+# Needs, scoped to this repo only: Contents read+write, Pull requests
+# read+write. Rotate yearly; the action fails closed without it.
 on:
   push:
-    tags:
-      - 'v*'
-  # Manual fallback: tags cut by GITHUB_TOKEN (e.g. release-please before
-  # the PAT switch) never fire tag-push workflows — GitHub suppresses
-  # token-triggered runs to prevent loops. Dispatching here publishes
-  # whatever version package.json holds on the chosen branch.
+    branches:
+      - master
   workflow_dispatch:
 
 permissions:
   contents: write
-  packages: write
-  # Artifact Attestations (SUP-022) mint Sigstore bundles for the tarball.
-  attestations: write
-  # The bundle step files provenance/ through a pull request — creating it
-  # needs pull-requests scope. (v2.9.0 tag run failed exactly here:
-  # "Resource not accessible by integration" on createPullRequest. The
-  # follow-up fix then shipped the comment without this line — v2.9.1
-  # proved it. The line is here now. Really.)
   pull-requests: write
   # OIDC trusted publishing: no long-lived NPM_TOKEN. One-time owner setup:
   # npmjs.com → package Settings → Trusted Publisher → GitHub Actions,
-  # this repo + this workflow. Until then, publishing fails closed here.
+  # this repo + workflow `release.yml`. Until then, publishing fails closed.
   id-token: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The PAT, so the version commit re-triggers CI on master.
+          token: ${{ secrets.CHANGESET_TOKEN }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
 
       - uses: actions/setup-node@v7
         with:
-          # Node 24: trusted publishing REQUIRES npm ≥ 11.5.1 (Node ≥ 22.14).
-          # On Node 20 (npm 10) the Sigstore/provenance leg succeeds but the
-          # registry OIDC token exchange silently never happens — the PUT
-          # goes out unauthenticated and npm 404s. Do not downgrade this.
+          # Node 24 + npm ≥ 11.15: trusted publishing needs the OIDC exchange,
+          # which Node 20's bundled npm silently never performs. Do not
+          # downshift, even though the rest of CI runs on 20.
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
 
-      # Belt and braces: setup-node's bundled npm is not pinned to ≥ 11.5.1,
-      # and a future downgrade would fail exactly like Node 20 did (provenance
-      # signed, PUT 404). Pin the floor explicitly instead of trusting it.
       - name: Ensure npm supports OIDC trusted publishing
         run: npm install -g npm@^11.15.0 && npm --version
 
-      - run: npm ci
-      - run: npm run build
-      # Provenance is public, verifiable build metadata on the registry —
-      # what USA's own S3 rules demand of others (SUP-005..007, S3).
-      # --access public is mandatory: scoped packages default to restricted.
-      # The scope registry is pinned explicitly IN SCOPED FORM: the repo-root
-      # .npmrc points @xenos1996 at GPR, and a scoped mapping beats the plain
-      # --registry default — a bare --registry flag does NOT win (v2.8.1
-      # failed exactly that way: PUT went to GPR, OIDC auth, ENEEDAUTH).
-      # Only a CLI-scoped override beats the project file (verified with
-      # `npm config get @xenos1996:registry --@xenos1996:registry=...`).
-      - run: npm publish --provenance --access public --@xenos1996:registry=https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
 
-      # CycloneDX SBOM for the shipped tarball. Same preach/practice logic:
-      # USA audits SBOM publication (SUP-014), so it ships one. `npm sbom`
-      # writes to stdout (there is no -o flag); the tree is complete because
-      # `npm ci` ran above — a partial node_modules fails with ESBOMPROBLEMS.
-      - name: SBOM (CycloneDX)
-        run: npm sbom --sbom-format cyclonedx > sbom.cdx.json
-
-      - name: Upload SBOM
-        uses: actions/upload-artifact@v7
+      - name: Create Release PR or publish
+        uses: changesets/action@v2
         with:
-          name: usa-sbom
-          path: sbom.cdx.json
-
-      # GitHub Packages mirror: the repo's Packages tab only lists packages
-      # hosted on npm.pkg.github.com — npmjs releases never appear there.
-      # Same tarball, second registry, same `@xenos1996` scope, so one
-      # identity holds on both channels. GPR maps a scope to the GitHub
-      # identity that owns it, and this repo's owner (Er-Sajan-PLG) is not
-      # that identity — so the mirror authenticates with a classic PAT minted
-      # on the scope-owning account (write:packages), stored as GPR_TOKEN.
-      # Never GITHUB_TOKEN here: cross-account writes are rejected with
-      # "installation does not exist". Placed last because reconfiguring the
-      # scope below repoints @xenos1996 publishes at GPR for the rest of the
-      # job. No provenance flag: GPR does not consume Sigstore attestations.
-      # --access public is mandatory, not cosmetic: without it npm publishes
-      # scoped packages as restricted (private), and a private mirror is
-      # invisible to everyone but the owning account — including this repo.
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@xenos1996'
-      - run: npm publish --access public
+          version: pnpm run version-packages
+          publish: pnpm run release
+          commit: 'chore(master): release'
+          title: 'chore(master): release'
+          create-github-releases: true
+          # Without this, `changeset publish` writes versions but never tags —
+          # and the tag is what wakes publish.yml for the GPR mirror, SBOM and
+          # provenance legs. A silent no-tag is the failure mode here.
+          push-git-tags: true
+          # The docs are explicit: passing GITHUB_TOKEN via `env:` does NOT
+          # reach the action. It must come through this input.
+          github-token: ${{ secrets.CHANGESET_TOKEN }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GPR_TOKEN }}
-
-      # SLSA provenance, preserved (SUP-022): the npmjs leg already emits
-      # Sigstore provenance to the registry (`--provenance`), but a registry
-      # entry is not a repo file and SUP-022 checks for a file. So: pack the
-      # release tarball, attest it with GitHub Artifact Attestations (A),
-      # download the bundle and file it under provenance/ (B). Anyone can
-      # verify with the commands in provenance/README.md. A PR, not a direct
-      # push: this repo does not bypass its own protection (SUP-012) — the
-      # bundle PR merges through the normal loop, and SUP-022 flips green
-      # on the first audit after that merge.
-      - name: Pack release tarball for attestation
-        run: |
-          echo "TARBALL=$(npm pack | tail -1)" >> "$GITHUB_ENV"
-          echo "VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
-
-      - name: Attest release tarball (SLSA provenance)
-        uses: actions/attest-build-provenance@v4
-        with:
-          subject-path: ${{ env.TARBALL }}
-
-      - name: File provenance bundle + VSA via PR (SUP-022/SUP-023)
-        run: |
-          gh attestation download "$TARBALL" --repo "$GITHUB_REPOSITORY"
-          dl=(sha256*.jsonl)
-          mkdir -p provenance
-          mv "${dl[0]}" "provenance/v${VERSION}.sigstore.json"
-          # The downloaded bundle is valid JSON but not Prettier-shaped;
-          # without this every bundle PR fails Lint & format on arrival.
-          npx prettier --write "provenance/v${VERSION}.sigstore.json"
-          # SUP-023: verify BEFORE filing. This checks the Sigstore bundle
-          # (cert chain, transparency, repo identity) and asserts the SLSA
-          # provenance predicate; a nonzero exit fails the job here, so a
-          # VSA file exists if and only if verification passed.
-          gh attestation verify "$TARBALL" --repo "$GITHUB_REPOSITORY" \
-            --predicate-type https://slsa.dev/provenance/v1
-          # Every VSA field derives from this run (see scripts/make-vsa.mjs):
-          # digests are computed, the policy digest pins this exact file.
-          VSA_OUT="provenance/v${VERSION}.vsa.json" \
-          VSA_TARBALL_NAME="$TARBALL" \
-          VSA_TARBALL_DIGEST="$(sha256sum "$TARBALL" | cut -d' ' -f1)" \
-          VSA_BUNDLE_DIGEST="$(sha256sum "provenance/v${VERSION}.sigstore.json" | cut -d' ' -f1)" \
-          VSA_VERSION="$VERSION" \
-          VSA_SHA="$GITHUB_SHA" \
-          VSA_POLICY_DIGEST="$(sha256sum .github/workflows/release.yml | cut -d' ' -f1)" \
-          VSA_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          VSA_GH_VERSION="$(gh --version | head -1 | awk '{print $3}')" \
-          node scripts/make-vsa.mjs
-          npx prettier --write "provenance/v${VERSION}.vsa.json"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "provenance/v${VERSION}"
-          git add "provenance/v${VERSION}.sigstore.json" "provenance/v${VERSION}.vsa.json"
-          git commit -m "docs: attach SLSA provenance bundle for v${VERSION}"
-          git push origin "HEAD:provenance/v${VERSION}"
-          gh pr create --base master --head "provenance/v${VERSION}" \
-            --title "docs: attach SLSA provenance bundle for v${VERSION}" \
-            --body "Sigstore bundle + verification summary for the release tarball (SUP-022/SUP-023). Verify with the commands in provenance/README.md."
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Provenance is public, verifiable build metadata on the registry —
+          # what USA's own S3 rules demand of others (SUP-005..007, S3).
+          NPM_CONFIG_PROVENANCE: 'true'
+          # The scope registry is pinned explicitly IN SCOPED FORM: the
+          # repo-root .npmrc points @xenos1996 at GPR, and a scoped mapping
+          # beats a bare --registry flag (v2.8.1 failed exactly that way).
+          npm_config_@xenos1996:registry: 'https://registry.npmjs.org'
+          # OIDC, not a long-lived token.
+          NODE_AUTH_TOKEN: ''

@@ -27,9 +27,10 @@ maintainer. YAML-only changes need one rule reviewer or the maintainer.
 
 ## Release authority
 
-Only the maintainer tags releases and publishes to npm. Release PRs (see
-ROADMAP: release-please) are reviewable; merging one is the release act.
-The `NPM_TOKEN`/OIDC publisher is never shared.
+Only the maintainer tags releases and publishes to npm. Release notes
+(author-declared changesets, see `docs/release.md`) are reviewable; merging
+the generated Version Packages PR is the release act. The OIDC publisher is
+never shared.
 
 ## Security
 

@@ -38,7 +38,7 @@ jobs:
             | grep -vE '^(docs/reference/cli.md|examples/sample-report.md)$' \
             | sort)"
           BODY="$(cat <<EOF
-          Mechanical facts are machine-checked (ADR-0020, \`npm run docs:check\`), so they
+          Mechanical facts are machine-checked (ADR-0020, \`pnpm run docs:check\`), so they
           are not at risk. What this review covers is **prose truth** — a sentence that was
           correct when written and quietly stopped being so (e.g. "SARIF is a renderer away"
           after SARIF shipped).
@@ -54,7 +54,7 @@ jobs:
           - [ ] Prefer timeless phrasing or a link over a duplicated fact.
           - [ ] Delete prose that no longer describes reality; do not leave it to rot.
           - [ ] If a decision changed, write a **new ADR** superseding the old one (never edit an ADR).
-          - [ ] Run \`npm run docs:all\` and commit any fixes.
+          - [ ] Run \`pnpm run docs:all\` and commit any fixes.
 
           ## Living docs
 

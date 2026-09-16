@@ -22,21 +22,25 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: ESLint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Prettier
-        run: npm run format:check
+        run: pnpm run format:check
 
       - name: Typecheck
-        run: npm run typecheck
+        run: pnpm run typecheck
 
   test:
     name: Test
@@ -49,15 +53,19 @@ jobs:
           # USA emits a "shallow clone?" warning and the assertion fails.
           fetch-depth: 0
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: Vitest
-        run: npm run test:cov
+        run: pnpm run test:cov
 
   build:
     name: Build
@@ -66,15 +74,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: Compile
-        run: npm run build
+        run: pnpm run build
 
       - name: Smoke test the CLI
         run: |
@@ -88,13 +100,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - run: npm ci
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
 
       - name: Every pack loads and every rule parses
         run: |
@@ -105,14 +121,10 @@ jobs:
         run: |
           node dist/cli.js detect . | grep -q 'maturity:'
 
-  # Docs rot faster than code, and ADRs rot fastest of all (ADR-0001 says so
-  # explicitly). These two scripts assert the machine-checkable invariants:
-  # the README rule-count floor, USA.md section coverage, and ADR
-  # numbering/index completeness. See scripts/check-docs.mjs,
-  # scripts/check-adrs.mjs, and ROADMAP.md ("doc sync").
-  # Commit messages drive releases (release-please reads them), so they are
-  # linted like code. PR-only: master receives squash/rebase merges whose
-  # messages GitHub derives from PR titles — lint the PR commits, not merges.
+  # Commit messages still drive the CHANGELOG (changesets copies them in), so
+  # they stay linted like code. PR-only: master receives squash/rebase merges
+  # whose messages GitHub derives from PR titles — lint the PR commits, not
+  # merges.
   commits:
     name: Conventional commits
     if: github.event_name == 'pull_request'
@@ -122,12 +134,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       # SHAs resolve via `gh`, never by interpolating pull-request payload
       # fields into `run:` blocks: SUP-008 forbids event-payload text there
@@ -141,7 +157,69 @@ jobs:
         run: |
           BASE_SHA="$(gh pr view "$PR_NUMBER" --json baseRefOid --jq .baseRefOid)"
           HEAD_SHA="$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)"
-          npx commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+          pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+
+  # A version only moves when a note says so. `change-status` answers the one
+  # question that matters: does this PR's diff touch shipped files without
+  # adding a changeset? It exits 1 for exactly that case and 0 otherwise, so
+  # a chore/docs/ci PR passes untouched and a src/rules PR must carry a note.
+  # Shipped paths are the ones `files` in package.json publishes plus the
+  # action manifest — a note is pointless for a change nobody downloads.
+  changesets:
+    name: Changeset present
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Compare against the base branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          set -euo pipefail
+          BASE_SHA="$(gh pr view "$PR_NUMBER" --json baseRefOid --jq .baseRefOid)"
+          HEAD_SHA="$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)"
+
+          # Does the diff touch anything the package ships?
+          if ! git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
+              | grep -qE '^(src/|rules/|templates/|action\.yml|package\.json)'; then
+            echo "No shipped paths touched — a changeset is not required."
+            exit 0
+          fi
+
+          # Shipped paths changed: is a note in the PR's diff? A note is an
+          # ADDED .changeset/*.md that is not the directory's own README.
+          # The exclusion has to live in the same pattern: a separate
+          # `grep README` over the whole diff reports the README this
+          # directory ships with and inverts to a false negative (this gate's
+          # first real run failed on exactly that).
+          NOTES="$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA" \
+                   | grep -E '^\.changeset/[^/]+\.md$' \
+                   | grep -vE '^\.changeset/README\.md$' || true)"
+          if [ -n "$NOTES" ]; then
+            echo "Shipped paths + a changeset found:"
+            echo "$NOTES"
+            exit 0
+          fi
+
+          echo "::error::This PR changes shipped files but adds no changeset."
+          echo "Run \`pnpm changeset\`, commit the note, push again."
+          echo "Skip this gate only by leaving shipped paths untouched."
+          exit 1
 
   hygiene:
     name: Docs & ADR hygiene
@@ -149,29 +227,33 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       # dist/ is required by check-docs (flag references run --help) and
       # gen-cli-docs --check. check-docs used to run before the build and
       # failed with MODULE_NOT_FOUND on both stacked PRs.
-      - run: npm run build
+      - run: pnpm run build
 
       - name: ADR index and numbering
-        run: npm run docs:adrs
+        run: pnpm run docs:adrs
 
       - name: Doc governance (facts, links, index, version pins, headings)
-        run: npm run docs:check
+        run: pnpm run docs:check
 
       - name: CLI reference is generated and committed
-        run: npm run docs:cli
+        run: pnpm run docs:cli
 
       - name: Sample report is generated and committed
-        run: npm run docs:sample
+        run: pnpm run docs:sample
 
   # Generated files (docs/reference/cli.md, examples/sample-report.md) are
   # byte-compared by the hygiene job, so any engine/CLI change turns the next
@@ -206,13 +288,17 @@ jobs:
           # interpolated into shell (SUP-008).
           ref: ${{ github.head_ref }}
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - run: npm ci
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
 
       - name: Regenerate and push if stale
         env:
@@ -259,15 +345,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: Dependency vulnerability scan
-        run: npm audit --audit-level=high
+        run: pnpm audit --audit-level=high
 
       # Run the gitleaks binary directly rather than through gitleaks-action:
       # the Action ships its own default config, so the repo's .gitleaks.toml
@@ -296,4 +386,4 @@ jobs:
           node scripts/gitleaks-filter.mjs /tmp/gitleaks.json
 
       - name: License scan
-        run: npx license-checker --production --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;Python-2.0'
+        run: pnpm dlx license-checker --production --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;Python-2.0'

@@ -14,7 +14,7 @@
  *   7. Banned strings   — known-stale tokens never reappear.
  *   8. Heading numbers  — no two `## N ·` headings share a number in one doc.
  *
- * Offline. Checks 1 and 3 need `dist/` (run `npm run build` first).
+ * Offline. Checks 1 and 3 need `dist/` (run `pnpm run build` first).
  *
  * Usage: `node scripts/check-docs.mjs` (exit 1 on any violation).
  */
@@ -89,7 +89,7 @@ if (!badge) {
 const help = cliHelp();
 const knownFlags = new Set([...help.matchAll(/--([a-z][a-z0-9-]*)/g)].map((m) => m[1]));
 const CMD_LINE =
-  /^[ \t]*(?:\$\s*)?(?:npx(?:\s+[^\s\\]+)*\s+)?(?:@\S+\/usa|usa(?:@\S+)?|npm run usa --)(.*)$/gm;
+  /^[ \t]*(?:\$\s*)?(?:npx(?:\s+[^\s\\]+)*\s+)?(?:@\S+\/usa|usa(?:@\S+)?|pnpm run usa --)(.*)$/gm;
 for (const rel of docFiles()) {
   const text = readDoc(rel);
   for (const m of text.matchAll(CMD_LINE)) {
