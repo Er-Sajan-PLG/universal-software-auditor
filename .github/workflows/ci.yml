@@ -193,6 +193,19 @@ jobs:
           set -euo pipefail
           BASE_SHA="$(gh pr view "$PR_NUMBER" --json baseRefOid --jq .baseRefOid)"
           HEAD_SHA="$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)"
+          HEAD_REF="$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)"
+
+          # The release PR is the one legitimate exception: it bumps versions
+          # and CONSUMES notes, so demanding a new one deadlocks the release
+          # (found the hard way — this gate failed the very first Version
+          # Packages PR, and it is a required check). Two independent signals,
+          # either sufficient: the action's own branch name, and deleted
+          # notes. The branch name alone would break if changesets renamed its
+          # branch; deleted notes alone would miss a release that also adds one.
+          if [[ "$HEAD_REF" == changeset-release/* ]]; then
+            echo "Release branch ($HEAD_REF) — the version PR consumes notes by design."
+            exit 0
+          fi
 
           # Does the diff touch anything the package ships?
           if ! git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
@@ -213,6 +226,17 @@ jobs:
           if [ -n "$NOTES" ]; then
             echo "Shipped paths + a changeset found:"
             echo "$NOTES"
+            exit 0
+          fi
+
+          # A diff that removes notes is mid-version-bump even off the
+          # canonical branch (e.g. a hand-cut release PR).
+          CONSUMED="$(git diff --name-only --diff-filter=D "$BASE_SHA" "$HEAD_SHA" \
+                      | grep -E '^\.changeset/[^/]+\.md$' \
+                      | grep -vE '^\.changeset/README\.md$' || true)"
+          if [ -n "$CONSUMED" ]; then
+            echo "This PR consumes changesets (version bump):"
+            echo "$CONSUMED"
             exit 0
           fi
 
