@@ -56,6 +56,7 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "usa": "node --experimental-strip-types src/cli.ts",
