@@ -201,12 +201,18 @@ jobs:
             exit 0
           fi
 
-          # Shipped paths changed: is a note in the PR's diff?
-          if git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA" \
-              | grep -qE '^\.changeset/[^/]+\.md$' \
-             && ! git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
-                  | grep -qE '^\.changeset/(README|config)'; then
-            echo "Shipped paths + a changeset found."
+          # Shipped paths changed: is a note in the PR's diff? A note is an
+          # ADDED .changeset/*.md that is not the directory's own README.
+          # The exclusion has to live in the same pattern: a separate
+          # `grep README` over the whole diff reports the README this
+          # directory ships with and inverts to a false negative (this gate's
+          # first real run failed on exactly that).
+          NOTES="$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA" \
+                   | grep -E '^\.changeset/[^/]+\.md$' \
+                   | grep -vE '^\.changeset/README\.md$' || true)"
+          if [ -n "$NOTES" ]; then
+            echo "Shipped paths + a changeset found:"
+            echo "$NOTES"
             exit 0
           fi
 
