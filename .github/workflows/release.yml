@@ -65,10 +65,14 @@ jobs:
       - name: Create Release PR or publish
         uses: changesets/action@v2
         with:
-          version: pnpm run version-packages
-          publish: pnpm run release
-          commit: 'chore(master): release'
-          title: 'chore(master): release'
+          # v2 input names. v1 called these `version`, `publish`, `commit` and
+          # `title`; v2 hard-fails on the old names with a rename table rather
+          # than ignoring them — which is how this workflow's first real run
+          # failed 23s in, before any package was touched.
+          version-script: pnpm run version-packages
+          publish-script: pnpm run release
+          commit-message: 'chore(master): release'
+          pr-title: 'chore(master): release'
           create-github-releases: true
           # Without this, `changeset publish` writes versions but never tags —
           # and the tag is what wakes publish.yml for the GPR mirror, SBOM and
