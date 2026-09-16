@@ -15,7 +15,7 @@ documentation. Living docs are `docs/release.md` and
 | Release workflow     | `release-please.yml` (tag cut) → `release.yml` (publish) | `release.yml` (changesets/action: version PR → publish) → `publish.yml` (tag follower) |
 | Node in publish legs | 24                                                       | 24 (unchanged; OIDC requires it)                                                       |
 | CI cache             | `cache: 'npm'`                                           | `cache: 'pnpm'` + `pnpm/action-setup@v4`                                               |
-| Secret               | `RELEASE_PLEASE_TOKEN`                                   | `CHANGESETS_TOKEN` (same scopes minus Issues)                                          |
+| Secret               | `RELEASE_PLEASE_TOKEN`                                   | `CHANGESET_TOKEN` (same scopes minus Issues)                                           |
 | New CI gate          | —                                                        | `changesets` job: shipped-path PR must add a note                                      |
 
 Version continuity is preserved: `package.json` stays at `2.25.1`, and the
@@ -23,7 +23,7 @@ first note above is a `patch`, so the first changesets release is `2.25.2`.
 
 ## One-time steps for the maintainer
 
-1. **Create the `CHANGESETS_TOKEN` secret.** Fine-grained PAT, this repo
+1. **Create the `CHANGESET_TOKEN` secret.** Fine-grained PAT, this repo
    only, scopes: Contents read+write, Pull requests read+write. Then delete
    `RELEASE_PLEASE_TOKEN` (no workflow reads it anymore).
 2. **Rotate the npmjs Trusted Publisher entry** to `workflow: release.yml`

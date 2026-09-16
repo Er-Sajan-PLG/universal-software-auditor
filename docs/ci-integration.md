@@ -225,7 +225,7 @@ markers encode author intent.
 5. The tag fires `publish.yml`: GPR mirror + SBOM + attestations +
    `provenance/` bundle PR.
 6. `changesets/action` authenticates with a fine-grained PAT
-   (`CHANGESETS_TOKEN`, repo-scoped: Contents + PRs read+write) — **not**
+   (`CHANGESET_TOKEN`, repo-scoped: Contents + PRs read+write) — **not**
    `GITHUB_TOKEN`. A version commit pushed by `GITHUB_TOKEN` does not
    trigger downstream workflows, so with the default token the bump lands,
    the tag is created… and `publish.yml` never fires. Nothing reaches

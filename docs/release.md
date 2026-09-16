@@ -81,7 +81,7 @@ per-package intent, which is the whole reason this repo moved.
 |     | `universal-software-auditor`, workflow `release.yml`, no env) | Exact basename — full paths do not match.                   |
 | 3   | Trusted publisher may **publish directly**                    | Same page (checkbox). Without it, PUTs 404.                 |
 | 4   | Publishing access: strictest (2FA required, no bypass tokens) | Same page. OIDC works with either option.                   |
-| 5   | `CHANGESETS_TOKEN`: fine-grained PAT, this repo only —        | Repo Settings → Secrets → Actions. **Check its expiry**     |
+| 5   | `CHANGESET_TOKEN`: fine-grained PAT, this repo only —         | Repo Settings → Secrets → Actions. **Check its expiry**     |
 |     | Contents + PRs read+write                                     | (Settings → Developer settings → Tokens): when it lapses,   |
 |     |                                                               | the Version Packages PR silently stops appearing. Rotate    |
 |     |                                                               | yearly. (Was `RELEASE_PLEASE_TOKEN`; the secret was renamed |
@@ -146,7 +146,7 @@ not "fix" the duplicate-version error; it is the fail-closed contract.
 | `You cannot publish over the previously published …`   | Re-running a tag whose version is already on the registry (e.g. after a manual        | **Expected / success.** OIDC works; the registry is fail-closed on duplicates. Verify with the next version.    |
 |                                                        | first publish). Not an error to "fix".                                                |                                                                                                                 |
 | Tag cut, GitHub Release created, **nothing published** | Tags pushed by `GITHUB_TOKEN` never fire downstream workflows (loop prevention)       | changesets/action uses the PAT, never the default token.                                                        |
-| Version Packages PR never appears                      | `CHANGESETS_TOKEN` expired, or the PR has no changeset notes to consume               | Rotate the PAT. If it is not the PAT, the PR genuinely changes nothing shippable.                               |
+| Version Packages PR never appears                      | `CHANGESET_TOKEN` expired, or the PR has no changeset notes to consume                | Rotate the PAT. If it is not the PAT, the PR genuinely changes nothing shippable.                               |
 | Release PR lint red on `CHANGELOG.md`                  | `changelog-github` writes double blank lines; prettier wants single                   | `CHANGELOG.md` is prettier-ignored (machine-written).                                                           |
 | `Unable to resolve action ossf/scorecard-action@v2`    | Upstream publishes no `v2` major tag                                                  | Pinned exact `v2.4.4`. Check for newer semver occasionally.                                                     |
 | Installed bin exits 0 and prints **nothing**           | Entry guard compared `import.meta.url` to `file://${argv[1]}`; under npm's bin        | Resolve `argv[1]` with `fs.realpathSync` before comparing. Regression-tested in `tests/e2e/cli.test.ts`.        |

@@ -204,7 +204,7 @@ self-audit validates it.
 
 ## Release machinery (read before touching)
 
-- changesets/action (PAT `CHANGESETS_TOKEN`, never `GITHUB_TOKEN` —
+- changesets/action (PAT `CHANGESET_TOKEN`, never `GITHUB_TOKEN` —
   token-triggered pushes do not fire downstream workflows) keeps one
   **Version Packages PR** updated from the `.changeset/*.md` notes in
   merged PRs. Merge it: the same workflow then publishes and tags.

@@ -13,7 +13,7 @@ name: Release
 # files the Sigstore bundle. The PAT is load-bearing — a version commit
 # pushed by GITHUB_TOKEN never fires downstream workflows.
 #
-# TOKEN: fine-grained PAT (repo secret CHANGESETS_TOKEN), NOT GITHUB_TOKEN.
+# TOKEN: fine-grained PAT (repo secret CHANGESET_TOKEN), NOT GITHUB_TOKEN.
 # Needs, scoped to this repo only: Contents read+write, Pull requests
 # read+write. Rotate yearly; the action fails closed without it.
 on:
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           # The PAT, so the version commit re-triggers CI on master.
-          token: ${{ secrets.CHANGESETS_TOKEN }}
+          token: ${{ secrets.CHANGESET_TOKEN }}
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
@@ -76,7 +76,7 @@ jobs:
           push-git-tags: true
           # The docs are explicit: passing GITHUB_TOKEN via `env:` does NOT
           # reach the action. It must come through this input.
-          github-token: ${{ secrets.CHANGESETS_TOKEN }}
+          github-token: ${{ secrets.CHANGESET_TOKEN }}
         env:
           # Provenance is public, verifiable build metadata on the registry —
           # what USA's own S3 rules demand of others (SUP-005..007, S3).
