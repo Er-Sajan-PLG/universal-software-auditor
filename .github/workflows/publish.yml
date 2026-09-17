@@ -140,26 +140,27 @@ jobs:
       # consume Sigstore attestations. --access public is mandatory, not
       # cosmetic: without it npm publishes scoped packages as restricted.
       #
-      # AUTH, and why it is written by hand: setup-node ran with
-      # registry-url=https://registry.npmjs.org, so its generated .npmrc
-      # carries an npmjs-scoped _authToken line and nothing for GPR. Exporting
-      # NODE_AUTH_TOKEN is NOT enough — pnpm reads credentials from .npmrc,
-      # keyed by registry host. So the host-scoped line is appended here, in
-      # the same shape setup-node would have written for this registry.
-      # (Verified: `//npm.pkg.github.com/:_authToken=<token>` is the form GPR
-      # accepts; a bare NODE_AUTH_TOKEN env var 401s.)
-      - name: Authenticate the GPR mirror
-        env:
-          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
-        run: |
-          set -euo pipefail
-          printf '@xenos1996:registry=https://npm.pkg.github.com/\n' > .npmrc
-          printf '//npm.pkg.github.com/:_authToken=%s\n' "$GPR_TOKEN" >> .npmrc
-          # Proof the token is present without printing it: GPR requires auth
-          # even to read a public package, so a successful `npm view` is the
-          # cheapest end-to-end credential check we get before publishing.
-          GPR_VERSION="$(npm view @xenos1996/usa version 2>/dev/null || echo 'none')"
-          echo "GPR currently reports version: $GPR_VERSION"
+      # AUTH, and why this is a second setup-node rather than a hand-written
+      # .npmrc: setup-node ran earlier with registry-url=npmjs, so its
+      # generated npmrc carries an npmjs-scoped token line and nothing for
+      # GitHub Packages. pnpm reads credentials from npmrc keyed by registry
+      # host, and exporting NODE_AUTH_TOKEN alone is not enough.
+      #
+      # The obvious fix — printf the host-scoped auth line into .npmrc — works
+      # (verified: the mirror published 2.25.2), but it trips the repo's own
+      # NODE-004: that rule greps for the auth-line shape and matches the
+      # mechanism as readily as a leak, failing the self-audit at CRITICAL.
+      # Rather than suppress a security rule on one file, let the vendor action
+      # generate the line. A new setup-node with this registry+scope writes the
+      # correctly-scoped auth entry itself, so no credential-line literal
+      # appears in a tracked file.
+      - name: Configure GitHub Packages auth
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@xenos1996'
+          cache: 'pnpm'
 
       - name: Publish mirror to GitHub Packages
         run: |
