@@ -6,7 +6,10 @@ negative:
       jobs:
         build:
           steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+            - uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
+          # Prose that quotes the syntax must not count as a reference.
+          # Catches a `uses: owner/action@v4` that slipped in without a pin.
 positive:
   files:
     .github/workflows/ci.yml: |
@@ -14,5 +17,9 @@ positive:
       jobs:
         build:
           steps:
+            - uses: actions/checkout@v4
             - uses: actions/checkout@main
+            - uses: ossf/scorecard-action@v2.4.4
+            - uses: github/codeql-action/analyze@v4
+            - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaazzz
   expect: FAIL

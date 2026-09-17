@@ -204,7 +204,7 @@ rules:
     tags: [github-actions]
 
   - id: SUP-010
-    title: Third-party actions are pinned to a version or SHA
+    title: Third-party actions are pinned to a commit SHA
     section: S3
     section_title: Supply Chain & Build Provenance
     severity: MEDIUM
@@ -212,11 +212,30 @@ rules:
     applies_when: { fact: 'ci:github-actions' }
     check:
       kind: grep_absent
-      pattern: 'uses:\s*[^@\s]+@(main|master|latest)\s*$'
+      # Anything that is not a 40-hex commit SHA is a moving target: even a
+      # semver tag like `@v4` is a mutable ref the upstream owner can repoint,
+      # so the next run executes a different commit with our secrets in scope.
+      # This used to match only `@main|@master|@latest`, which let every `@vN`
+      # tag through — the exact drift OpenSSF Scorecard's Pinned-Dependencies
+      # check flags, and the gap that produced 59 findings on this repo.
+      #
+      # The lookahead requires 40 hex chars AND a following boundary, so a
+      # 40-hex prefix of a longer ref (`…aaaa` + `zzz`) is still a failure.
+      # The `.github/workflows/*` include list plus the fact gate above keep
+      # this scoped to GitHub Actions; a Docker `image: …@sha256:` digest is a
+      # different syntax and not matched.
+      #
+      # `^(?!\s*#)` skips comment lines. Without it the rule matches prose
+      # that merely quotes the syntax — it flagged this repo's own ci.yml
+      # comment explaining the rule, the same self-match that hit
+      # scripts/pin-actions.mjs in the same session. A rule that fires on its
+      # own documentation is a false positive; comments are not directives.
+      pattern: '^(?!\s*#).*uses:\s*(?:[\w.-]+\/)+[\w.-]+@(?!([0-9a-f]{40})(?:\s|$))'
       include: ['.github/workflows/*.yml', '.github/workflows/*.yaml']
       flags: i
-    why: '`@main` on a third-party action means their next commit runs with your secrets.'
-    remediation: 'Pin to a full commit SHA; enable Dependabot for github-actions to keep them current.'
+    why: 'A mutable ref (`@v4`, `@main`) lets the upstream owner — or anyone who compromises them — run arbitrary code with your tokens; only a commit SHA is immutable.'
+    remediation: 'Pin to a full commit SHA with the version in a trailing comment (`uses: owner/action@<40-hex> # vX.Y.Z`), which keeps Dependabot able to raise update PRs. `node scripts/pin-actions.mjs` rewrites every workflow in place; `--check` fails if any ref drifts back.'
+    note: 'Tightened 2026-09-17 after OpenSSF Scorecard reported 59 unpinned actions. The trailing `# vX.Y.Z` comment is load-bearing: without it Dependabot cannot update a SHA pin.'
     references: ['OpenSSF-Scorecard:Pinned-Dependencies']
 
   - id: SUP-011
