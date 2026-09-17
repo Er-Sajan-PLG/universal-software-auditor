@@ -38,17 +38,17 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # The PAT, so the version commit re-triggers CI on master.
           token: ${{ secrets.CHANGESET_TOKEN }}
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           version: 10.34.5
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           # Node 24 + npm ≥ 11.15: trusted publishing needs the OIDC exchange,
           # which Node 20's bundled npm silently never performs. Do not
@@ -86,7 +86,7 @@ jobs:
           echo "effective scope registry: $(npm config get @xenos1996:registry)"
 
       - name: Create Release PR or publish
-        uses: changesets/action@v2
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2
         with:
           # v2 input names. v1 called these `version`, `publish`, `commit` and
           # `title`; v2 hard-fails on the old names with a rename table rather

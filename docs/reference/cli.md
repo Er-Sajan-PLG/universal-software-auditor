@@ -189,7 +189,7 @@ examples
    SUP-007    MEDIUM   supply-chain     Secret scanning runs in CI
    SUP-008    HIGH     supply-chain     CI workflows avoid script-injection patterns
    SUP-009    MEDIUM   supply-chain     Workflows declare least-privilege token permissions
-   SUP-010    MEDIUM   supply-chain     Third-party actions are pinned to a version or SHA
+   SUP-010    MEDIUM   supply-chain     Third-party actions are pinned to a commit SHA
    SUP-011    CRITICAL supply-chain     No secrets in CI configuration
    SUP-012    HIGH     supply-chain     Default branch is protected
    SUP-013    LOW      supply-chain     Commits are signed or attested

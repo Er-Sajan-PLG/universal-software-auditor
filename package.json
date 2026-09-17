@@ -61,6 +61,8 @@
     "build": "tsc -p tsconfig.json",
     "usa": "node --experimental-strip-types src/cli.ts",
     "lint": "eslint .",
+    "actions:pin": "node scripts/pin-actions.mjs",
+    "actions:check": "node scripts/pin-actions.mjs --check",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
