@@ -58,9 +58,17 @@ jobs:
       - run: pnpm run build
 
       # npmjs leg when a human dispatches by hand. The scheduled path publishes
-      # through changesets/action in release.yml; re-running it here would hit
-      # the registry's duplicate-version wall, which is fail-closed and
-      # therefore harmless, but noisy — so it is skipped for tag pushes.
+      # through changesets/action in release.yml, so this exists only as the
+      # manual fallback when that leg wedged.
+      #
+      # IDEMPOTENT BY DESIGN, and this is load-bearing: the FIRST dispatch of
+      # this workflow died here with
+      #   "You cannot publish over the previously published versions: 2.25.2"
+      # which is fail-closed and correct — but it aborted the job before the
+      # mirror, SBOM, attestation and provenance steps, all of which are
+      # idempotent backfill work that a duplicate npmjs publish must not
+      # block. Same shape as the GPR step below: check first, skip cleanly.
+      #
       # --access public is mandatory: scoped packages default to restricted.
       # The scope registry is pinned explicitly IN SCOPED FORM: the repo-root
       # .npmrc points @xenos1996 at GPR, and a scoped mapping beats the plain
@@ -69,7 +77,20 @@ jobs:
       # Only a CLI-scoped override beats the project file.
       - name: Publish to npmjs (manual dispatch only)
         if: github.event_name == 'workflow_dispatch'
-        run: pnpm publish --provenance --access public --no-git-checks --@xenos1996:registry=https://registry.npmjs.org
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          # SCOPED form, and the plain `--registry` does NOT substitute for it:
+          # the repo .npmrc maps the scope to GPR, and a scope mapping beats a
+          # bare registry flag for both `npm view` and `npm publish`. Measured,
+          # because assuming otherwise cost two failed runs already.
+          if npm view "@xenos1996/usa@${VERSION}" version \
+              --@xenos1996:registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "@xenos1996/usa@${VERSION} already on npmjs — skipping publish."
+            exit 0
+          fi
+          pnpm publish --provenance --access public --no-git-checks \
+            --@xenos1996:registry=https://registry.npmjs.org
 
       # CycloneDX SBOM for the shipped tarball. Same preach/practice logic:
       # USA audits SBOM publication (SUP-014), so it ships one.
