@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.25.3
+
+### Patch Changes
+
+- [#161](https://github.com/Er-Sajan-PLG/universal-software-auditor/pull/161) [`b668e64`](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/b668e6412b11b50753848bcae520160cbfd488ec) Thanks [@Er-Sajan-PLG](https://github.com/Er-Sajan-PLG)! - Tighten `SUP-010` to require a full commit SHA on every GitHub Action, not just the absence of `@main`/`@master`/`@latest` — a semver tag like `@v4` is still a mutable ref OpenSSF Scorecard flags. Adds `scripts/pin-actions.mjs` (`pnpm actions:pin` / `actions:check`, wired into the Lint job) and skips comment lines so the rule no longer fires on prose that quotes the syntax.
+
 ## 2.25.2
 
 ### Patch Changes
