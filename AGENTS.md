@@ -216,10 +216,21 @@ self-audit validates it.
   no long-lived token) and the GitHub Packages mirror (classic PAT
   `GPR_TOKEN` minted on the scope-owning account, because the repo owner
   is not the scope owner). The root `.npmrc` maps the scope at GPR.
-- **The `.npmrc` trap**: a scoped registry mapping beats a bare
-  `--registry` flag. Any publish leg targeting npmjs must override in
-  scoped form. This failed a real release once; the comment in
-  `release.yml` tells the story.
+- **The `.npmrc` trap** — and the precedence it actually follows, measured
+  rather than assumed (v2.25.2 died here with a 401 from GitHub Packages):
+
+  | Override                             | Wins over the project `.npmrc`? |
+  | ------------------------------------ | ------------------------------- |
+  | `--@xenos1996:registry=…` on the CLI | **yes**                         |
+  | rewriting the `.npmrc` scope line    | **yes**                         |
+  | `npm_config_@xenos1996:registry` env | no                              |
+  | `NPM_CONFIG_USERCONFIG`              | no                              |
+
+  `pnpm publish` (in `publish.yml`) can pass the CLI flag, so it does.
+  `changeset publish` (in `release.yml`) builds its own `npm publish` call
+  and offers no way to inject one, so that leg rewrites `.npmrc` before it
+  runs. A bare `--registry` never wins — it is not scoped.
+
 - Every release is attested (Sigstore provenance on npmjs, GitHub
   Artifact Attestations), verified (`gh attestation verify` as a job
   gate), and filed under `provenance/` (`v*.sigstore.json` +
