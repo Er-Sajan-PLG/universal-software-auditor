@@ -10,11 +10,13 @@ on: [pull_request]
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   audit:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
