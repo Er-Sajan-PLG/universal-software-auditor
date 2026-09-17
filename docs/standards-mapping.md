@@ -184,6 +184,32 @@ vulnerabilities [1](https://rywalker.com/research/openssf-scorecard). Scorecard 
 needs a public repo and network access. USA is the offline, code-level,
 private-repo complement — run both.
 
+#### Token-Permissions: the rule is top-level read-only
+
+`TokenPermissionsID` is easy to misread as "move writes to job level," but the
+mechanism is stricter and one-directional. In `checks/raw/permissions.go`
+Scorecard validates the **top-level** `permissions:` block _before_ it builds the
+`ignoredPermissions` allowlist (`validateTopLevelPermissions` is called ahead of
+`createIgnoredPermissions`), and it passes that validation an empty map. So the
+allowlist — semantic-release, GoReleaser, SLSA generators, `mvn release:prepare`,
+and `actions/setup-node` + `npm.*publish` packaging workflows — can never exempt a
+top-level grant. A top-level `contents`, `packages`, or `actions` write then hits
+`reduceBy`, which subtracts the maximum score and zeroes the whole check.
+
+The scoring asymmetry is the part that surprises people: a **job-level** write is
+recorded as a warning but costs nothing, because `checks/evaluation/permissions.go`
+only penalizes it when the _same_ workflow also writes at the top level. The
+practical rule is therefore:
+
+- top level: `contents: read` (or `read-all`) on every workflow;
+- every write scope: on the single job that needs it.
+
+Reproduce against a checkout with
+`scorecard --local . --checks Token-Permissions --format probe`; the `probe`
+format prints per-workflow findings that the JSON `details` view sometimes hides.
+This repo applies the rule to all its own workflows, which is what moved the
+check from 0 to 10.
+
 ### On SARIF
 
 SARIF 2.1.0 is the right interchange format for static-analysis _results_, and most
