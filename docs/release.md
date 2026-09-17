@@ -54,19 +54,48 @@ untouched.
 
 ## Monorepo growth (when a second package is born)
 
-The workspace already declares `packages/*` in `pnpm-workspace.yaml`, so
-nothing in CI has to change on the day the first baby package lands under
-it. What to do then:
+`pnpm-workspace.yaml` declares only `.` today — `packages/*` was removed on
+purpose. See "Why the workspace holds one package" below before adding it
+back. What to do the day the first baby package lands:
 
-1. Give it a `package.json` with its own `name` (same `@xenos1996` scope),
+1. Add `packages/*` back to `pnpm-workspace.yaml`.
+2. **In the same PR**, widen `publish.yml`'s tag trigger. This is not
+   optional. Adding a second workspace entry flips changesets'
+   classification from "root" to monorepo, which changes the tag it writes
+   from `v2.26.0` to `@xenos1996/usa@2.26.0`. `publish.yml` listens on
+   `v*`, so a release would publish to npmjs and then silently skip the
+   mirror, SBOM, attestation and provenance steps. Either widen the trigger
+   to the `*@*` shape or add an explicit `v${VERSION}` tag step to
+   `release.yml` — pick one and write down why in the PR.
+3. Give it a `package.json` with its own `name` (same `@xenos1996` scope),
    `version: 0.0.0`, and a `version` script if it needs one.
-2. Add it to `.changeset/config.json` if it should be versioned
+4. Add it to `.changeset/config.json` if it should be versioned
    independently — the empty `fixed`/`linked` arrays mean nothing moves
    together by default, which is the point.
-3. That is all. `pnpm install --frozen-lockfile`, `pnpm -r` build/test, the
-   changeset gate, and `changeset publish` already cover it: the gate checks
-   `packages/`, and `changeset publish` publishes every package whose note
-   was consumed.
+5. That is all beyond step 2. `pnpm install --frozen-lockfile`, `pnpm -r`
+   build/test, the changeset gate, and `changeset publish` already cover
+   it: the gate checks `packages/`, and `changeset publish` publishes every
+   package whose note was consumed.
+
+### Why the workspace holds one package
+
+`packages/*` was in the migration from the start, as future-proofing. It was
+removed because it broke the release chain in a way that fails _quietly_:
+the release would succeed at npmjs, and the tag-follower work would simply
+never start. Verified in `@changesets/cli`'s `buildGitTag`:
+
+```js
+function buildGitTag(tool, { name, version }) {
+  return tool.type !== 'root' ? `${name}@${version}` : `v${version}`;
+}
+```
+
+A workspace with one entry is `root` and tags `v2.26.0`; two or more is not,
+and tags `@xenos1996/usa@2.26.0`. Since every historical tag in this repo is
+`v*` (and `docs/` refers to them by that shape), keeping the glob would also
+have meant a tag-format discontinuity for no present benefit — there is no
+`packages/` directory. The glob returns when a package does, together with
+the trigger change in step 2.
 
 What you would NOT do: resurrect release-please. It cannot express
 per-package intent, which is the whole reason this repo moved.
@@ -254,11 +283,16 @@ mismatch detail; exit-2 errors stay loud.
   automatic publishing is the wrong risk profile here (see ROADMAP.md).
 - **changesets, not release-please.** Per-package intent has to be stated
   by the author to survive a second package. Reverting this to
-  history-guessing would re-break the moment `packages/*` is populated.
+  history-guessing would re-break the moment a second package is added —
+  which is when `packages/*` returns to `pnpm-workspace.yaml`, together with
+  the `publish.yml` trigger widening that its return makes mandatory (see
+  "Monorepo growth").
 - **pnpm, not npm.** `strict-peer-dependencies` makes a missing peer a hard
-  error instead of a hoisted accident, and the workspace globs make package
-  two a no-op for CI. The `.npmrc` scope mapping and its publish-time
-  scoped override keep the GPR mirror working unchanged.
+  error instead of a hoisted accident. The workspace holds one package on
+  purpose so changesets tags `v*` rather than `@xenos1996/usa@*` — the glob
+  and the silent tag-follower breakage it caused are documented under
+  "Monorepo growth". The `.npmrc` scope mapping and its publish-time scoped
+  override keep the GPR mirror working unchanged.
 - **npmjs is the source of truth; GitHub Packages is a mirror.** Old
   versions were never backfilled to GPR — two sources of truth for dead
   versions is worse than a thin Packages tab for one cycle.
