@@ -62,6 +62,29 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # THE .npmrc TRAP, FOURTH TIME — and this time the override is tested.
+      #
+      # `changeset publish` shells out to `npm publish` per package, and the
+      # repo-root .npmrc maps @xenos1996 to GitHub Packages. That mapping wins
+      # over everything except a CLI-scoped flag — which changesets does not
+      # let us pass, since it builds the command itself. Measured:
+      #
+      #   project .npmrc scope mapping          → GPR   (the bug)
+      #   --@xenos1996:registry=…  (CLI)        → npmjs  wins
+      #   npm_config_@xenos1996:registry (env)  → GPR   DOES NOT WIN
+      #   NPM_CONFIG_USERCONFIG                 → GPR   DOES NOT WIN
+      #   rewritten project .npmrc              → npmjs  wins
+      #
+      # The v2.25.2 release died exactly here: 401 from npm.pkg.github.com
+      # because the publish had no GPR token. So: rewrite the scope line
+      # itself. publish.yml restores the GPR mapping for the mirror leg, so
+      # the two workflows never disagree about which registry is which.
+      - name: Point the @xenos1996 scope at npmjs for this job
+        run: |
+          set -euo pipefail
+          sed -i 's#^@xenos1996:registry=.*#@xenos1996:registry=https://registry.npmjs.org/#' .npmrc
+          echo "effective scope registry: $(npm config get @xenos1996:registry)"
+
       - name: Create Release PR or publish
         uses: changesets/action@v2
         with:
@@ -85,9 +108,5 @@ jobs:
           # Provenance is public, verifiable build metadata on the registry —
           # what USA's own S3 rules demand of others (SUP-005..007, S3).
           NPM_CONFIG_PROVENANCE: 'true'
-          # The scope registry is pinned explicitly IN SCOPED FORM: the
-          # repo-root .npmrc points @xenos1996 at GPR, and a scoped mapping
-          # beats a bare --registry flag (v2.8.1 failed exactly that way).
-          npm_config_@xenos1996:registry: 'https://registry.npmjs.org'
           # OIDC, not a long-lived token.
           NODE_AUTH_TOKEN: ''
