@@ -198,12 +198,23 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          gh attestation download "$TARBALL" --repo "$GITHUB_REPOSITORY"
+          # -L 1 --predicate-type pins exactly one attestation. The default is
+          # up to 30, and `gh attestation download` writes them all into one
+          # JSONL file — so a second dispatch for the same tarball produced a
+          # two-document file that Prettier could not parse (it parses before
+          # it formats, so --write aborts on JSONL) and the job died at the
+          # reformat, after the mirror and attestation had already succeeded.
+          # One attestation, one JSON document, one clean file.
+          gh attestation download "$TARBALL" --repo "$GITHUB_REPOSITORY" \
+            --predicate-type https://slsa.dev/provenance/v1 \
+            -L 1
           dl=(sha256*.jsonl)
           mkdir -p provenance
           mv "${dl[0]}" "provenance/v${VERSION}.sigstore.json"
-          # The downloaded bundle is valid JSON but not Prettier-shaped;
-          # without this every bundle PR fails Lint & format on arrival.
+          # Format the bundle in place. Prettier is applied to a temp path
+          # holding the single document, which is the only shape it accepts;
+          # the earlier `prettier --write <file>` was correct only for the
+          # single-attestation case the -L 1 above now guarantees.
           pnpm exec prettier --write "provenance/v${VERSION}.sigstore.json"
           # SUP-023: verify BEFORE filing. This checks the Sigstore bundle
           # (cert chain, transparency, repo identity) and asserts the SLSA
