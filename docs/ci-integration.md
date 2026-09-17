@@ -185,7 +185,7 @@ USA audits itself with the full stack — copy what fits:
 | `automerge.yml`       | Dependabot patch/minor auto-merge once CI is green (majors stay manual)                                                                                                                                                                                                                                      |
 | `gitleaks-pin.yml`    | Monthly check that the curl-pinned gitleaks binary in `ci.yml` is current (no bot watches it) — opens a deduped issue when stale                                                                                                                                                                             |
 | `release.yml`         | `changesets/action`: opens the Version Packages PR, then publishes via OIDC trusted publishing (no long-lived token) + `--provenance`                                                                                                                                                                        |
-| `publish.yml`         | Tag push `v*` → GPR mirror + CycloneDX SBOM artifact + Artifact Attestations + `provenance/` filing PR. Manual dispatch also publishes to npmjs if the release leg wedged.                                                                                                                                   |
+| `publish.yml`         | Tag push (`v*` or `@xenos1996/usa@**`) → GPR mirror + CycloneDX SBOM artifact + Artifact Attestations + `provenance/` filing PR. Manual dispatch also publishes to npmjs if the release leg wedged.                                                                                                          |
 | `commits` in `ci.yml` | Lints PR commit messages (commitlint) — the CHANGELOG is assembled from them, so history must parse                                                                                                                                                                                                          |
 
 Release setup note: trusted publishing needs a one-time owner step on
@@ -219,8 +219,10 @@ markers encode author intent.
    updated: version bump in `package.json` + CHANGELOG entries, as a diff
    you review like code.
 4. Merge that PR → the same workflow sees the notes consumed and runs
-   `changeset publish`: npmjs via OIDC with provenance, then tag `vX.Y.Z`.
-   Tags are the release act; never push `v*` tags by hand (first bootstrap
+   `changeset publish`: npmjs via OIDC with provenance, then tag
+   `@xenos1996/usa@X.Y.Z` (pnpm workspaces use the scoped shape, not `vX.Y.Z`
+   — see `docs/release.md` "The tag shape").
+   Tags are the release act; never push release tags by hand (first bootstrap
    tag `v1.0.0` excepted).
 5. The tag fires `publish.yml`: GPR mirror + SBOM + attestations +
    `provenance/` bundle PR.
