@@ -1,8 +1,17 @@
-# The workspace map. Today it holds exactly one package — this repo root,
-# which ships `@xenos1996/usa`. The `packages/*` glob is deliberately present
-# before the first package lands under it: `pnpm -r` then no-ops gracefully
-# now and picks baby packages up automatically the day they are born, with no
-# CI change required. See docs/release.md ("Monorepo growth").
+# The workspace map. It holds exactly one package: this repo root, which ships
+# `@xenos1996/usa`.
+#
+# `packages/*` is deliberately ABSENT. It was present in the migration, to let
+# `pnpm -r` pick up sub-packages automatically, and it cost more than it bought:
+# changesets classifies a workspace with more than one entry as a monorepo, so
+# it tagged releases `@xenos1996/usa@2.25.2` instead of `v2.25.2` — and
+# publish.yml triggers on `v*`, so the entire tag-follower chain (GPR mirror,
+# SBOM, attestation, provenance PR) would silently never run. Verified in
+# @changesets/cli: buildGitTag returns `v${version}` only when tool.type is
+# "root".
+#
+# Add the glob back the day a real sub-package lands under packages/, and widen
+# publish.yml's tag trigger in the same PR — see docs/release.md
+# ("Monorepo growth").
 packages:
   - '.'
-  - 'packages/*'

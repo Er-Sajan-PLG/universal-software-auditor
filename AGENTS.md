@@ -15,7 +15,10 @@ and the gates below enforce what it preaches. If a change would fail
 `usa audit .`, it does not merge.
 
 Key facts: Node with strict TypeScript, vitest suites, ESLint + Prettier,
-**pnpm workspace** (one package today, `packages/*` reserved for the next),
+**pnpm workspace** (one package on purpose — the `packages/*` glob stays out
+until a second package exists, because it flips changesets' tag format from
+`v*` to `@xenos1996/usa@*`, which silently skips `publish.yml`; see
+docs/release.md "Monorepo growth"),
 **changesets** releases (author states the bump, the tool obeys),
 Conventional Commits (they feed the CHANGELOG). The engine
 (`src/engine/`) evaluates data-driven rule packs (`rules/`); the CLI
