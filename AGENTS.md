@@ -15,11 +15,8 @@ and the gates below enforce what it preaches. If a change would fail
 `usa audit .`, it does not merge.
 
 Key facts: Node with strict TypeScript, vitest suites, ESLint + Prettier,
-**pnpm workspace** (one package on purpose — the `packages/*` glob stays out
-until a second package exists, because it flips changesets' tag format from
-`v*` to `@xenos1996/usa@*`, which silently skips `publish.yml`; see
-docs/release.md "Monorepo growth"),
-**changesets** releases (author states the bump, the tool obeys),
+**pnpm workspace** (one package), **changesets** releases (author states the
+bump, the tool obeys),
 Conventional Commits (they feed the CHANGELOG). The engine
 (`src/engine/`) evaluates data-driven rule packs (`rules/`); the CLI
 (`src/cli.ts`) is a thin driver over it.
@@ -215,6 +212,17 @@ self-audit validates it.
   `publish.yml` = the tag follower: GPR mirror, SBOM, attestation,
   `provenance/` PR. Do not merge them back — a tag push and a branch push
   need different permissions and different failure isolation.
+- **Tags are `@xenos1996/usa@X.Y.Z`, not `vX.Y.Z`.** pnpm workspaces make
+  `@manypkg/tools` report `tool.type: "pnpm"` (it checks only that
+  `pnpm-workspace.yaml` has a `packages:` key, never the count), so
+  changesets emits the scoped tag shape. `publish.yml` matches both `v*` and
+  `@xenos1996/usa@**` — `**` is required, `*` does not cross `/`. Do not
+  "fix" the tag shape by trimming the workspace; that was tried and did
+  nothing. Release 2.25.3 published to npmjs while silently skipping the
+  mirror, SBOM, attestation and provenance, with every workflow green — so
+  **after any change to release triggers, confirm `publish.yml` actually
+  ran**; do not trust the glob by inspection. Full story in
+  `docs/release.md` "The tag shape".
 - Two registries: npmjs (source of truth, OIDC trusted publishing —
   no long-lived token) and the GitHub Packages mirror (classic PAT
   `GPR_TOKEN` minted on the scope-owning account, because the repo owner
