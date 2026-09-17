@@ -235,12 +235,27 @@ jobs:
           VSA_GH_VERSION="$(gh --version | head -1 | awk '{print $3}')" \
           node scripts/make-vsa.mjs
           pnpm exec prettier --write "provenance/v${VERSION}.vsa.json"
+          # Idempotent like the mirror and npmjs legs. `git push` without
+          # --force is rejected once the branch exists, so a second dispatch
+          # for a version that already filed its bundle died here with
+          # '! [rejected] ... (fetch first)' — after doing all the work.
+          # Force-pushing would rewrite a human-reviewed PR's history, so if
+          # the branch is already up, the bundle is already filed: say so and
+          # stop. Re-filing the same version is the re-run's desired end state
+          # anyway, so this is a skip, not a failure.
+          BRANCH="provenance/v${VERSION}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "$BRANCH already exists — bundle for v${VERSION} is already filed."
+            gh pr list --head "$BRANCH" --state open --json url \
+              --jq '.[] | "open PR: \(.url)"' || true
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "provenance/v${VERSION}"
+          git checkout -b "$BRANCH"
           git add "provenance/v${VERSION}.sigstore.json" "provenance/v${VERSION}.vsa.json"
           git commit -m "docs: attach SLSA provenance bundle for v${VERSION}"
-          git push origin "HEAD:provenance/v${VERSION}"
-          gh pr create --base master --head "provenance/v${VERSION}" \
+          git push origin "HEAD:${BRANCH}"
+          gh pr create --base master --head "$BRANCH" \
             --title "docs: attach SLSA provenance bundle for v${VERSION}" \
             --body "Sigstore bundle + verification summary for the release tarball (SUP-022/SUP-023). Verify with the commands in provenance/README.md."
