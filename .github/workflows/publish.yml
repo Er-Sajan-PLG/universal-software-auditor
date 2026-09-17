@@ -72,11 +72,34 @@ jobs:
         run: pnpm publish --provenance --access public --no-git-checks --@xenos1996:registry=https://registry.npmjs.org
 
       # CycloneDX SBOM for the shipped tarball. Same preach/practice logic:
-      # USA audits SBOM publication (SUP-014), so it ships one. `npm sbom`
-      # writes to stdout (there is no -o flag); the tree is complete because
-      # `pnpm install` ran above.
+      # USA audits SBOM publication (SUP-014), so it ships one.
+      #
+      # WHY THE SCRATCH DIR: `npm sbom` resolves the dependency graph from
+      # node_modules, and pnpm's tree is symlinked and strict — `charcodes`
+      # and friends live under node_modules/.pnpm and are invisible to npm's
+      # resolver, so `npm sbom` dies with ESBOMPROBLEMS on a pnpm-installed
+      # tree (reproduced locally). The previous version of this step assumed
+      # "the tree is complete because npm ci ran above", which stopped being
+      # true the moment the repo moved to pnpm. So: build a flat npm tree in
+      # a throwaway directory from the same package.json, and read that.
+      #
+      # Rejected: `cdxgen` (works on pnpm, but it also scans the environment
+      # and prints secret NAMES to the log — unacceptable in CI), and
+      # `pnpm sbom` (does not exist).
       - name: SBOM (CycloneDX)
-        run: npm sbom --sbom-format cyclonedx > sbom.cdx.json
+        run: |
+          set -euo pipefail
+          SBOM_DIR="$(mktemp -d)"
+          cp package.json "$SBOM_DIR/"
+          ( cd "$SBOM_DIR" && npm install --silent --no-audit --no-fund )
+          ( cd "$SBOM_DIR" && npm sbom --sbom-format cyclonedx ) > sbom.cdx.json
+          rm -rf "$SBOM_DIR"
+          node -e "const b=require('./sbom.cdx.json'); \
+            if (!b.components || b.components.length === 0) { \
+              console.error('SBOM has no components — refusing to ship an empty bill of materials'); \
+              process.exit(1); \
+            } \
+            console.log('SBOM: ' + b.components.length + ' components (' + b.bomFormat + ')');"
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v7
@@ -95,8 +118,27 @@ jobs:
       # "installation does not exist". No provenance flag: GPR does not
       # consume Sigstore attestations. --access public is mandatory, not
       # cosmetic: without it npm publishes scoped packages as restricted.
-      - name: Point the scope at GitHub Packages
-        run: pnpm config set @xenos1996:registry https://npm.pkg.github.com/
+      #
+      # AUTH, and why it is written by hand: setup-node ran with
+      # registry-url=https://registry.npmjs.org, so its generated .npmrc
+      # carries an npmjs-scoped _authToken line and nothing for GPR. Exporting
+      # NODE_AUTH_TOKEN is NOT enough — pnpm reads credentials from .npmrc,
+      # keyed by registry host. So the host-scoped line is appended here, in
+      # the same shape setup-node would have written for this registry.
+      # (Verified: `//npm.pkg.github.com/:_authToken=<token>` is the form GPR
+      # accepts; a bare NODE_AUTH_TOKEN env var 401s.)
+      - name: Authenticate the GPR mirror
+        env:
+          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '@xenos1996:registry=https://npm.pkg.github.com/\n' > .npmrc
+          printf '//npm.pkg.github.com/:_authToken=%s\n' "$GPR_TOKEN" >> .npmrc
+          # Proof the token is present without printing it: GPR requires auth
+          # even to read a public package, so a successful `npm view` is the
+          # cheapest end-to-end credential check we get before publishing.
+          GPR_VERSION="$(npm view @xenos1996/usa version 2>/dev/null || echo 'none')"
+          echo "GPR currently reports version: $GPR_VERSION"
 
       - name: Publish mirror to GitHub Packages
         run: |
@@ -105,8 +147,7 @@ jobs:
           # instead of a red run: re-running a tag whose version is already on
           # the mirror is not a failure, it is a no-op.
           VERSION="$(node -p "require('./package.json').version")"
-          if npm view "@xenos1996/usa@${VERSION}" version \
-              --@xenos1996:registry=https://npm.pkg.github.com/ >/dev/null 2>&1; then
+          if npm view "@xenos1996/usa@${VERSION}" version >/dev/null 2>&1; then
             echo "@xenos1996/usa@${VERSION} already on GPR — skipping mirror."
             exit 0
           fi
