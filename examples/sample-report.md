@@ -8,7 +8,7 @@
 | **Path** | `/home/user/universal-software-auditor/examples/demo-app` |
 | **Commit** | n/a (detached) |
 | **Date** | 2026-01-01T00:00:00.000Z |
-| **USA version** | 2.25.1 |
+| **USA version** | 2.25.2 |
 | **Detected type** | unclassified |
 | **Platform** | server |
 | **Stack** | javascript, express |
@@ -640,7 +640,7 @@ Rule packs skipped as not applicable (15): core/provenance-attestation, stacks/p
 ```yaml
 schema: usa-report-v1
 generated_at: 2026-01-01T00:00:00.000Z
-usa_version: 2.25.1
+usa_version: 2.25.2
 ruleset: 30f4745629a27b14995d23088a9e2fb592830c225a849f408bd024bb5e83c209
 overall: 37.3
 sections:

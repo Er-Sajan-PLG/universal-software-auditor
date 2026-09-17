@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.25.2
+
+### Patch Changes
+
+- [#152](https://github.com/Er-Sajan-PLG/universal-software-auditor/pull/152) [`e91538e`](https://github.com/Er-Sajan-PLG/universal-software-auditor/commit/e91538ec5e79854c4157169d2d8b4e37a653bf71) Thanks [@Er-Sajan-PLG](https://github.com/Er-Sajan-PLG)! - Migrate the release pipeline to a pnpm workspace with changesets: declared bumps replace history-guessing, `packages/*` is pre-wired for the next package, and the publish/provenance legs move to a tag-following `publish.yml`.
+
 All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
