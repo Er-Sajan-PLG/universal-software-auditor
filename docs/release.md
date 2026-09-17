@@ -52,37 +52,14 @@ PR touching a shipped path must add `.changeset/<name>.md` or fail with
 instructions. A chore/docs/ci/test PR touches no shipped path and passes
 untouched.
 
-## Monorepo growth (when a second package is born)
+## The tag shape (read this before touching release tags)
 
-`pnpm-workspace.yaml` declares only `.` today — `packages/*` was removed on
-purpose. See "Why the workspace holds one package" below before adding it
-back. What to do the day the first baby package lands:
+Releases are tagged `@xenos1996/usa@X.Y.Z`, **not** `vX.Y.Z`. That is not a
+choice anyone made — it is what `changeset publish` does in a pnpm
+workspace, and two separate attempts to "fix" it failed. Both are recorded
+here so a third does not repeat them.
 
-1. Add `packages/*` back to `pnpm-workspace.yaml`.
-2. **In the same PR**, widen `publish.yml`'s tag trigger. This is not
-   optional. Adding a second workspace entry flips changesets'
-   classification from "root" to monorepo, which changes the tag it writes
-   from `v2.26.0` to `@xenos1996/usa@2.26.0`. `publish.yml` listens on
-   `v*`, so a release would publish to npmjs and then silently skip the
-   mirror, SBOM, attestation and provenance steps. Either widen the trigger
-   to the `*@*` shape or add an explicit `v${VERSION}` tag step to
-   `release.yml` — pick one and write down why in the PR.
-3. Give it a `package.json` with its own `name` (same `@xenos1996` scope),
-   `version: 0.0.0`, and a `version` script if it needs one.
-4. Add it to `.changeset/config.json` if it should be versioned
-   independently — the empty `fixed`/`linked` arrays mean nothing moves
-   together by default, which is the point.
-5. That is all beyond step 2. `pnpm install --frozen-lockfile`, `pnpm -r`
-   build/test, the changeset gate, and `changeset publish` already cover
-   it: the gate checks `packages/`, and `changeset publish` publishes every
-   package whose note was consumed.
-
-### Why the workspace holds one package
-
-`packages/*` was in the migration from the start, as future-proofing. It was
-removed because it broke the release chain in a way that fails _quietly_:
-the release would succeed at npmjs, and the tag-follower work would simply
-never start. Verified in `@changesets/cli`'s `buildGitTag`:
+**Mechanism.** `@changesets/cli`'s `buildGitTag` is:
 
 ```js
 function buildGitTag(tool, { name, version }) {
@@ -90,12 +67,88 @@ function buildGitTag(tool, { name, version }) {
 }
 ```
 
-A workspace with one entry is `root` and tags `v2.26.0`; two or more is not,
-and tags `@xenos1996/usa@2.26.0`. Since every historical tag in this repo is
-`v*` (and `docs/` refers to them by that shape), keeping the glob would also
-have meant a tag-format discontinuity for no present benefit — there is no
-`packages/` directory. The glob returns when a package does, together with
-the trigger change in step 2.
+`tool` comes from `@manypkg/get-packages`, which asks each tool in turn
+whether the directory is a monorepo root. `@manypkg/tools`'s
+`PnpmTool.isMonorepoRoot` is:
+
+```ts
+const manifest = await readYamlFile(path.join(directory, 'pnpm-workspace.yaml'));
+if (manifest.packages) {
+  return true;
+}
+```
+
+**It checks that the key exists. It never counts the packages.** So any
+`pnpm-workspace.yaml` with a `packages:` field makes `tool.type === 'pnpm'`
+and the scoped tag shape applies — even with exactly one package. Verified
+live on this repo:
+
+```console
+$ node -e "getPackages(process.cwd()).then(p => console.log(p.tool.type, p.packages.length))"
+pnpm 1
+```
+
+**Two failed fixes, do not retry them:**
+
+1. _Remove `packages/*` so the workspace holds one package._ Done in #160. It
+   changed nothing: `tool.type` is `"pnpm"` with one package too. The glob
+   removal is harmless and stays (there is no `packages/` directory), but it
+   was never the cause.
+2. _Add an explicit `v${VERSION}` tag step._ Would work, but means two tags
+   per release and a second thing to keep correct.
+
+**What actually fixes it** is accepting the tag changesets writes and
+matching it. `publish.yml` listens on both shapes:
+
+```yaml
+on:
+  push:
+    tags:
+      - 'v*' # historical releases
+      - '@xenos1996/usa@**' # what changeset publish writes now
+```
+
+Note `**`, not `*`. GitHub's tag globs treat `*` as "any characters except
+`/`" and `**` as "including `/`". The tag contains a slash, so the obvious
+`@xenos1996/usa@*` is a fix that looks right and silently matches nothing —
+which is the same failure mode being fixed.
+
+The `2.25.3` release is how this was found: npmjs published fine, the tag
+was `@xenos1996/usa@2.25.3`, the `v*` filter matched nothing, and the GPR
+mirror, SBOM, attestation and provenance steps were skipped with every
+workflow showing green. **A release that succeeds while silently dropping
+its evidence trail is the worst failure shape there is** — nothing turns
+red, so nothing gets looked at.
+
+Verification after any change here: dispatch `publish.yml` on `master`, or
+push a tag, and confirm `publish.yml` actually runs. Do not trust the glob
+by inspection — both trap patterns above looked correct on inspection.
+
+## Monorepo growth (when a second package is born)
+
+`pnpm-workspace.yaml` declares only `.` today; `packages/*` returns when a
+real package does. The tag shape does **not** change when it does — the
+workspace is already a pnpm workspace and already tags `@xenos1996/usa@X.Y.Z`
+(see "The tag shape" above), and `publish.yml` already matches it. So:
+
+1. Add `packages/*` back to `pnpm-workspace.yaml`.
+2. Give the package a `package.json` with its own `name` (same `@xenos1996`
+   scope), `version: 0.0.0`, and a `version` script if it needs one.
+3. Add it to `.changeset/config.json` if it should be versioned
+   independently — the empty `fixed`/`linked` arrays mean nothing moves
+   together by default, which is the point.
+4. That is all. `pnpm install --frozen-lockfile`, `pnpm -r` build/test, the
+   changeset gate, and `changeset publish` already cover it: the gate checks
+   `packages/`, and `changeset publish` publishes every package whose note
+   was consumed.
+
+The one thing to re-check when a second package lands: `changeset publish`
+then emits one tag per published package — `@xenos1996/usa@X.Y.Z` for this
+one, and the same shape for the newcomer. The scoped pattern above still
+matches this package, but a second name needs its own pattern or a
+`**`-style catch-all; and `publish.yml` keys off the root `package.json`
+version, so a release where _only_ the second package bumped needs the
+workflow checked before it is trusted.
 
 What you would NOT do: resurrect release-please. It cannot express
 per-package intent, which is the whole reason this repo moved.
@@ -283,15 +336,13 @@ mismatch detail; exit-2 errors stay loud.
   automatic publishing is the wrong risk profile here (see ROADMAP.md).
 - **changesets, not release-please.** Per-package intent has to be stated
   by the author to survive a second package. Reverting this to
-  history-guessing would re-break the moment a second package is added —
-  which is when `packages/*` returns to `pnpm-workspace.yaml`, together with
-  the `publish.yml` trigger widening that its return makes mandatory (see
-  "Monorepo growth").
+  history-guessing would re-break the moment a second package is added.
 - **pnpm, not npm.** `strict-peer-dependencies` makes a missing peer a hard
-  error instead of a hoisted accident. The workspace holds one package on
-  purpose so changesets tags `v*` rather than `@xenos1996/usa@*` — the glob
-  and the silent tag-follower breakage it caused are documented under
-  "Monorepo growth". The `.npmrc` scope mapping and its publish-time scoped
+  error instead of a hoisted accident. It also means releases are tagged
+  `@xenos1996/usa@X.Y.Z` rather than `vX.Y.Z` and no amount of workspace
+  trimming changes that — see "The tag shape", which records the two failed
+  fixes so they are not attempted a third time. `publish.yml` matches both
+  tag shapes. The `.npmrc` scope mapping and its publish-time scoped
   override keep the GPR mirror working unchanged.
 - **npmjs is the source of truth; GitHub Packages is a mirror.** Old
   versions were never backfilled to GPR — two sources of truth for dead

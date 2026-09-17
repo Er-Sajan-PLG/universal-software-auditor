@@ -10,10 +10,30 @@ name: Publish
 # `provenance/` through a normal PR.
 #
 # Triggered by the `changeset publish` tag on the version commit, or manually.
+#
+# THE TAG SHAPE, and why two patterns — this cost a real release (2.25.3):
+# `changeset publish` does not use `v${version}` here. It asks @manypkg/tools
+# for the workspace `tool`, and PnpmTool.isMonorepoRoot returns true whenever
+# pnpm-workspace.yaml has a `packages:` key — it never counts the packages.
+# So tool.type is "pnpm", not "root", and @changesets/cli's buildGitTag emits
+# `${name}@${version}`. The tag was `@xenos1996/usa@2.25.3`, the old `v*`
+# filter matched nothing, and the mirror, SBOM, attestation and provenance
+# steps were silently skipped while npmjs published fine. A release that goes
+# green and skips its evidence trail is the worst failure shape there is.
+#
+# Removing the `packages/*` glob (PR #160) did NOT fix this — verified live:
+# getPackages returns tool.type "pnpm" with exactly one package.
+#
+# `**`, not `*`, and this is the second trap in the same pattern: GitHub's
+# tag globs use `*` for "any chars EXCEPT /" and `**` for "any chars
+# INCLUDING /". The tag contains a slash, so `@xenos1996/usa@*` would match
+# nothing — a fix that looks right and silently does nothing, which is
+# precisely the bug being fixed. `v*` stays for historical tags.
 on:
   push:
     tags:
       - 'v*'
+      - '@xenos1996/usa@**'
   workflow_dispatch:
 
 permissions:
