@@ -23,8 +23,51 @@ Conventional Commits (they feed the CHANGELOG). The engine
 
 ## The Loop (make-or-break — follow it for every change)
 
+0. **Prove the diagnosis before writing the fix.** This is step zero and it
+   is not a formality — skipping it has cost this repo real releases.
+   A plausible mechanism is not a verified one. Concretely:
+   - **Read the code that decides the behaviour**, not the docs about it.
+     "X is probably caused by Y" is a hypothesis; find the line of Y that
+     does it, and quote it.
+   - **Reproduce the mechanism directly** — a one-liner that prints the
+     actual value, or a failing test. If you cannot demonstrate the cause
+     in isolation, you do not know it yet.
+   - **Trace the blast radius**: what else reads this, what fires from it,
+     what silently _stops_ firing. The dangerous failures here are the ones
+     that stay green (see the two case studies below).
+   - **State the consequence before you change it.** If the fix is wrong,
+     what breaks, and would anything notice?
+     Then, and only then, patch.
+
+   Two worked examples, both real, both in this repo's history:
+   - _"Removing `packages/*` will make changesets tag `v*`."_ Plausible.
+     False. `PnpmTool.isMonorepoRoot` checks only that `pnpm-workspace.yaml`
+     **has** a `packages:` key and never counts the packages — so it tags
+     `@xenos1996/usa@X.Y.Z` with one package or ten. The patch shipped, the
+     tag shape did not change, and a release went out untagged for its
+     consumers of `publish.yml`. One `console.log(packages.tool.type)`
+     would have refuted the whole theory in five seconds. See
+     `docs/release.md` "The tag shape".
+   - _"The tighter SUP-010 regex flags unpinned actions."_ True, and it also
+     flagged the comment that documented it, dropping the self-audit to
+     94/100. Diagnosing the rule would have surfaced that in the same
+     minute; the fix (`^(?!\s*#)`) was then trivial.
+
+   Corollary for automation: **"the workflow ran" is not "the workflow did
+   its job."** A release can publish, report success, and skip every
+   downstream step because a trigger or filter matched nothing. After
+   touching anything release-shaped, verify the _effect_ (the tag exists,
+   the mirror has the version, the provenance PR opened), never the status
+   icon. Step 8 says the same thing for releases; it applies to every
+   trigger you edit.
+
 1. **Branch** from `master`: `fix/<topic>`, `feat/<topic>`,
    `chore/<topic>`, or `docs/<topic>`. Never commit to `master` directly.
+   Branch from **current `master`**, not from another in-flight branch or a
+   pre-squash commit — this repo squash-merges, so an unmerged base
+   re-introduces already-merged work and the PR sits `DIRTY` with a diff
+   listing files you never touched. If you must base on a branch, expect to
+   rebuild before opening the PR.
 2. **Implement** (see Code conventions). Prefer editing existing files;
    new files only with reason. Keep diffs minimal.
    2b. **Release note**: if the change touches a shipped path (`src/`,
