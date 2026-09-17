@@ -4,7 +4,7 @@
     {
       "name": "xenos1996-usa-2.25.2.tgz",
       "digest": {
-        "sha256": "fbbc75d0a200453d76a0111fafc7692a6a15dfc689c98809aed282967d1bf3a0"
+        "sha256": "37bcc8c0c3a676740f973c130c3cd41a8caaa1bc00555d96daab8dc5c1fa2e05"
       }
     }
   ],
@@ -16,19 +16,19 @@
         "gh": "2.100.0"
       }
     },
-    "timeVerified": "2026-09-17T02:18:45Z",
+    "timeVerified": "2026-09-17T08:47:33Z",
     "resourceUri": "https://registry.npmjs.org/@xenos1996/usa/-/usa-2.25.2.tgz",
     "policy": {
-      "uri": "https://github.com/Er-Sajan-PLG/universal-software-auditor/blob/c4cf50c95751e3e11c712dfbaad08d6383287c7b/.github/workflows/release.yml",
+      "uri": "https://github.com/Er-Sajan-PLG/universal-software-auditor/blob/3a0a7aacac2ee9c28de9777337bfcaaedb2ce881/.github/workflows/release.yml",
       "digest": {
-        "sha256": "3f87070b535cc28a3c84feb26d6e159989829a4afc7e219171e9dfe3add1c3e4"
+        "sha256": "221606bfecb229e17101eac6ea8e7d34833813534a11d3f313dd19f53fb8d55b"
       }
     },
     "inputAttestations": [
       {
-        "uri": "https://api.github.com/repos/Er-Sajan-PLG/universal-software-auditor/attestations/sha256:fbbc75d0a200453d76a0111fafc7692a6a15dfc689c98809aed282967d1bf3a0",
+        "uri": "https://api.github.com/repos/Er-Sajan-PLG/universal-software-auditor/attestations/sha256:37bcc8c0c3a676740f973c130c3cd41a8caaa1bc00555d96daab8dc5c1fa2e05",
         "digest": {
-          "sha256": "4801515dd6c954235a904cdf7d3d8c8bc6a2553312f010d90740d8d137601c40"
+          "sha256": "e6e267adee2a13c1a89525ec54573bb3f4065bd7b54bebbc7fb55f042b583188"
         }
       }
     ],
