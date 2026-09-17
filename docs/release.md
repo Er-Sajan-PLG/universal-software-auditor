@@ -124,6 +124,10 @@ Verification after any change here: dispatch `publish.yml` on `master`, or
 push a tag, and confirm `publish.yml` actually runs. Do not trust the glob
 by inspection — both trap patterns above looked correct on inspection.
 
+This section is also the canonical example of AGENTS.md step 0 ("prove the
+diagnosis before writing the fix"): the first fix here shipped on a
+plausible mechanism nobody had reproduced, and cost a release.
+
 ## Monorepo growth (when a second package is born)
 
 `pnpm-workspace.yaml` declares only `.` today; `packages/*` returns when a
