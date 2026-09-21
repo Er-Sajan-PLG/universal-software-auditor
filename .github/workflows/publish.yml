@@ -36,16 +36,12 @@ on:
       - '@xenos1996/usa@**'
   workflow_dispatch:
 
+# Top level is read-only on purpose. Scorecard's Token-Permissions check builds
+# its workflow-type allowlist *after* validating the top level, so a top-level
+# `write` is always a finding — and `contents: write`/`packages: write` there
+# zero the whole check score. The job below holds exactly the writes it needs.
 permissions:
-  contents: write
-  packages: write
-  # Artifact Attestations (SUP-022) mint Sigstore bundles for the tarball.
-  attestations: write
-  # The bundle step files provenance/ through a pull request — creating it
-  # needs pull-requests scope. (v2.9.0 tag run failed exactly here:
-  # "Resource not accessible by integration" on createPullRequest.)
-  pull-requests: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -54,6 +50,18 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      # The provenance step files provenance/ through a pull request — creating
+      # it needs pull-requests scope. (v2.9.0 tag run failed exactly here:
+      # "Resource not accessible by integration" on createPullRequest.)
+      contents: write
+      pull-requests: write
+      # GPR mirror leg.
+      packages: write
+      # Artifact Attestations (SUP-022) mint Sigstore bundles for the tarball.
+      attestations: write
+      # OIDC token exchange for npmjs trusted publishing.
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
