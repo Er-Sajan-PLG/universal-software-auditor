@@ -55,25 +55,30 @@ ignore: # extra globs, on top of .gitignore + USA defaults
 facts: # assert what detection could not infer
   - 'has:database'
   - 'platform:server'
+
+# ── Documentation universe ─────────────────────────────────────────────────
+docs:
+  universe: true # include the documentation-universe audit in `usa audit`
 ```
 
 ## Field reference
 
-| Field                 | Type                                                 | Effect                                                                         |
-| --------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `version`             | `1`                                                  | Schema version                                                                 |
-| `maturity`            | stage                                                | Overrides auto-detection; changes dampening and the expected band              |
-| `include`             | pack ids                                             | Force packs on even when `skip_when` says no                                   |
-| `exclude`             | pack ids                                             | Force packs off                                                                |
-| `rules.<id>.severity` | severity                                             | Re-grade one rule (must be on the ladder, else ignored with a warning)         |
-| `rules.<id>.weight`   | number                                               | Change how much it moves the score (finite, ≥ 0, else ignored with a warning)  |
-| `rules.<id>.disabled` | bool                                                 | Skip entirely (still listed as ➖ SKIPPED)                                     |
-| `rules.<id>.reason`   | string                                               | **Required in practice** — an override with no reason is an unaudited decision |
-| `suppressions[]`      | `{rule, reason, until, file?, line?}`                | Excluded from the score, listed under Accepted Risk                            |
-| `reviews[]`           | `{rule, reviewed, until?, file?, line?, by?, note?}` | Dated human-review provenance on open findings (never changes a verdict)       |
-| `ignore`              | globs                                                | Extra paths to keep out of the index                                           |
-| `facts`               | fact strings                                         | Assert detection facts manually (`ns:value`)                                   |
-| `sections`            | section ids                                          | Restrict the report to these sections                                          |
+| Field                 | Type                                                 | Effect                                                                                                   |
+| --------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `version`             | `1`                                                  | Schema version                                                                                           |
+| `maturity`            | stage                                                | Overrides auto-detection; changes dampening and the expected band                                        |
+| `include`             | pack ids                                             | Force packs on even when `skip_when` says no                                                             |
+| `exclude`             | pack ids                                             | Force packs off                                                                                          |
+| `rules.<id>.severity` | severity                                             | Re-grade one rule (must be on the ladder, else ignored with a warning)                                   |
+| `rules.<id>.weight`   | number                                               | Change how much it moves the score (finite, ≥ 0, else ignored with a warning)                            |
+| `rules.<id>.disabled` | bool                                                 | Skip entirely (still listed as ➖ SKIPPED)                                                               |
+| `rules.<id>.reason`   | string                                               | **Required in practice** — an override with no reason is an unaudited decision                           |
+| `suppressions[]`      | `{rule, reason, until, file?, line?}`                | Excluded from the score, listed under Accepted Risk                                                      |
+| `reviews[]`           | `{rule, reviewed, until?, file?, line?, by?, note?}` | Dated human-review provenance on open findings (never changes a verdict)                                 |
+| `ignore`              | globs                                                | Extra paths to keep out of the index                                                                     |
+| `facts`               | fact strings                                         | Assert detection facts manually (`ns:value`)                                                             |
+| `sections`            | section ids                                          | Restrict the report to these sections                                                                    |
+| `docs.universe`       | bool                                                 | Run the [documentation universe](documentation-audit.md) audit inside `usa audit` (DOCU findings in S12) |
 
 ## Foundation interview file
 

@@ -375,6 +375,12 @@ export interface UsaConfig {
   sections?: string[];
   /** Indexing caps for bigger-than-comfortable trees (validated, else defaults). */
   limits?: { max_files?: number; max_bytes?: number };
+  /**
+   * Documentation universe audit (rules/docs-taxonomy.yaml). `universe: true`
+   * injects DOCU-* findings into `usa audit` (S12); the standalone `usa docs`
+   * commands run it regardless. Opt-in so existing baselines stay stable.
+   */
+  docs?: { universe?: boolean };
 }
 
 /* ------------------------------------------------------------------ score -- */
