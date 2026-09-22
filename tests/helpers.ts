@@ -39,6 +39,7 @@ export function auditAt(
     allowCommands: boolean;
     include: string[];
     exclude: string[];
+    docsUniverse: boolean;
   }> = {},
 ) {
   return runAudit({
@@ -51,6 +52,7 @@ export function auditAt(
     usaVersion: 'test',
     includePacks: opts.include,
     excludePacks: opts.exclude,
+    docsUniverse: opts.docsUniverse,
   });
 }
 

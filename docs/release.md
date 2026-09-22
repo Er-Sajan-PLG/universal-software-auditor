@@ -35,6 +35,11 @@ path moves, review PRs, merge the Version Packages PR. Everything else —
 bump arithmetic, CHANGELOG entries, tags, publishing, provenance, SBOM —
 happens on its own.
 
+The VSA step is driven entirely by `VSA_*` environment variables set by the
+workflow (`VSA_TARBALL_NAME`, `VSA_TARBALL_DIGEST`, `VSA_BUNDLE_DIGEST`,
+`VSA_VERSION`, `VSA_SHA`, `VSA_POLICY_DIGEST`, `VSA_TIME`, `VSA_GH_VERSION`)
+and written to the path named by `VSA_OUT` — see `scripts/make-vsa.mjs`.
+
 ## Why changesets and not release-please
 
 release-please reads commit history and guesses the bump. That works while

@@ -392,6 +392,9 @@ The original checklist this project grew from covered sections S1–S13 well. Fo
 - [ ] Docs live in the repo, next to the code
 - [ ] Onboarding page for new contributors
 - [ ] Doc examples executed in CI (🔵 FUTURE)
+- [ ] Doc universe checked with `usa docs audit .` (tiered by maturity;
+      `usa audit . --docs-universe` folds it into the main report — see
+      [documentation audit](docs/documentation-audit.md))
 
 ---
 
