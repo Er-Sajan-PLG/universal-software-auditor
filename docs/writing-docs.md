@@ -45,20 +45,22 @@ fill it in.
 
 Only these keys exist. Using an unknown key fails CI.
 
-| Marker key         | Renders | Derived from                          |
-| ------------------ | ------- | ------------------------------------- |
-| `rules`            | `281`   | `rules/index.yaml` → pack files       |
-| `rules-floor`      | `280+`  | `rules`, rounded down to 10           |
-| `detectors-approx` | `~230`  | `rules/detectors.yaml`, floored to 10 |
-| `detectors`        | `236`   | `rules/detectors.yaml` exact          |
-| `packs`            | `28`    | pack registry                         |
-| `core`             | `11`    | `core/` packs                         |
-| `stacks`           | `17`    | `stacks/` packs                       |
-| `sections`         | `16`    | `src/engine/sections.ts`              |
-| `check-kinds`      | `16`    | `src/types.ts`                        |
-| `adrs`             | `20`    | `docs/adr/*.md`                       |
-| `version`          | `2.0.1` | `package.json`                        |
-| `version-major`    | `2`     | `package.json`                        |
+| Marker key            | Renders | Derived from                              |
+| --------------------- | ------- | ----------------------------------------- |
+| `rules`               | `281`   | `rules/index.yaml` → pack files           |
+| `rules-floor`         | `280+`  | `rules`, rounded down to 10               |
+| `detectors-approx`    | `~230`  | `rules/detectors.yaml`, floored to 10     |
+| `detectors`           | `236`   | `rules/detectors.yaml` exact              |
+| `packs`               | `28`    | pack registry                             |
+| `core`                | `11`    | `core/` packs                             |
+| `stacks`              | `17`    | `stacks/` packs                           |
+| `sections`            | `16`    | `src/engine/sections.ts`                  |
+| `check-kinds`         | `16`    | `src/types.ts`                            |
+| `adrs`                | `20`    | `docs/adr/*.md`                           |
+| `taxonomy-artifacts`  | `220`   | `rules/docs-taxonomy.yaml` artifact count |
+| `taxonomy-categories` | `14`    | `rules/docs-taxonomy.yaml` category count |
+| `version`             | `2.0.1` | `package.json`                            |
+| `version-major`       | `2`     | `package.json`                            |
 
 ### Generated blocks
 

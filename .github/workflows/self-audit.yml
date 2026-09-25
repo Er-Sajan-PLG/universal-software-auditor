@@ -13,12 +13,14 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   usa:
     name: USA audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -44,9 +46,22 @@ jobs:
             --out AUDIT.md \
             --fail-on critical
 
+      # The documentation-universe gate (ADR-0042) is a separate concern from
+      # the security audit above: doc drift and staleness should not block a
+      # build the security posture passes, so it runs as its own step. It must
+      # stay green — this repo dogfoods its own documentation contract.
+      - name: Documentation universe gate
+        if: always()
+        run: |
+          node dist/cli.js docs audit . \
+            --out DOC-AUDIT.md \
+            --fail-on medium
+
       - name: Publish to job summary
         if: always()
-        run: cat AUDIT.md >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          cat AUDIT.md >> "$GITHUB_STEP_SUMMARY"
+          if [ -f DOC-AUDIT.md ]; then cat DOC-AUDIT.md >> "$GITHUB_STEP_SUMMARY"; fi
 
       - name: Score for the PR comment
         if: always()
@@ -55,12 +70,14 @@ jobs:
           echo "score=$SCORE" >> "$GITHUB_OUTPUT"
         id: score
 
-      - name: Upload report
+      - name: Upload reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: usa-audit
-          path: AUDIT.md
+          path: |
+            AUDIT.md
+            DOC-AUDIT.md
 
       - name: Comment score on PR
         if: github.event_name == 'pull_request' && always()

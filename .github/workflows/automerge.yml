@@ -7,14 +7,21 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+# Top level stays read-only: Scorecard's Token-Permissions check ignores a
+# grant at this level only for a semantic-release/GoReleaser/SLSA/mvn workflow,
+# and it builds that allowlist *after* validating the top level — so a
+# top-level `write` here is always a finding, job-level or not. Every write
+# moves to the one job that needs it.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   automerge:
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 

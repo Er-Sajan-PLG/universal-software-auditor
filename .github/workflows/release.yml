@@ -22,13 +22,13 @@ on:
       - master
   workflow_dispatch:
 
+# Top level is read-only: Scorecard's Token-Permissions check does not treat
+# changesets as a "releasing workflow" (its allowlist is semantic-release,
+# GoReleaser, SLSA generators, mvn release:prepare), and it applies that
+# allowlist only at job level anyway — a top-level `contents: write` is always
+# a finding. The write scopes live on the job instead.
 permissions:
-  contents: write
-  pull-requests: write
-  # OIDC trusted publishing: no long-lived NPM_TOKEN. One-time owner setup:
-  # npmjs.com → package Settings → Trusted Publisher → GitHub Actions,
-  # this repo + workflow `release.yml`. Until then, publishing fails closed.
-  id-token: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -37,6 +37,15 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      # changesets/action pushes the version commit and the tag.
+      contents: write
+      # It opens/updates the Version Packages PR.
+      pull-requests: write
+      # OIDC trusted publishing: no long-lived NPM_TOKEN. One-time owner setup:
+      # npmjs.com → package Settings → Trusted Publisher → GitHub Actions,
+      # this repo + workflow `release.yml`. Until then, publishing fails closed.
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

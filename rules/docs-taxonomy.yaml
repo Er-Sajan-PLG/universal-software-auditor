@@ -1,0 +1,3362 @@
+# =============================================================================
+# USA — Documentation universe taxonomy  (schema: usa-doc-taxonomy-v1)
+# -----------------------------------------------------------------------------
+# The full documentation universe: 14 categories, 220 artifact types, the
+# ownership class of each, when it is expected (tier), how the engine detects
+# that it exists (patterns), when it applies to a project (applies_when over
+# detector facts), which source changes can invalidate it (sources), and how
+# artifacts depend on each other (derives_from / syncs_with).
+#
+# This is the single machine-readable home for every documentation obligation
+# USA knows — no sync relationship lives only in human memory.
+#
+# Fields (per artifact)
+#   id            global number 1..220 (Appendix A ordering)
+#   cat           category id (A1..A14, see `categories` below)
+#   name          artifact name
+#   tier          0..4 — when the artifact is expected (Appendix B policy:
+#                 Tier 0-1 from day one, Tier 2-3 progressively, Tier 4 as
+#                 the project matures; see docs/documentation-audit.md)
+#   kind          ownership class: canonical | derived | generated |
+#                 reference | example | index
+#   patterns      globs that detect presence. Leading `!` negates (e.g.
+#                 '!README.md' excludes the root README from per-module
+#                 matches). Empty list = not mechanically trackable: the
+#                 engine reports it as MANUAL, never MISSING.
+#   applies_when  optional predicate over detector facts (same shape as rule
+#                 `applies_when`). Absent = always applicable.
+#   sources       optional globs of source files whose change invalidates the
+#                 artifact (impact analysis). `any-source` means any
+#                 non-document change. Absent = no mechanical source linkage
+#                 (human-governed artifact).
+#   derives_from  ids of upstream artifacts: when an upstream is affected,
+#                 this one is too (transitive impact walks these edges).
+#   syncs_with    ids of peers that must stay mutually consistent.
+#   alias_rule    id of an existing rule that already reports this artifact's
+#                 absence (avoids double-counting in the main audit).
+#   notes         optional free text.
+#
+# Honesty discipline: patterns must be specific enough that "present" means
+# "this kind of document exists" — a bare '**/*.md' would make every artifact
+# present, which is a silent false negative of every missing-document check.
+# Artifacts that cannot be reliably matched get patterns: [] and MANUAL status.
+# =============================================================================
+
+schema: usa-doc-taxonomy-v1
+
+categories:
+  - { id: A1, name: 'Project & Governance' }
+  - { id: A2, name: 'Requirements & Specifications' }
+  - { id: A3, name: 'Architecture & Design' }
+  - { id: A4, name: 'Source Code Documentation' }
+  - { id: A5, name: 'API Documentation' }
+  - { id: A6, name: 'Configuration Documentation' }
+  - { id: A7, name: 'Testing Documentation' }
+  - { id: A8, name: 'Operations, DevOps & SRE' }
+  - { id: A9, name: 'Security Documentation' }
+  - { id: A10, name: 'User-Facing Documentation' }
+  - { id: A11, name: 'Developer & Contributor Documentation' }
+  - { id: A12, name: 'Compliance, Legal & Audit' }
+  - { id: A13, name: 'Analytics, Metrics & Reporting' }
+  - { id: A14, name: 'Meta-Documentation' }
+
+artifacts:
+  # ---------------------------------------------------------------- A1 (15)
+  - {
+      id: 1,
+      cat: A1,
+      name: 'Project charter / vision',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/CHARTER*', 'docs/charter*', '**/charter*.md', 'VISION.md', '**/vision.md'],
+    }
+  - {
+      id: 2,
+      cat: A1,
+      name: 'Project plan',
+      tier: 4,
+      kind: canonical,
+      patterns:
+        ['**/PROJECT_PLAN*', 'docs/project-plan*', '**/project-plan*.md', 'PROJECT_PLAN.md'],
+    }
+  - {
+      id: 3,
+      cat: A1,
+      name: 'Scope statement',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/SCOPE*.md', 'docs/scope*', '**/scope-statement*'],
+    }
+  - {
+      id: 4,
+      cat: A1,
+      name: 'Stakeholder register',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/STAKEHOLDERS*', 'docs/stakeholders*', '**/stakeholder*.md'],
+    }
+  - {
+      id: 5,
+      cat: A1,
+      name: 'RACI matrix',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/RACI*.md', 'docs/raci*', '**/raci*.md'],
+    }
+  - {
+      id: 6,
+      cat: A1,
+      name: 'Risk register',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/RISK_REGISTER*', '**/risk-register*.md', '**/risks.md', 'docs/risks*'],
+      sources: ['**/risk*', '**/risks*'],
+    }
+  - {
+      id: 7,
+      cat: A1,
+      name: 'Changelog',
+      tier: 0,
+      kind: canonical,
+      patterns: ['CHANGELOG*', '**/CHANGELOG*'],
+      syncs_with: [8],
+      sources: ['any-source'],
+    }
+  - {
+      id: 8,
+      cat: A1,
+      name: 'Release notes',
+      tier: 1,
+      kind: canonical,
+      patterns: ['**/RELEASE_NOTES*', '**/release-notes*.md', 'docs/release-notes*'],
+      alias_rule: REL-003,
+      derives_from: [7],
+      syncs_with: [7],
+      sources: ['any-source'],
+    }
+  - {
+      id: 9,
+      cat: A1,
+      name: 'Roadmap',
+      tier: 2,
+      kind: canonical,
+      patterns: ['ROADMAP*', '**/ROADMAP*', 'docs/roadmap*', '**/roadmap*.md'],
+      sources: ['**/ROADMAP*', '**/roadmap*', '**/milestone*'],
+    }
+  - {
+      id: 10,
+      cat: A1,
+      name: 'ADRs (Architecture Decision Records)',
+      tier: 4,
+      kind: index,
+      patterns: ['docs/adr/**', '**/adr/**', '**/ADR-*.md', '**/adr-*.md'],
+      derives_from: [39],
+      sources: ['docs/adr/**', '**/adr/**', '**/ADR*'],
+    }
+  - {
+      id: 11,
+      cat: A1,
+      name: 'Governance model',
+      tier: 4,
+      kind: canonical,
+      patterns: ['GOVERNANCE*', 'docs/governance*', '**/governance*.md'],
+    }
+  - {
+      id: 12,
+      cat: A1,
+      name: 'Budget / cost tracking',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/BUDGET*.md', 'docs/budget*', '**/cost-tracking*'],
+    }
+  - {
+      id: 13,
+      cat: A1,
+      name: 'Lessons learned / retrospectives',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/RETROSPECTIVE*', '**/retro*.md', 'docs/lessons*', '**/lessons-learned*'],
+    }
+  - {
+      id: 14,
+      cat: A1,
+      name: 'Product brief / one-pager',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/BRIEF*.md', 'docs/brief*', '**/one-pager*', '**/ONE_PAGER*'],
+      syncs_with: [15],
+    }
+  - {
+      id: 15,
+      cat: A1,
+      name: 'Elevator pitch',
+      tier: 4,
+      kind: reference,
+      patterns: [],
+      notes: 'Usually lives inside the README; not separately trackable.',
+      syncs_with: [14],
+    }
+
+  # ---------------------------------------------------------------- A2 (20)
+  - {
+      id: 16,
+      cat: A2,
+      name: 'Business requirements',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        ['**/BUSINESS_REQUIREMENTS*', '**/requirements/business*', 'docs/requirements/business*'],
+      sources: [],
+    }
+  - {
+      id: 17,
+      cat: A2,
+      name: 'Functional requirements (SRS)',
+      tier: 2,
+      kind: canonical,
+      patterns: ['**/SRS*.md', 'docs/requirements/**', '**/REQUIREMENTS.md', '**/requirements.md'],
+      derives_from: [16],
+      sources: ['**/requirements*', '**/srs*', '**/stories*'],
+    }
+  - {
+      id: 18,
+      cat: A2,
+      name: 'Non-functional requirements',
+      tier: 2,
+      kind: canonical,
+      patterns: ['**/NFR*.md', '**/NON_FUNCTIONAL*', 'docs/requirements/nfr*', '**/nfr*.md'],
+      derives_from: [16],
+      sources: ['**/nfr*', '**/requirements*', '**/slo*'],
+    }
+  - {
+      id: 19,
+      cat: A2,
+      name: 'User stories / use cases',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '**/USER_STORIES*',
+          '**/use-cases*',
+          '**/usecases*',
+          'docs/user-stories*',
+          'docs/use-cases*',
+        ],
+      derives_from: [16],
+      syncs_with: [20],
+      sources: ['**/stories*', '**/use-cases*', '**/requirements*'],
+    }
+  - {
+      id: 20,
+      cat: A2,
+      name: 'Acceptance criteria',
+      tier: 2,
+      kind: derived,
+      patterns: ['**/ACCEPTANCE_CRITERIA*', '**/acceptance-criteria*.md', 'docs/acceptance*'],
+      derives_from: [19],
+      syncs_with: [19],
+      sources: ['**/stories*', '**/use-cases*', '**/test*'],
+    }
+  - {
+      id: 21,
+      cat: A2,
+      name: 'Glossary / domain dictionary',
+      tier: 2,
+      kind: reference,
+      patterns: ['**/GLOSSARY*.md', 'docs/glossary*', '**/domain-dictionary*'],
+      derives_from: [16],
+      syncs_with: [161],
+      sources: ['**/glossary*', '**/domain*'],
+    }
+  - {
+      id: 22,
+      cat: A2,
+      name: 'Data dictionary',
+      tier: 2,
+      kind: derived,
+      patterns: ['**/DATA_DICTIONARY*', '**/data-dictionary*.md', 'docs/data-dictionary*'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'db:postgres' },
+              { fact: 'db:mysql' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:redis' },
+              { fact: 'db:clickhouse' },
+              { fact: 'db:elasticsearch' },
+              { fact: 'db:vector' },
+              { fact: 'db:dynamodb' },
+              { fact: 'orm:prisma' },
+              { fact: 'orm:sequelize' },
+              { fact: 'orm:sqlalchemy' },
+              { fact: 'orm:gorm' },
+              { fact: 'orm:sqlx' },
+              { fact: 'orm:diesel' },
+              { fact: 'orm:drizzle' },
+              { fact: 'orm:hibernate' },
+              { fact: 'orm:mongoose' },
+              { fact: 'orm:typeorm' },
+              { fact: 'orm:activerecord' },
+            ],
+        },
+      derives_from: [17],
+      syncs_with: [44],
+      sources:
+        [
+          '**/migrations/**',
+          '**/*.sql',
+          '**/prisma/**',
+          '**/*.prisma',
+          '**/models/**',
+          '**/entities/**',
+          '**/alembic/**',
+          '**/schema/**',
+        ],
+    }
+  - {
+      id: 23,
+      cat: A2,
+      name: 'Data flow diagrams',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/data-flow*', '**/dataflow*', '**/dfd*', '**/*-dfd*'],
+      derives_from: [22],
+      sources: ['**/*.puml', '**/*.plantuml', '**/*.mmd', '**/*.dot', '**/diagrams/**'],
+    }
+  - {
+      id: 24,
+      cat: A2,
+      name: 'State diagrams',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/state-diagram*', '**/*-state*.md', '**/state-machine*', '**/*lifecycle*.md'],
+      derives_from: [22],
+      sources: ['**/*.puml', '**/*.plantuml', '**/*.mmd', '**/*.dot', '**/diagrams/**'],
+    }
+  - {
+      id: 25,
+      cat: A2,
+      name: 'Workflow diagrams',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/workflow*.md', '**/*-flow*.md', '**/process-diagram*'],
+      derives_from: [23],
+      sources: ['**/*.puml', '**/*.plantuml', '**/*.mmd', '**/*.dot', '**/diagrams/**'],
+    }
+  - {
+      id: 26,
+      cat: A2,
+      name: 'Requirements traceability matrix',
+      tier: 3,
+      kind: derived,
+      patterns:
+        ['**/TRACEABILITY*', '**/traceability*.md', '**/rtm*.md', '**/requirements-traceability*'],
+      derives_from: [17, 22],
+      sources: ['**/requirements*', '**/stories*', '**/test*'],
+    }
+  - {
+      id: 27,
+      cat: A2,
+      name: 'Constraints documentation',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/CONSTRAINTS*.md', 'docs/constraints*'],
+      derives_from: [16],
+      sources: ['**/constraints*', '**/requirements*'],
+    }
+  - {
+      id: 28,
+      cat: A2,
+      name: 'Assumptions & dependencies',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/ASSUMPTIONS*.md', 'docs/assumptions*'],
+      derives_from: [16],
+      sources: ['**/assumption*', '**/requirements*'],
+    }
+  - {
+      id: 29,
+      cat: A2,
+      name: 'Prioritization / MoSCoW',
+      tier: 3,
+      kind: derived,
+      patterns: ['**/MOSCOW*.md', '**/prioritization*.md', '**/priorities.md'],
+      derives_from: [19],
+      sources: ['**/prioriti*', '**/roadmap*', '**/stories*'],
+    }
+  - {
+      id: 30,
+      cat: A2,
+      name: 'Wireframes & mockups',
+      tier: 3,
+      kind: example,
+      patterns: ['**/wireframe*', '**/mockup*', '**/mockups/**', 'docs/ui/**'],
+      derives_from: [19],
+      sources: ['**/wireframe*', '**/mockup*', '**/ui/**'],
+    }
+  - {
+      id: 31,
+      cat: A2,
+      name: 'Interaction specifications',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/interaction-spec*', '**/ui-spec*', '**/interaction*.md'],
+      derives_from: [30],
+      sources: ['**/interaction*', '**/ui-spec*', '**/wireframe*'],
+    }
+  - {
+      id: 32,
+      cat: A2,
+      name: 'Content requirements',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/CONTENT_REQUIREMENTS*', '**/content-requirements*.md', 'docs/content*'],
+      derives_from: [31],
+      sources: ['**/content*', '**/copy*', '**/strings*', '**/locale*'],
+    }
+  - {
+      id: 33,
+      cat: A2,
+      name: 'Accessibility requirements',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/ACCESSIBILITY_REQS*',
+          '**/accessibility-requirements*.md',
+          '**/a11y-requirements*.md',
+          '**/wcag*.md',
+        ],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'platform:web' },
+              { fact: 'platform:mobile' },
+              { fact: 'fw:react' },
+              { fact: 'fw:vue' },
+              { fact: 'fw:next' },
+              { fact: 'fw:svelte' },
+              { fact: 'fw:angular' },
+              { fact: 'fw:astro' },
+              { fact: 'fw:remix' },
+              { fact: 'fw:sveltekit' },
+              { fact: 'fw:nuxt' },
+            ],
+        },
+      derives_from: [19],
+      sources: ['**/a11y*', '**/accessibility*', '**/wcag*', '**/aria*'],
+    }
+  - {
+      id: 34,
+      cat: A2,
+      name: 'i18n / l10n specs',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/I18N_SPEC*', '**/i18n-spec*.md', '**/l10n*.md', 'docs/i18n*'],
+      applies_when: { any: [{ fact: 'platform:web' }, { fact: 'platform:mobile' }] },
+      derives_from: [19],
+      sources:
+        [
+          '**/i18n*',
+          '**/l10n*',
+          '**/locales/**',
+          '**/messages/**',
+          '**/translations/**',
+          '**/lang/**',
+        ],
+    }
+  - {
+      id: 35,
+      cat: A2,
+      name: 'Persona profiles',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/PERSONAS*.md', '**/personas*.md', '**/user-personas*'],
+      derives_from: [19],
+      sources: ['**/persona*', '**/user-research*'],
+    }
+
+  # ---------------------------------------------------------------- A3 (25)
+  - {
+      id: 36,
+      cat: A3,
+      name: 'System architecture overview',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          'docs/ARCHITECTURE*',
+          '**/ARCHITECTURE*.md',
+          'docs/architecture*',
+          '**/system-architecture*',
+        ],
+      syncs_with: [49],
+      sources: ['any-source'],
+    }
+  - {
+      id: 37,
+      cat: A3,
+      name: 'Component design documents',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        ['docs/components/**', 'docs/design/**', '**/COMPONENT_DESIGN*', '**/component-design*.md'],
+      derives_from: [36],
+      sources: ['any-source'],
+    }
+  - {
+      id: 38,
+      cat: A3,
+      name: 'Technology stack documentation',
+      tier: 2,
+      kind: reference,
+      patterns: ['**/TECH_STACK*.md', '**/tech-stack*.md', 'docs/tech-stack*', '**/stack.md'],
+      derives_from: [36],
+      sources:
+        [
+          'package.json',
+          'pyproject.toml',
+          'go.mod',
+          'Cargo.toml',
+          'pom.xml',
+          'build.gradle*',
+          'Gemfile',
+          'composer.json',
+          'mix.exs',
+          '*.csproj',
+          '.nvmrc',
+          '.python-version',
+        ],
+    }
+  - {
+      id: 39,
+      cat: A3,
+      name: 'ADRs (individual)',
+      tier: 4,
+      kind: canonical,
+      patterns: ['docs/adr/*.md', '**/adr/*.md', '**/ADR-*.md', '**/adr-*.md'],
+      sources: ['docs/adr/**', '**/adr/**', '**/ADR*'],
+    }
+  - {
+      id: 40,
+      cat: A3,
+      name: 'Design pattern documentation',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/PATTERNS*.md', '**/patterns*.md', 'docs/patterns*'],
+      derives_from: [37],
+      sources: ['**/pattern*', '**/design/**'],
+    }
+  - {
+      id: 41,
+      cat: A3,
+      name: 'UML diagrams',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/*.puml', '**/*.plantuml', '**/uml/**', '**/diagrams/**/*.puml'],
+      derives_from: [45],
+      sources: ['**/*.puml', '**/*.plantuml', '**/*.xmi', '**/uml/**'],
+    }
+  - {
+      id: 42,
+      cat: A3,
+      name: 'C4 model diagrams',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/c4*.md', '**/C4*.md', '**/*.c4.puml', 'docs/c4*'],
+      derives_from: [36],
+      sources: ['**/c4*', '**/*.c4.puml', '**/context-diagram*'],
+    }
+  - {
+      id: 43,
+      cat: A3,
+      name: 'Entity-relationship diagrams',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/erd*.md', '**/ERD*.md', '**/entity-relationship*'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'db:postgres' },
+              { fact: 'db:mysql' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:dynamodb' },
+            ],
+        },
+      derives_from: [45],
+      sources: ['**/erd*', '**/entity*', '**/*.sql', '**/migrations/**'],
+    }
+  - {
+      id: 44,
+      cat: A3,
+      name: 'Database schema documentation',
+      tier: 3,
+      kind: derived,
+      patterns: ['**/SCHEMA.md', 'docs/schema*', '**/db/schema*.md', '**/database/schema*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'db:postgres' },
+              { fact: 'db:mysql' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:redis' },
+              { fact: 'db:clickhouse' },
+              { fact: 'db:elasticsearch' },
+              { fact: 'db:vector' },
+              { fact: 'db:dynamodb' },
+              { fact: 'orm:prisma' },
+              { fact: 'orm:sequelize' },
+              { fact: 'orm:sqlalchemy' },
+              { fact: 'orm:gorm' },
+              { fact: 'orm:sqlx' },
+              { fact: 'orm:diesel' },
+              { fact: 'orm:drizzle' },
+              { fact: 'orm:hibernate' },
+              { fact: 'orm:mongoose' },
+              { fact: 'orm:typeorm' },
+              { fact: 'orm:activerecord' },
+            ],
+        },
+      derives_from: [45],
+      syncs_with: [22],
+      sources:
+        [
+          '**/migrations/**',
+          '**/*.sql',
+          '**/prisma/**',
+          '**/*.prisma',
+          '**/models/**',
+          '**/alembic/**',
+        ],
+    }
+  - {
+      id: 45,
+      cat: A3,
+      name: 'Data model documentation',
+      tier: 3,
+      kind: derived,
+      patterns: ['**/DATA_MODEL*.md', '**/data-model*.md', 'docs/data-model*'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'db:postgres' },
+              { fact: 'db:mysql' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:dynamodb' },
+              { fact: 'orm:prisma' },
+              { fact: 'orm:sequelize' },
+              { fact: 'orm:sqlalchemy' },
+              { fact: 'orm:gorm' },
+            ],
+        },
+      derives_from: [22],
+      sources: ['**/migrations/**', '**/*.sql', '**/prisma/**', '**/*.prisma', '**/models/**'],
+    }
+  - {
+      id: 46,
+      cat: A3,
+      name: 'Data migration documentation',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        ['**/migrations/README*', '**/MIGRATIONS*.md', 'docs/migrations*', '**/migrations.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'db:postgres' },
+              { fact: 'db:mysql' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:dynamodb' },
+              { fact: 'orm:prisma' },
+              { fact: 'orm:sequelize' },
+              { fact: 'orm:sqlalchemy' },
+              { fact: 'orm:gorm' },
+            ],
+        },
+      derives_from: [44],
+      sources: ['**/migrations/**', '**/alembic/**', '**/*.sql'],
+    }
+  - {
+      id: 47,
+      cat: A3,
+      name: 'Event/message schema docs',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/EVENTS.md', '**/message-schemas*.md', '**/event-schemas*.md', 'docs/events*'],
+      derives_from: [88],
+      sources: ['**/events*', '**/message*', '**/*.proto', '**/avro*', '**/schema/**'],
+    }
+  - {
+      id: 48,
+      cat: A3,
+      name: 'Integration architecture',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/INTEGRATION*.md',
+          '**/integrations*.md',
+          'docs/integrations*',
+          '**/integration-architecture*',
+        ],
+      derives_from: [36],
+      sources: ['**/integration*', '**/connector*', '**/adapter*', '**/client*'],
+    }
+  - {
+      id: 49,
+      cat: A3,
+      name: 'Deployment architecture',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/DEPLOYMENT*.md',
+          'docs/deployment*',
+          '**/deployment-architecture*',
+          'infra/**/README*',
+          '**/deploy/README*',
+        ],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'has:ci' },
+              { fact: 'has:containers' },
+              { fact: 'has:kubernetes' },
+              { fact: 'has:terraform' },
+              { fact: 'platform:server' },
+            ],
+        },
+      derives_from: [48, 117],
+      syncs_with: [36],
+      sources:
+        [
+          '**/Dockerfile*',
+          '**/docker-compose*.yml',
+          '**/k8s/**',
+          '**/*.tf',
+          '**/.github/workflows/**',
+          '**/deploy/**',
+          '**/helm/**',
+          'Makefile',
+        ],
+    }
+  - {
+      id: 50,
+      cat: A3,
+      name: 'Security architecture',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/security-architecture*.md',
+          'docs/security/architecture*',
+          '**/SECURITY_ARCHITECTURE*',
+        ],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'project:api' },
+              { fact: 'auth:jwt' },
+              { fact: 'auth:oauth' },
+              { fact: 'auth:session' },
+              { fact: 'auth:apikey' },
+              { fact: 'platform:server' },
+            ],
+        },
+      derives_from: [36],
+      sources: ['**/auth*', '**/security*', '**/crypto*', '**/middleware/**'],
+    }
+  - {
+      id: 51,
+      cat: A3,
+      name: 'Threat model',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/THREAT_MODEL*', '**/threat-model*.md', 'docs/security/threat*'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'project:api' },
+              { fact: 'auth:jwt' },
+              { fact: 'auth:oauth' },
+              { fact: 'auth:session' },
+              { fact: 'auth:apikey' },
+              { fact: 'platform:server' },
+            ],
+        },
+      derives_from: [50],
+      sources: ['**/auth*', '**/security*', '**/crypto*', '**/session*'],
+    }
+  - {
+      id: 52,
+      cat: A3,
+      name: 'Concurrency design',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/CONCURRENCY*.md',
+          '**/concurrency*.md',
+          'docs/design/concurrency*',
+          '**/async-design*.md',
+        ],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'lang:go' },
+              { fact: 'lang:rust' },
+              { fact: 'lang:java' },
+              { fact: 'lang:csharp' },
+              { fact: 'lang:python' },
+              { fact: 'project:api' },
+            ],
+        },
+      derives_from: [37],
+      sources: ['**/concurrency*', '**/async*', '**/thread*', '**/worker*', '**/queue*'],
+    }
+  - {
+      id: 53,
+      cat: A3,
+      name: 'Error handling strategy',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/ERROR_HANDLING*.md',
+          '**/error-handling*.md',
+          'docs/error-handling*',
+          '**/errors-strategy*.md',
+        ],
+      derives_from: [37],
+      sources:
+        ['**/errors*', '**/exceptions*', '**/error*.{ts,py,go,rs}', '**/panic*', '**/recovery*'],
+    }
+  - {
+      id: 54,
+      cat: A3,
+      name: 'Logging & observability design',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          'docs/logging*.md',
+          'docs/observability*.md',
+          '**/logging-design*.md',
+          '**/observability-design*.md',
+        ],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'obs:prometheus' },
+              { fact: 'obs:datadog' },
+              { fact: 'obs:grafana' },
+              { fact: 'obs:otel' },
+              { fact: 'obs:sentry' },
+              { fact: 'has:monitoring' },
+              { fact: 'project:api' },
+              { fact: 'platform:server' },
+            ],
+        },
+      derives_from: [53],
+      sources:
+        [
+          '**/logging*',
+          '**/log*.{ts,py,go,rs}',
+          '**/pino*',
+          '**/winston*',
+          '**/structlog*',
+          '**/tracing*',
+          '**/otel*',
+        ],
+    }
+  - {
+      id: 55,
+      cat: A3,
+      name: 'Caching strategy',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/CACHING*.md', '**/caching*.md', 'docs/caching*', '**/cache-strategy*.md'],
+      applies_when: { any: [{ fact: 'db:redis' }, { fact: 'project:api' }] },
+      derives_from: [37],
+      sources: ['**/cache*', '**/redis*', '**/memcache*', '**/invalidat*'],
+    }
+  - {
+      id: 56,
+      cat: A3,
+      name: 'Scaling strategy',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/SCALING*.md', '**/scaling-strategy*.md', 'docs/scaling*'],
+      derives_from: [36],
+      sources: ['**/k8s/**', '**/*.tf', '**/docker-compose*.yml', '**/scaling*'],
+    }
+  - {
+      id: 57,
+      cat: A3,
+      name: 'Disaster recovery plan',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        ['**/DISASTER_RECOVERY*', '**/disaster-recovery*.md', '**/dr-plan*.md', 'docs/disaster*'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'platform:server' },
+              { fact: 'has:ci' },
+              { fact: 'has:containers' },
+              { fact: 'has:kubernetes' },
+            ],
+        },
+      derives_from: [49, 56],
+      sources: ['**/dr-plan*', '**/disaster*', '**/failover*', '**/backup*', '**/*.tf'],
+    }
+  - {
+      id: 58,
+      cat: A3,
+      name: 'Capacity planning',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/CAPACITY*.md', 'docs/capacity*', '**/capacity-plan*'],
+      derives_from: [56],
+      sources: ['**/capacity*', '**/sizing*'],
+    }
+  - {
+      id: 59,
+      cat: A3,
+      name: 'Performance budget',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/PERF_BUDGET*.md', '**/performance-budget*.md', '**/perf-budget*.md'],
+      applies_when:
+        { any: [{ fact: 'platform:web' }, { fact: 'has:perf-tests' }, { fact: 'project:api' }] },
+      derives_from: [56],
+      syncs_with: [133],
+      sources:
+        ['**/budget*', '**/performance*', '**/lighthouse*', '**/web-vitals*', '**/size-limit*'],
+    }
+  - {
+      id: 60,
+      cat: A3,
+      name: 'Design review notes',
+      tier: 4,
+      kind: reference,
+      patterns: ['**/design-reviews*.md', 'docs/design/reviews*', '**/review-notes*.md'],
+      derives_from: [39],
+      sources: ['**/design-review*', '**/adr/**', '**/ADR*'],
+    }
+
+  # ---------------------------------------------------------------- A4 (14)
+  - {
+      id: 61,
+      cat: A4,
+      name: 'README (root)',
+      tier: 0,
+      kind: canonical,
+      patterns: ['README.md', 'README.rst', 'README.mdx', 'README.txt', 'README'],
+      alias_rule: REPO-004,
+      sources: ['any-source'],
+    }
+  - {
+      id: 62,
+      cat: A4,
+      name: 'README (per module)',
+      tier: 1,
+      kind: canonical,
+      patterns:
+        [
+          '**/README.md',
+          '**/README.rst',
+          '**/README.mdx',
+          '!README.md',
+          '!README.rst',
+          '!README.mdx',
+        ],
+      derives_from: [61],
+      sources: ['any-source'],
+    }
+  - {
+      id: 63,
+      cat: A4,
+      name: 'Inline code comments',
+      tier: 0,
+      kind: canonical,
+      patterns: [],
+      notes: 'Quality is judgement, not file presence — belongs to the judgement queue.',
+    }
+  - {
+      id: 64,
+      cat: A4,
+      name: 'Docstrings / JSDoc / XML docs',
+      tier: 0,
+      kind: canonical,
+      patterns: [],
+      notes: 'Covered mechanically by the docstring-coverage invariant (DOCU-INV-DOCS).',
+    }
+  - {
+      id: 65,
+      cat: A4,
+      name: 'Type/interface annotations',
+      tier: 1,
+      kind: canonical,
+      patterns: [],
+      notes: 'Self-documenting types; presence of a typechecker is the practical signal.',
+    }
+  - {
+      id: 66,
+      cat: A4,
+      name: 'TODO/FIXME/HACK with context',
+      tier: 3,
+      kind: reference,
+      patterns: [],
+      notes: 'Context quality is judgement; the raw markers are code, not docs.',
+    }
+  - {
+      id: 67,
+      cat: A4,
+      name: 'Code-level design notes',
+      tier: 4,
+      kind: reference,
+      patterns: [],
+      notes: 'Architectural decisions in source — judgement queue.',
+    }
+  - {
+      id: 68,
+      cat: A4,
+      name: 'Literate programming',
+      tier: 4,
+      kind: reference,
+      patterns: ['**/*.lit*', '**/literate*'],
+      sources: ['**/*.lit*', '**/*.ipynb', '**/org/**'],
+    }
+  - {
+      id: 69,
+      cat: A4,
+      name: 'Dependency documentation',
+      tier: 1,
+      kind: derived,
+      patterns: ['**/DEPENDENCIES.md', '**/dependencies.md', 'docs/dependencies*', '**/deps.md'],
+      sources:
+        [
+          'package.json',
+          'requirements*.txt',
+          'pyproject.toml',
+          'go.mod',
+          'Cargo.toml',
+          'pom.xml',
+          'build.gradle*',
+          'Gemfile',
+          'composer.json',
+          'mix.exs',
+          '*.csproj',
+        ],
+    }
+  - {
+      id: 70,
+      cat: A4,
+      name: 'CODEOWNERS',
+      tier: 2,
+      kind: canonical,
+      patterns: ['.github/CODEOWNERS', '**/CODEOWNERS', '**/codeowners'],
+      derives_from: [4],
+      sources: ['.github/CODEOWNERS', '**/CODEOWNERS', '**/codeowners'],
+    }
+  - {
+      id: 71,
+      cat: A4,
+      name: 'Deprecated API documentation',
+      tier: 3,
+      kind: reference,
+      patterns:
+        ['**/DEPRECATION*.md', '**/deprecation*.md', '**/deprecated-api*.md', 'docs/deprecated*'],
+      applies_when: { any: [{ fact: 'project:library' }, { fact: 'project:api' }] },
+      derives_from: [81],
+      sources: ['**/deprecat*', '**/migration*', '**/CHANGELOG*'],
+    }
+  - {
+      id: 72,
+      cat: A4,
+      name: 'Magic number documentation',
+      tier: 4,
+      kind: reference,
+      patterns: [],
+      notes: 'Lives in comments at the point of use — judgement queue.',
+    }
+  - {
+      id: 73,
+      cat: A4,
+      name: 'Algorithm documentation',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/ALGORITHMS.md', '**/algorithms*.md', 'docs/algorithms*'],
+      sources: ['any-source'],
+    }
+  - {
+      id: 74,
+      cat: A4,
+      name: 'Regex documentation',
+      tier: 4,
+      kind: reference,
+      patterns: [],
+      notes: 'Complex patterns need inline explanation — judgement queue.',
+    }
+
+  # ---------------------------------------------------------------- A5 (16)
+  - {
+      id: 75,
+      cat: A5,
+      name: 'API overview / philosophy',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        ['docs/api/README*', 'docs/api/index*', '**/api-overview*.md', 'docs/API.md', '**/api.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'project:api' },
+              { fact: 'api:graphql' },
+              { fact: 'api:grpc' },
+              { fact: 'api:trpc' },
+              { fact: 'api:websocket' },
+            ],
+        },
+      sources: ['**/openapi.*', '**/api/**', '**/routes/**'],
+    }
+  - {
+      id: 76,
+      cat: A5,
+      name: 'API reference (per endpoint)',
+      tier: 2,
+      kind: derived,
+      patterns:
+        ['docs/api/**', 'docs/reference/api*', '**/API_REFERENCE*.md', '**/api-reference*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'project:api' },
+              { fact: 'api:graphql' },
+              { fact: 'api:grpc' },
+              { fact: 'api:trpc' },
+              { fact: 'api:websocket' },
+            ],
+        },
+      alias_rule: DOC-003,
+      derives_from: [83],
+      sources:
+        [
+          '**/openapi.{yaml,yml,json}',
+          '**/swagger.{yaml,yml,json}',
+          '**/*.graphql',
+          '**/*.proto',
+          '**/routes/**',
+          '**/router*.{ts,js,py,go,rs}',
+          '**/api/**',
+          '**/handlers/**',
+          '**/controllers/**',
+        ],
+    }
+  - {
+      id: 77,
+      cat: A5,
+      name: 'API authentication guide',
+      tier: 2,
+      kind: canonical,
+      patterns: ['**/api-auth*.md', 'docs/api/auth*', '**/api-authentication*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'project:api' },
+              { fact: 'auth:jwt' },
+              { fact: 'auth:oauth' },
+              { fact: 'auth:apikey' },
+              { fact: 'auth:session' },
+            ],
+        },
+      derives_from: [139],
+      sources: ['**/auth*', '**/oauth*', '**/jwt*', '**/session*', '**/api/**'],
+    }
+  - {
+      id: 78,
+      cat: A5,
+      name: 'API rate limiting / quotas',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/rate-limit*.md', '**/ratelimit*.md', '**/quotas*.md', 'docs/api/rate*'],
+      applies_when: { any: [{ fact: 'project:api' }] },
+      derives_from: [76],
+      sources: ['**/rate-limit*', '**/throttle*', '**/quota*'],
+    }
+  - {
+      id: 79,
+      cat: A5,
+      name: 'API pagination guide',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/pagination*.md', 'docs/api/pagination*'],
+      applies_when: { any: [{ fact: 'project:api' }] },
+      derives_from: [76],
+      sources: ['**/pagination*', '**/cursor*', '**/page*'],
+    }
+  - {
+      id: 80,
+      cat: A5,
+      name: 'API error catalog',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        ['**/API_ERRORS*.md', 'docs/api/errors*', '**/error-catalog*.md', '**/error-codes*.md'],
+      applies_when: { any: [{ fact: 'project:api' }] },
+      derives_from: [76],
+      sources: ['**/errors*', '**/error-codes*', '**/exceptions*', '**/error*.{ts,py,go,rs}'],
+    }
+  - {
+      id: 81,
+      cat: A5,
+      name: 'API versioning guide',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/api-versioning*.md', 'docs/api/versioning*', '**/versioning.md'],
+      applies_when: { any: [{ fact: 'project:api' }] },
+      derives_from: [76],
+      sources: ['**/version*', '**/openapi.*'],
+    }
+  - {
+      id: 82,
+      cat: A5,
+      name: 'API changelog',
+      tier: 3,
+      kind: derived,
+      patterns: ['docs/api/CHANGELOG*', '**/api-changelog*.md'],
+      applies_when: { any: [{ fact: 'project:api' }] },
+      derives_from: [7],
+      sources: ['**/api/**', '**/openapi.*'],
+    }
+  - {
+      id: 83,
+      cat: A5,
+      name: 'OpenAPI / GraphQL / gRPC schemas',
+      tier: 2,
+      kind: reference,
+      patterns:
+        [
+          '**/openapi.{yaml,yml,json}',
+          '**/swagger.{yaml,yml,json}',
+          '**/*.graphql',
+          '**/*.gql',
+          '**/*.proto',
+        ],
+      applies_when:
+        { any: [{ fact: 'project:api' }, { fact: 'api:graphql' }, { fact: 'api:grpc' }] },
+      sources:
+        ['**/openapi.{yaml,yml,json}', '**/swagger.{yaml,yml,json}', '**/*.graphql', '**/*.proto'],
+    }
+  - {
+      id: 84,
+      cat: A5,
+      name: 'API usage examples / recipes',
+      tier: 3,
+      kind: example,
+      patterns:
+        [
+          'docs/api/examples*',
+          '**/recipes.md',
+          'docs/recipes*',
+          '**/api-examples*.md',
+          '**/cookbook.md',
+        ],
+      applies_when: { any: [{ fact: 'project:api' }, { fact: 'project:library' }] },
+      derives_from: [76],
+      sources: ['**/examples/**', '**/recipes*', '**/cookbook*'],
+    }
+  - {
+      id: 85,
+      cat: A5,
+      name: 'API SDK documentation',
+      tier: 3,
+      kind: derived,
+      patterns: ['**/sdk/README*', 'docs/sdk/**', '**/SDK_GUIDE*.md', '**/clients/**/README*'],
+      applies_when: { any: [{ fact: 'project:api' }, { fact: 'project:library' }] },
+      derives_from: [83],
+      sources: ['**/sdk/**', '**/clients/**', '**/sdk*'],
+    }
+  - {
+      id: 86,
+      cat: A5,
+      name: 'Webhook documentation',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/webhooks.md', 'docs/webhooks*', '**/WEBHOOKS.md'],
+      applies_when: { any: [{ fact: 'project:api' }, { fact: 'api:websocket' }] },
+      derives_from: [88],
+      sources: ['**/webhook*', '**/webhooks*'],
+    }
+  - {
+      id: 87,
+      cat: A5,
+      name: 'Internal API / RPC docs',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/internal-api*.md', 'docs/rpc*.md', '**/RPC.md'],
+      applies_when: { any: [{ fact: 'api:grpc' }, { fact: 'api:trpc' }, { fact: 'project:api' }] },
+      derives_from: [76],
+      sources: ['**/*.proto', '**/grpc/**', '**/rpc/**'],
+    }
+  - {
+      id: 88,
+      cat: A5,
+      name: 'Event/message API docs',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/EVENTS.md', 'docs/events*', '**/message-api*.md'],
+      applies_when:
+        { any: [{ fact: 'api:websocket' }, { fact: 'db:redis' }, { fact: 'fw:celery' }] },
+      derives_from: [47],
+      sources: ['**/events*', '**/message*', '**/topic*', '**/queue*'],
+    }
+  - {
+      id: 89,
+      cat: A5,
+      name: 'CLI API documentation',
+      tier: 2,
+      kind: derived,
+      patterns:
+        [
+          'docs/cli.md',
+          '**/CLI_REFERENCE*.md',
+          '**/cli-reference*.md',
+          '**/cli.md',
+          'docs/commands*',
+        ],
+      applies_when: { fact: 'project:cli' },
+      sources:
+        ['**/cli*.{ts,js,py,go,rs}', '**/commands/**', '**/cmd/**', 'bin/**', 'package.json'],
+    }
+  - {
+      id: 90,
+      cat: A5,
+      name: 'Plugin/extension API',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/plugins.md',
+          '**/PLUGINS.md',
+          '**/plugin-api*.md',
+          '**/extending*.md',
+          '**/extensions.md',
+        ],
+      applies_when: { any: [{ fact: 'project:library' }, { fact: 'project:api' }] },
+      derives_from: [76],
+      sources: ['**/plugin*', '**/extension*', '**/hook*'],
+    }
+
+  # ---------------------------------------------------------------- A6 (7)
+  - {
+      id: 91,
+      cat: A6,
+      name: 'Configuration reference',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        ['**/CONFIG_REFERENCE*.md', 'docs/config*.md', '**/configuration.md', '**/config.md'],
+      sources:
+        [
+          '.env.example',
+          '.env*.example',
+          '**/config.{ts,js,py,go,rs,toml,yaml,yml,json,ini,env}',
+          '**/settings.{py,ts,js,go,rs}',
+          '**/application.properties',
+          '**/application.yaml',
+        ],
+    }
+  - {
+      id: 92,
+      cat: A6,
+      name: 'Environment variables',
+      tier: 1,
+      kind: canonical,
+      patterns:
+        [
+          '.env.example',
+          '**/.env.example',
+          '**/env-vars.md',
+          '**/environment-variables*.md',
+          'docs/env*.md',
+        ],
+      alias_rule: REPO-006,
+      derives_from: [91],
+      syncs_with: [91],
+      sources:
+        [
+          '**/.env*',
+          '**/config*.{ts,js,py,go,rs,toml,yaml,yml,json,ini}',
+          '**/settings*.{py,ts,js,go,rs}',
+          'package.json',
+          'pyproject.toml',
+          '**/Dockerfile*',
+          '**/.github/workflows/**',
+        ],
+    }
+  - {
+      id: 93,
+      cat: A6,
+      name: 'Feature flags / toggles',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/FEATURE_FLAGS*.md', '**/feature-flags*.md', '**/toggles.md', 'docs/flags*'],
+      derives_from: [91],
+      sources: ['**/flag*', '**/feature*', '**/toggle*', '**/flags*'],
+    }
+  - {
+      id: 94,
+      cat: A6,
+      name: 'Config file format',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/config-schema*.json', '**/config.schema.json', 'docs/config-format*'],
+      sources: ['**/config*.{json,yaml,yml,toml,ini,env}', '**/settings*.{py,ts}'],
+    }
+  - {
+      id: 95,
+      cat: A6,
+      name: 'Secrets management',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/SECRETS.md', 'docs/secrets*', '**/secret-management*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'project:api' },
+              { fact: 'platform:server' },
+              { fact: 'has:ci' },
+              { fact: 'has:secrets-scan' },
+            ],
+        },
+      derives_from: [145],
+      sources: ['**/secret*', '**/vault*', '**/sops*', '**/.env*', '**/secrets*'],
+    }
+  - {
+      id: 96,
+      cat: A6,
+      name: 'Environment matrix',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/ENVIRONMENTS.md', 'docs/environments*', '**/env-matrix*.md'],
+      applies_when:
+        { any: [{ fact: 'has:ci' }, { fact: 'has:kubernetes' }, { fact: 'has:terraform' }] },
+      derives_from: [91],
+      sources: ['**/staging*', '**/production*', '**/.env*', '**/config/*.{yaml,yml,toml,env}'],
+    }
+  - {
+      id: 97,
+      cat: A6,
+      name: 'License / entitlement config',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/ENTITLEMENTS.md', '**/licensing*.md', '**/license-config*.md'],
+      applies_when: { any: [{ fact: 'project:library' }, { fact: 'project:api' }] },
+      derives_from: [91],
+      sources: ['**/license*', '**/entitlement*', '**/feature-gate*'],
+    }
+
+  # ---------------------------------------------------------------- A7 (17)
+  - {
+      id: 98,
+      cat: A7,
+      name: 'Test strategy / test plan',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '**/TEST_PLAN*.md',
+          '**/test-plan*.md',
+          '**/TESTING_STRATEGY*.md',
+          '**/testing-strategy*.md',
+          'docs/testing*.md',
+        ],
+      applies_when: { fact: 'has:tests' },
+      sources:
+        [
+          '**/vitest.config*',
+          '**/jest.config*',
+          '**/pytest.ini',
+          '**/tox.ini',
+          '**/pyproject.toml',
+          '**/conftest.py',
+          '**/.github/workflows/**',
+        ],
+    }
+  - {
+      id: 99,
+      cat: A7,
+      name: 'Test case specifications',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/test-cases*.md', '**/TEST_CASES.md', 'docs/test-cases*', '**/test-spec*.md'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [98],
+      sources: ['**/test*.{ts,js,py,go,rs}', '**/*_test*', '**/test_*'],
+    }
+  - {
+      id: 100,
+      cat: A7,
+      name: 'Unit test documentation',
+      tier: 2,
+      kind: canonical,
+      patterns: ['docs/tests/**', '**/unit-tests*.md', '**/unit-testing*.md', '**/UNIT_TESTS.md'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [98],
+      sources: ['**/*.test.*', '**/*.spec.*', '**/test_*.py', '**/*_test.go', '**/__tests__/**'],
+    }
+  - {
+      id: 101,
+      cat: A7,
+      name: 'Integration test docs',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/integration-tests*.md', 'docs/integration*'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [98],
+      sources: ['**/integration*/**', '**/tests/integration/**'],
+    }
+  - {
+      id: 102,
+      cat: A7,
+      name: 'E2E test documentation',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/e2e-testing*.md',
+          '**/E2E_TESTS.md',
+          '**/end-to-end*.md',
+          '**/cypress/README*',
+          '**/playwright/README*',
+        ],
+      applies_when: { fact: 'has:e2e' },
+      derives_from: [98],
+      sources: ['**/cypress/**', '**/playwright/**', '**/e2e/**', '**/selenium/**'],
+    }
+  - {
+      id: 103,
+      cat: A7,
+      name: 'Performance test docs',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        ['**/perf-test*.md', '**/performance-tests*.md', '**/load-test*.md', '**/BENCHMARKS.md'],
+      applies_when: { fact: 'has:perf-tests' },
+      derives_from: [98],
+      sources: ['**/k6*', '**/locust*', '**/autocannon*', '**/benchmark*', '**/perf*'],
+    }
+  - {
+      id: 104,
+      cat: A7,
+      name: 'Security test docs',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/security-tests*.md', '**/pen-test-plan*.md', 'docs/security/tests*'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'has:sast' },
+              { fact: 'has:secrets-scan' },
+              { fact: 'project:api' },
+              { fact: 'has:dep-scan' },
+            ],
+        },
+      derives_from: [98],
+      sources: ['**/bandit*', '**/semgrep*', '**/.gitleaks*', '**/snyk*', '**/trivy*'],
+    }
+  - {
+      id: 105,
+      cat: A7,
+      name: 'Accessibility test docs',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/a11y-test*.md', '**/accessibility-tests*.md'],
+      applies_when: { any: [{ fact: 'platform:web' }, { fact: 'platform:mobile' }] },
+      derives_from: [98, 33],
+      sources: ['**/axe*', '**/a11y*', '**/accessibility*', '**/wcag*'],
+    }
+  - {
+      id: 106,
+      cat: A7,
+      name: 'Test data documentation',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/test-data*.md', 'docs/test-data*', '**/seeding*.md'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [98],
+      sources: ['**/fixtures/**', '**/seed*', '**/factories/**', '**/factories*'],
+    }
+  - {
+      id: 107,
+      cat: A7,
+      name: 'Test fixtures / factories',
+      tier: 3,
+      kind: reference,
+      patterns:
+        ['**/fixtures/README*', '**/factories/README*', '**/test-factories*.md', '**/fixtures.md'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [98],
+      sources: ['**/fixtures/**', '**/factories/**', '**/factory*'],
+    }
+  - {
+      id: 108,
+      cat: A7,
+      name: 'Test environment docs',
+      tier: 2,
+      kind: canonical,
+      patterns: ['**/test-env*.md', '**/test-environment*.md', 'docs/testing/env*'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [98],
+      sources:
+        [
+          '**/docker-compose*.yml',
+          '**/conftest.py',
+          '**/vitest.config*',
+          '**/jest.config*',
+          '**/.env.test*',
+          '**/tox.ini',
+        ],
+    }
+  - {
+      id: 109,
+      cat: A7,
+      name: 'Test coverage report',
+      tier: 2,
+      kind: generated,
+      patterns: ['**/COVERAGE.md', '**/coverage-report*.md'],
+      notes: 'CI-generated coverage (codecov, ratcheted thresholds) is the normal state; only a committed report is matchable here.',
+    }
+  - {
+      id: 110,
+      cat: A7,
+      name: 'QA sign-off records',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/QA_SIGNOFF*.md', '**/qa-signoff*.md', '**/sign-off*.md'],
+      applies_when: { any: [{ fact: 'project:api' }, { fact: 'platform:server' }] },
+      derives_from: [98],
+      sources: ['**/qa*', '**/sign-off*', '**/.github/workflows/**'],
+    }
+  - {
+      id: 111,
+      cat: A7,
+      name: 'Known bugs / test exclusions',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/KNOWN_BUGS.md', '**/known-bugs*.md', '**/test-exclusions*.md'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [114],
+      sources: ['**/known-bugs*', '**/known-issues*', '**/bug-tracker*'],
+    }
+  - {
+      id: 112,
+      cat: A7,
+      name: 'Mock/stub documentation',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/MOCKS.md', 'docs/mocks*.md', '**/stubs.md', '**/mocks/README*'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [98],
+      sources: ['**/mock*', '**/stub*', '**/fake*'],
+    }
+  - {
+      id: 113,
+      cat: A7,
+      name: 'Regression test suite',
+      tier: 2,
+      kind: reference,
+      patterns: ['**/regression*.md', '**/REGRESSION_TESTS.md', '**/regression/README*'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [99],
+      sources: ['**/regression*', '**/smoke*', '**/canary*'],
+    }
+  - {
+      id: 114,
+      cat: A7,
+      name: 'Flaky test register',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/FLAKY_TESTS.md', '**/flaky-tests*.md', '**/flaky.md'],
+      applies_when: { fact: 'has:tests' },
+      derives_from: [99],
+      sources: ['**/flaky*', '**/quarantine*', '**/skip*'],
+    }
+
+  # ---------------------------------------------------------------- A8 (23)
+  - {
+      id: 115,
+      cat: A8,
+      name: 'Deployment guide',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '**/DEPLOYMENT.md',
+          '**/deployment.md',
+          'docs/deployment*',
+          '**/DEPLOY.md',
+          'docs/deploy*',
+        ],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'has:ci' },
+              { fact: 'has:containers' },
+              { fact: 'has:kubernetes' },
+              { fact: 'has:terraform' },
+              { fact: 'platform:server' },
+            ],
+        },
+      derives_from: [49, 117],
+      sources:
+        [
+          '**/Dockerfile*',
+          '**/docker-compose*.yml',
+          '**/k8s/**',
+          '**/*.tf',
+          '**/.github/workflows/**',
+          '**/deploy/**',
+          '**/helm/**',
+          'Makefile',
+        ],
+    }
+  - {
+      id: 116,
+      cat: A8,
+      name: 'Rollback procedure',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/ROLLBACK*.md', '**/rollback*.md', 'docs/rollback*'],
+      applies_when:
+        { any: [{ fact: 'has:ci' }, { fact: 'has:containers' }, { fact: 'platform:server' }] },
+      derives_from: [115],
+      sources:
+        [
+          '**/Dockerfile*',
+          '**/migrations/**',
+          '**/*.tf',
+          '**/deploy/**',
+          '**/.github/workflows/**',
+        ],
+    }
+  - {
+      id: 117,
+      cat: A8,
+      name: 'IaC documentation',
+      tier: 2,
+      kind: derived,
+      patterns:
+        ['**/terraform/README*', '**/infra/README*', '**/iac.md', '**/IAC.md', 'docs/infra*'],
+      applies_when:
+        { any: [{ fact: 'has:terraform' }, { fact: 'project:iac' }, { fact: 'has:containers' }] },
+      derives_from: [49],
+      sources: ['**/*.tf', '**/*.tfvars', '**/*.hcl', '**/pulumi/**', '**/stacks/**'],
+    }
+  - {
+      id: 118,
+      cat: A8,
+      name: 'CI/CD pipeline docs',
+      tier: 1,
+      kind: derived,
+      patterns:
+        [
+          '.github/workflows/README*',
+          '**/CI.md',
+          '**/CI_CD.md',
+          '**/ci-cd*.md',
+          'docs/ci*.md',
+          '**/pipeline*.md',
+        ],
+      applies_when: { fact: 'has:ci' },
+      derives_from: [49],
+      sources:
+        [
+          '.github/workflows/**',
+          '.gitlab-ci.yml',
+          '**/Jenkinsfile',
+          '**/.circleci/**',
+          '**/azure-pipelines*',
+          '**/bitbucket-pipelines*',
+        ],
+    }
+  - {
+      id: 119,
+      cat: A8,
+      name: 'Container / image docs',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        ['**/docker.md', '**/DOCKER.md', '**/containers.md', '**/images.md', 'docs/docker*'],
+      applies_when: { fact: 'has:containers' },
+      derives_from: [49],
+      sources: ['**/Dockerfile*', '**/docker-compose*.yml', '**/Containerfile', '**/.dockerignore'],
+    }
+  - {
+      id: 120,
+      cat: A8,
+      name: 'K8s / orchestration manifests',
+      tier: 3,
+      kind: reference,
+      patterns:
+        [
+          '**/k8s/**',
+          '**/kubernetes/**',
+          '**/*.k8s.yaml',
+          '**/helm/**',
+          '**/charts/**',
+          '**/kustomization*.yaml',
+        ],
+      applies_when: { fact: 'has:kubernetes' },
+      derives_from: [49],
+      sources: ['**/k8s/**', '**/kubernetes/**', '**/helm/**', '**/kustomization*'],
+    }
+  - {
+      id: 121,
+      cat: A8,
+      name: 'Monitoring & alerting docs',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/monitoring.md',
+          'docs/monitoring*',
+          '**/MONITORING.md',
+          '**/alerting*.md',
+          '**/alerts.md',
+        ],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'has:monitoring' },
+              { fact: 'obs:prometheus' },
+              { fact: 'obs:grafana' },
+              { fact: 'obs:datadog' },
+              { fact: 'obs:otel' },
+              { fact: 'obs:sentry' },
+              { fact: 'platform:server' },
+            ],
+        },
+      derives_from: [54, 132],
+      syncs_with: [123],
+      sources:
+        [
+          '**/grafana/**',
+          '**/prometheus*',
+          '**/alert*.{yaml,yml,json,ts,py}',
+          '**/monitoring/**',
+          '**/sentry*',
+          '**/datadog*',
+          '**/otel*',
+        ],
+    }
+  - {
+      id: 122,
+      cat: A8,
+      name: 'Dashboard documentation',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/dashboards.md', '**/DASHBOARDS.md', 'docs/dashboards*'],
+      applies_when:
+        { any: [{ fact: 'has:monitoring' }, { fact: 'obs:grafana' }, { fact: 'obs:datadog' }] },
+      derives_from: [121],
+      sources: ['**/grafana/**', '**/dashboard*', '**/metric*'],
+    }
+  - {
+      id: 123,
+      cat: A8,
+      name: 'Runbook / ops manual',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        ['**/RUNBOOK.md', '**/runbook*.md', '**/runbooks/**', 'docs/runbook*', '**/ops-manual*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'has:monitoring' },
+              { fact: 'platform:server' },
+              { fact: 'has:ci' },
+              { fact: 'has:kubernetes' },
+            ],
+        },
+      alias_rule: REL-007,
+      derives_from: [121],
+      syncs_with: [121],
+      sources: ['**/runbook*', '**/RUNBOOK*', '**/oncall*', '**/alerts*'],
+    }
+  - {
+      id: 124,
+      cat: A8,
+      name: 'Incident response playbook',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/INCIDENT_RESPONSE*.md',
+          '**/incident-response*.md',
+          '**/ir-playbook*.md',
+          'docs/incident*',
+        ],
+      applies_when:
+        { any: [{ fact: 'platform:server' }, { fact: 'has:monitoring' }, { fact: 'has:ci' }] },
+      derives_from: [123],
+      sources: ['**/incident*', '**/INCIDENT*', '**/oncall*'],
+    }
+  - {
+      id: 125,
+      cat: A8,
+      name: 'Postmortem template',
+      tier: 4,
+      kind: reference,
+      patterns:
+        ['**/POSTMORTEM*.md', '**/postmortem*.md', '**/incident-template*.md', 'docs/postmortems*'],
+      applies_when: { any: [{ fact: 'platform:server' }, { fact: 'has:monitoring' }] },
+      derives_from: [124],
+      sources: ['**/postmortem*', '**/incident*', '**/retro*'],
+    }
+  - {
+      id: 126,
+      cat: A8,
+      name: 'On-call documentation',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/ONCALL.md', '**/on-call*.md', '**/oncall.md', 'docs/on-call*'],
+      applies_when: { any: [{ fact: 'platform:server' }, { fact: 'has:monitoring' }] },
+      derives_from: [124],
+      sources: ['**/oncall*', '**/on-call*', '**/pager*', '**/escalation*'],
+    }
+  - {
+      id: 127,
+      cat: A8,
+      name: 'SLO / SLI / SLA docs',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/SLO.md', '**/SLOs.md', '**/service-level*.md', '**/sla.md'],
+      applies_when: { any: [{ fact: 'platform:server' }, { fact: 'has:monitoring' }] },
+      derives_from: [59],
+      syncs_with: [128],
+      sources: ['**/slo*', '**/sla*', '**/error-budget*', '**/reliability*'],
+    }
+  - {
+      id: 128,
+      cat: A8,
+      name: 'Error budget policy',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/error-budget*.md', '**/ERROR_BUDGET.md'],
+      applies_when: { any: [{ fact: 'platform:server' }, { fact: 'has:monitoring' }] },
+      derives_from: [127],
+      syncs_with: [127],
+      sources: ['**/error-budget*', '**/slo*'],
+    }
+  - {
+      id: 129,
+      cat: A8,
+      name: 'Backup & restore procedures',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/BACKUP*.md', '**/backup*.md', '**/restore*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'platform:server' },
+              { fact: 'db:postgres' },
+              { fact: 'db:mysql' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:dynamodb' },
+            ],
+        },
+      derives_from: [57],
+      sources: ['**/backup*', '**/restore*', '**/pg_dump*', '**/wal*'],
+    }
+  - {
+      id: 130,
+      cat: A8,
+      name: 'Certificate / TLS management',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/TLS.md', '**/tls.md', '**/certificates.md', '**/certificate-management*.md'],
+      applies_when: { any: [{ fact: 'platform:server' }, { fact: 'has:ci' }] },
+      derives_from: [145],
+      sources: ['**/certs/**', '**/tls*', '**/ingress*'],
+    }
+  - {
+      id: 131,
+      cat: A8,
+      name: 'DNS / networking docs',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/DNS.md', '**/dns.md', '**/networking.md', '**/network-topology*.md'],
+      applies_when:
+        {
+          any: [{ fact: 'has:terraform' }, { fact: 'has:kubernetes' }, { fact: 'platform:server' }],
+        },
+      derives_from: [49],
+      sources: ['**/dns*', '**/network*', '**/firewall*'],
+    }
+  - {
+      id: 132,
+      cat: A8,
+      name: 'Log management docs',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/LOGS.md', '**/log-management*.md', 'docs/logging/management*'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'platform:server' },
+              { fact: 'has:monitoring' },
+              { fact: 'obs:prometheus' },
+              { fact: 'obs:grafana' },
+              { fact: 'obs:otel' },
+            ],
+        },
+      derives_from: [54],
+      sources: ['**/logging*', '**/log*.{ts,py,go,rs}', '**/logstash*', '**/fluent*'],
+    }
+  - {
+      id: 133,
+      cat: A8,
+      name: 'Performance baseline',
+      tier: 4,
+      kind: generated,
+      patterns:
+        [
+          '**/PERF_BASELINE.md',
+          '**/perf-baseline*.md',
+          '**/benchmarks/README*',
+          '**/performance-baseline*.md',
+        ],
+      applies_when:
+        {
+          any: [{ fact: 'has:perf-tests' }, { fact: 'platform:server' }, { fact: 'platform:web' }],
+        },
+      derives_from: [103],
+      syncs_with: [59],
+      sources: ['**/benchmark*', '**/bench*', '**/perf*', '**/load-test*'],
+    }
+  - {
+      id: 134,
+      cat: A8,
+      name: 'Scaling runbook',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/scaling-runbook*.md', '**/SCALE.md', '**/scale-procedures*.md'],
+      applies_when: { any: [{ fact: 'platform:server' }, { fact: 'has:kubernetes' }] },
+      derives_from: [56, 123],
+      sources: ['**/hpa*', '**/scaling*', '**/autoscal*', '**/k8s/**', '**/*.tf'],
+    }
+  - {
+      id: 135,
+      cat: A8,
+      name: 'Maintenance window procedures',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/maintenance*.md', '**/MAINTENANCE.md'],
+      applies_when: { any: [{ fact: 'platform:server' }] },
+      derives_from: [123],
+      sources: ['**/maintenance*', '**/cron*', '**/schedule*'],
+    }
+  - {
+      id: 136,
+      cat: A8,
+      name: 'Cost / billing docs',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/COSTS.md', '**/finops*.md', '**/billing.md'],
+      applies_when:
+        {
+          any: [{ fact: 'has:terraform' }, { fact: 'has:kubernetes' }, { fact: 'platform:server' }],
+        },
+      derives_from: [58, 12],
+      sources: ['**/*.tf', '**/cost*', '**/billing*', '**/finops*'],
+    }
+  - {
+      id: 137,
+      cat: A8,
+      name: 'Compliance monitoring',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/compliance-monitoring*.md', '**/COMPLIANCE_MONITORING.md'],
+      applies_when: { any: [{ fact: 'platform:server' }, { fact: 'has:ci' }] },
+      derives_from: [196],
+      sources: ['**/compliance*', '**/audit*', '**/control*'],
+    }
+
+  # ---------------------------------------------------------------- A9 (14)
+  - {
+      id: 138,
+      cat: A9,
+      name: 'Security policy',
+      tier: 3,
+      kind: canonical,
+      patterns: ['SECURITY.md', 'SECURITY.rst', 'docs/security/README*', '**/security-policy.md'],
+      notes: 'SECURITY.md doubles as the public security policy / disclosure document.',
+      sources: ['**/SECURITY.md', '**/security*'],
+    }
+  - {
+      id: 139,
+      cat: A9,
+      name: 'Auth & authorization design',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/auth-design*.md', 'docs/security/auth*.md', '**/authorization.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'auth:jwt' },
+              { fact: 'auth:oauth' },
+              { fact: 'auth:session' },
+              { fact: 'auth:apikey' },
+              { fact: 'auth:auth0' },
+              { fact: 'auth:firebase' },
+              { fact: 'auth:nextauth' },
+              { fact: 'auth:passport' },
+              { fact: 'auth:supabase' },
+              { fact: 'project:api' },
+            ],
+        },
+      derives_from: [50],
+      sources: ['**/auth*', '**/session*', '**/middleware/**', '**/jwt*', '**/oauth*'],
+    }
+  - {
+      id: 140,
+      cat: A9,
+      name: 'Vulnerability management',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/VULNERABILITY_MGMT*.md',
+          '**/vulnerability-management*.md',
+          'docs/security/vulnerability*',
+        ],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'has:dep-scan' },
+              { fact: 'has:sast' },
+              { fact: 'has:secrets-scan' },
+              { fact: 'has:ci' },
+            ],
+        },
+      derives_from: [138],
+      sources:
+        ['**/vulnerability*', '**/vuln*', '**/.github/dependabot*', '**/renovate*', '**/.snyk*'],
+    }
+  - {
+      id: 141,
+      cat: A9,
+      name: 'Penetration test reports',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/pen-test-report*.md', '**/PEN_TEST*.md', '**/pentest-report*.md'],
+      applies_when: { any: [{ fact: 'project:api' }, { fact: 'platform:server' }] },
+      derives_from: [138],
+      sources: ['**/pen-test*', '**/pentest*'],
+    }
+  - {
+      id: 142,
+      cat: A9,
+      name: 'Security audit trail',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/security-audit-trail*.md', '**/AUDIT_TRAIL.md', '**/audit-trail.md'],
+      applies_when: { any: [{ fact: 'project:api' }, { fact: 'platform:server' }] },
+      derives_from: [138, 197],
+      sources: ['**/audit-trail*', '**/security-log*', '**/audit*'],
+    }
+  - {
+      id: 143,
+      cat: A9,
+      name: 'Incident response plan (security)',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/security-incident*.md', '**/SECURITY_INCIDENT*.md', 'docs/security/incident*'],
+      applies_when:
+        { any: [{ fact: 'platform:server' }, { fact: 'project:api' }, { fact: 'has:ci' }] },
+      derives_from: [138, 124],
+      syncs_with: [138],
+      sources: ['**/security-incident*', '**/incident*', '**/response*'],
+    }
+  - {
+      id: 144,
+      cat: A9,
+      name: 'Data classification',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/DATA_CLASSIFICATION.md', '**/data-classification*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'db:postgres' },
+              { fact: 'db:mysql' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:dynamodb' },
+              { fact: 'db:vector' },
+              { fact: 'db:elasticsearch' },
+              { fact: 'project:api' },
+              { fact: 'platform:server' },
+            ],
+        },
+      derives_from: [138],
+      sources: ['**/pii*', '**/privacy*', '**/models/**', '**/migrations/**'],
+    }
+  - {
+      id: 145,
+      cat: A9,
+      name: 'Encryption documentation',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/encryption.md', '**/ENCRYPTION.md', 'docs/security/encryption*'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'db:postgres' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:mysql' },
+              { fact: 'db:sqlite' },
+              { fact: 'project:api' },
+              { fact: 'platform:server' },
+            ],
+        },
+      derives_from: [138, 139],
+      sources: ['**/crypto*', '**/tls*', '**/certs/**', '**/encryption*'],
+    }
+  - {
+      id: 146,
+      cat: A9,
+      name: 'Privacy / PII handling',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/PRIVACY.md', '**/privacy.md', '**/PII_HANDLING*.md', '**/data-handling*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'platform:web' },
+              { fact: 'platform:mobile' },
+              { fact: 'project:api' },
+              { fact: 'db:postgres' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:mysql' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:dynamodb' },
+              { fact: 'db:vector' },
+            ],
+        },
+      derives_from: [138, 144],
+      sources: ['**/privacy*', '**/pii*', '**/data-processing*', '**/consent*'],
+    }
+  - {
+      id: 147,
+      cat: A9,
+      name: 'GDPR / CCPA / SOC2 docs',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/GDPR.md', '**/CCPA.md', 'docs/compliance/**'],
+      applies_when:
+        { any: [{ fact: 'platform:web' }, { fact: 'platform:mobile' }, { fact: 'project:api' }] },
+      derives_from: [146],
+      sources: ['**/gdpr*', '**/ccpa*', '**/privacy*', '**/consent*', '**/cookie*'],
+    }
+  - {
+      id: 148,
+      cat: A9,
+      name: 'Supply chain security',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/supply-chain-security*.md', '**/SUPPLY_CHAIN.md', 'docs/supply-chain*'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'has:dep-scan' },
+              { fact: 'has:sbom' },
+              { fact: 'has:ci' },
+              { fact: 'has:dependabot' },
+              { fact: 'has:renovate' },
+            ],
+        },
+      derives_from: [138],
+      sources: ['**/supply-chain*', '**/SECURITY.md', '**/attestation*', '**/provenance*'],
+    }
+  - {
+      id: 149,
+      cat: A9,
+      name: 'SBOM',
+      tier: 3,
+      kind: generated,
+      patterns: ['**/sbom.json', '**/sbom.xml', '**/SBOM.md', '**/spdx.json', '**/cyclonedx.json'],
+      alias_rule: SUP-014,
+      derives_from: [148, 192],
+      sources:
+        [
+          'package.json',
+          'pnpm-lock.yaml',
+          'package-lock.json',
+          'yarn.lock',
+          'requirements*.txt',
+          'pyproject.toml',
+          'poetry.lock',
+          'uv.lock',
+          'go.mod',
+          'go.sum',
+          'Cargo.toml',
+          'Cargo.lock',
+          'pom.xml',
+          'build.gradle*',
+          'Gemfile',
+          'Gemfile.lock',
+          'composer.json',
+          '*.csproj',
+        ],
+    }
+  - {
+      id: 150,
+      cat: A9,
+      name: 'Security training records',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/security-training*.md', '**/SECURITY_TRAINING.md'],
+      applies_when: { fact: 'metric:contributors', op: 'gt', value: 2 },
+    }
+  - {
+      id: 151,
+      cat: A9,
+      name: 'Access control matrix',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/ACCESS_MATRIX.md', '**/access-control*.md', '**/access-matrix*.md'],
+      applies_when:
+        { any: [{ fact: 'project:api' }, { fact: 'platform:server' }, { fact: 'has:kubernetes' }] },
+      derives_from: [139],
+      sources: ['**/rbac*', '**/abac*', '**/access*', '**/permission*', '**/iam*'],
+    }
+
+  # --------------------------------------------------------------- A10 (19)
+  - {
+      id: 152,
+      cat: A10,
+      name: 'User manual / handbook',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/USER_GUIDE*.md',
+          '**/user-guide*.md',
+          '**/USER_MANUAL*.md',
+          '**/handbook*.md',
+          'docs/user/**',
+          '**/manual.md',
+        ],
+      derives_from: [76, 91, 153],
+      syncs_with: [157],
+      sources: ['any-source'],
+    }
+  - {
+      id: 153,
+      cat: A10,
+      name: 'Getting started guide',
+      tier: 1,
+      kind: canonical,
+      patterns: ['**/GETTING_STARTED*.md', '**/getting-started*.md', 'docs/getting-started*'],
+      alias_rule: DOC-006,
+      syncs_with: [61],
+      sources: ['any-source'],
+    }
+  - {
+      id: 154,
+      cat: A10,
+      name: 'Quick start guide',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        ['**/QUICK_START*.md', '**/quick-start*.md', '**/QUICKSTART*.md', '**/quickstart.md'],
+      derives_from: [153],
+      sources: ['any-source'],
+    }
+  - {
+      id: 155,
+      cat: A10,
+      name: 'Tutorials',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/tutorials/**', '**/tutorial*.md', '**/TUTORIALS.md', 'docs/tutorials*'],
+      derives_from: [153],
+      sources: ['any-source'],
+    }
+  - {
+      id: 156,
+      cat: A10,
+      name: 'How-to guides',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/how-to*.md', '**/HOW_TO.md', 'docs/how-to*', '**/guides/*.md'],
+      derives_from: [152],
+      sources: ['any-source'],
+    }
+  - {
+      id: 157,
+      cat: A10,
+      name: 'Reference documentation',
+      tier: 2,
+      kind: canonical,
+      patterns: ['docs/reference/**', '**/REFERENCE.md', '**/reference.md'],
+      derives_from: [76, 91],
+      syncs_with: [152],
+      sources: ['any-source'],
+    }
+  - {
+      id: 158,
+      cat: A10,
+      name: 'Explanations / concepts',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/concepts.md', '**/CONCEPTS.md', '**/explanations*.md', 'docs/concepts*'],
+      derives_from: [36],
+      sources: ['**/concept*', '**/explain*', '**/architecture*'],
+    }
+  - {
+      id: 159,
+      cat: A10,
+      name: 'FAQ',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/FAQ.md', '**/faq.md', '**/FAQS.md'],
+      derives_from: [156],
+      sources: ['any-source'],
+    }
+  - {
+      id: 160,
+      cat: A10,
+      name: 'Troubleshooting guide',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/TROUBLESHOOTING.md', '**/troubleshooting*.md', 'docs/troubleshooting*'],
+      derives_from: [80],
+      sources: ['any-source'],
+    }
+  - {
+      id: 161,
+      cat: A10,
+      name: 'Glossary (user-facing)',
+      tier: 3,
+      kind: reference,
+      patterns: ['**/glossary.md', '**/GLOSSARY.md', '**/user-glossary*.md'],
+      derives_from: [21],
+      syncs_with: [21],
+      sources: ['**/glossary*', '**/domain*'],
+    }
+  - {
+      id: 162,
+      cat: A10,
+      name: 'Screenshot / visual docs',
+      tier: 3,
+      kind: example,
+      patterns: ['**/screenshots/**', '**/screen-captures/**', 'docs/screens/**'],
+      derives_from: [152],
+      sources: ['**/screenshot*', '**/screen-capture*', '**/ui/**'],
+    }
+  - {
+      id: 163,
+      cat: A10,
+      name: 'Video tutorials',
+      tier: 3,
+      kind: example,
+      patterns: ['**/video-tutorials*.md', '**/videos/**'],
+      derives_from: [155],
+      sources: ['**/video*', '**/*.mp4', '**/*.webm'],
+    }
+  - {
+      id: 164,
+      cat: A10,
+      name: 'In-product help / tooltips',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/in-product-help*.md', '**/help-content*.md', '**/tooltips.md'],
+      applies_when:
+        {
+          any:
+            [{ fact: 'platform:web' }, { fact: 'platform:mobile' }, { fact: 'platform:desktop' }],
+        },
+      derives_from: [159],
+      sources: ['**/help*', '**/tooltip*', '**/onboarding*'],
+    }
+  - {
+      id: 165,
+      cat: A10,
+      name: 'Onboarding wizard content',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/onboarding-content*.md', '**/onboarding-wizard*.md', '**/first-run*.md'],
+      applies_when:
+        {
+          any:
+            [{ fact: 'platform:web' }, { fact: 'platform:mobile' }, { fact: 'platform:desktop' }],
+        },
+      derives_from: [164],
+      sources: ['**/onboarding*', '**/first-run*', '**/welcome*'],
+    }
+  - {
+      id: 166,
+      cat: A10,
+      name: 'Keyboard shortcuts',
+      tier: 4,
+      kind: reference,
+      patterns: ['**/keyboard-shortcuts*.md', '**/SHORTCUTS.md', '**/shortcuts.md'],
+      applies_when:
+        {
+          any:
+            [{ fact: 'platform:desktop' }, { fact: 'platform:web' }, { fact: 'platform:mobile' }],
+        },
+      derives_from: [152],
+      sources: ['**/shortcut*', '**/keybinding*', '**/keyboard*'],
+    }
+  - {
+      id: 167,
+      cat: A10,
+      name: 'Release migration guide',
+      tier: 3,
+      kind: canonical,
+      patterns:
+        [
+          '**/MIGRATION_GUIDE*.md',
+          '**/migration-guide*.md',
+          '**/UPGRADE*.md',
+          '**/upgrade-guide*.md',
+        ],
+      derives_from: [8, 76, 22],
+      syncs_with: [185],
+      sources: ['any-source'],
+    }
+  - {
+      id: 168,
+      cat: A10,
+      name: 'Known issues / limitations',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        ['**/KNOWN_ISSUES.md', '**/known-issues*.md', '**/LIMITATIONS.md', '**/limitations.md'],
+      derives_from: [111],
+      sources: ['any-source'],
+    }
+  - {
+      id: 169,
+      cat: A10,
+      name: 'Accessibility guide (user)',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/ACCESSIBILITY.md', '**/accessibility-guide*.md', '**/a11y-guide*.md'],
+      applies_when:
+        {
+          any:
+            [{ fact: 'platform:web' }, { fact: 'platform:mobile' }, { fact: 'platform:desktop' }],
+        },
+      derives_from: [33],
+      sources: ['**/a11y*', '**/accessibility*', '**/aria*'],
+    }
+  - {
+      id: 170,
+      cat: A10,
+      name: 'Print/PDF export docs',
+      tier: 4,
+      kind: generated,
+      patterns: ['**/print-docs*.md', '**/pdf-exports*.md'],
+      derives_from: [152],
+      sources: ['**/print*', '**/pdf*', '**/export*'],
+    }
+
+  # --------------------------------------------------------------- A11 (20)
+  - {
+      id: 171,
+      cat: A11,
+      name: 'CONTRIBUTING.md',
+      tier: 0,
+      kind: canonical,
+      patterns: ['CONTRIBUTING.md', 'CONTRIBUTING.rst', 'CONTRIBUTING', '**/CONTRIBUTING.md'],
+      sources: ['**/CONTRIBUTING*'],
+    }
+  - {
+      id: 172,
+      cat: A11,
+      name: 'Developer setup guide',
+      tier: 1,
+      kind: canonical,
+      patterns:
+        [
+          '**/DEV_SETUP*.md',
+          '**/dev-setup*.md',
+          '**/SETUP.md',
+          '**/setup.md',
+          '**/DEVELOPMENT.md',
+          'docs/development*',
+        ],
+      derives_from: [153],
+      sources: ['any-source'],
+    }
+  - {
+      id: 173,
+      cat: A11,
+      name: 'Build system docs',
+      tier: 1,
+      kind: canonical,
+      patterns:
+        ['**/BUILD.md', '**/build.md', '**/build-system*.md', '**/BUILDING.md', '**/building.md'],
+      derives_from: [172],
+      sources:
+        [
+          'package.json',
+          '**/Makefile',
+          '**/Taskfile*',
+          '**/justfile',
+          'pyproject.toml',
+          '**/setup.py',
+          '**/setup.cfg',
+          '**/tox.ini',
+          '**/CMakeLists.txt',
+          '**/build.gradle*',
+          '**/pom.xml',
+          '*.csproj',
+          '**/mix.exs',
+          'Cargo.toml',
+        ],
+    }
+  - {
+      id: 174,
+      cat: A11,
+      name: 'Code style guide',
+      tier: 1,
+      kind: canonical,
+      patterns:
+        [
+          '**/STYLE.md',
+          '**/style.md',
+          '**/code-style*.md',
+          '**/CODING_CONVENTIONS.md',
+          '**/conventions.md',
+        ],
+      derives_from: [172],
+      sources:
+        [
+          '.eslintrc*',
+          '**/eslint.config*',
+          '**/.prettierrc*',
+          '**/prettier.config*',
+          '.flake8',
+          '**/pyproject.toml',
+          '**/rustfmt.toml',
+          '**/.rubocop.yml',
+          '**/.editorconfig',
+          '**/.golangci*',
+          '**/.clang-format',
+        ],
+    }
+  - {
+      id: 175,
+      cat: A11,
+      name: 'Code review guidelines',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '**/CODE_REVIEW.md',
+          '**/code-review*.md',
+          '**/REVIEW_GUIDELINES.md',
+          '**/review-guidelines*.md',
+        ],
+      derives_from: [171],
+      syncs_with: [171],
+      sources: ['**/.github/CODEOWNERS', '**/review*', '**/checklist*', '**/.gitlab/**'],
+    }
+  - {
+      id: 176,
+      cat: A11,
+      name: 'Git workflow / branching',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '**/GIT_WORKFLOW.md',
+          '**/git-workflow*.md',
+          '**/BRANCHING.md',
+          '**/branching*.md',
+          '**/development-process*.md',
+        ],
+      derives_from: [171],
+      sources: ['**/.gitattributes', '**/branch*', '**/.github/**'],
+    }
+  - {
+      id: 177,
+      cat: A11,
+      name: 'Commit message convention',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '**/COMMIT_CONVENTIONS.md',
+          '**/commit-conventions*.md',
+          '**/commitlint.config.js',
+          '**/commitlint.config.json',
+          '**/conventional-commits*.md',
+        ],
+      derives_from: [176],
+      sources: ['**/commitlint*', '**/.husky/**', '**/lefthook*'],
+    }
+  - {
+      id: 178,
+      cat: A11,
+      name: 'PR / MR template',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '.github/PULL_REQUEST_TEMPLATE.md',
+          '**/PULL_REQUEST_TEMPLATE.md',
+          '**/pull_request_template.md',
+          '**/PULL_REQUEST_TEMPLATE/**',
+          '.gitlab/merge_request_templates/**',
+        ],
+      derives_from: [171],
+      sources: ['.github/**', '**/.gitlab/**'],
+    }
+  - {
+      id: 179,
+      cat: A11,
+      name: 'Issue templates',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '.github/ISSUE_TEMPLATE.md',
+          '**/ISSUE_TEMPLATE.md',
+          '**/ISSUE_TEMPLATE/**',
+          '**/issue-template*.md',
+        ],
+      derives_from: [171],
+      sources: ['.github/**', '**/.gitlab/**'],
+    }
+  - {
+      id: 180,
+      cat: A11,
+      name: 'Module/package README',
+      tier: 1,
+      kind: canonical,
+      patterns:
+        [
+          '**/README.md',
+          '**/README.rst',
+          '**/README.mdx',
+          '!README.md',
+          '!README.rst',
+          '!README.mdx',
+        ],
+      derives_from: [62],
+      sources: ['any-source'],
+    }
+  - {
+      id: 181,
+      cat: A11,
+      name: 'Makefile / task runner ref',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '**/Makefile',
+          '**/Taskfile.yml',
+          '**/justfile',
+          '**/melody.mjs',
+          '**/COMMANDS.md',
+          '**/commands.md',
+          '**/task-runner*.md',
+        ],
+      derives_from: [173],
+      sources: ['**/Makefile', '**/Taskfile*', '**/justfile', '**/melody*', 'package.json'],
+    }
+  - {
+      id: 182,
+      cat: A11,
+      name: 'IDE / tooling setup',
+      tier: 2,
+      kind: canonical,
+      patterns:
+        [
+          '.vscode/launch.json',
+          '.vscode/tasks.json',
+          '**/IDE.md',
+          '**/ide-setup*.md',
+          '**/devcontainer.json',
+        ],
+      derives_from: [172],
+      sources: ['.vscode/**', '**/.idea/**', '**/devcontainer*', '**/IDE*'],
+    }
+  - {
+      id: 183,
+      cat: A11,
+      name: 'Debugging guide',
+      tier: 2,
+      kind: canonical,
+      patterns: ['**/DEBUGGING.md', '**/debugging*.md', 'docs/debugging*'],
+      derives_from: [172],
+      sources: ['**/debug*', '**/breakpoint*', '**/.vscode/**'],
+    }
+  - {
+      id: 184,
+      cat: A11,
+      name: 'Profiling guide',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/PROFILING.md', '**/profiling*.md'],
+      applies_when: { any: [{ fact: 'has:perf-tests' }, { fact: 'platform:server' }] },
+      derives_from: [183],
+      sources: ['**/profile*', '**/perf*', '**/benchmark*', '**/heap*'],
+    }
+  - {
+      id: 185,
+      cat: A11,
+      name: 'Migration guide (dev)',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/UPGRADING.md', '**/upgrading*.md', '**/dev-migration*.md'],
+      applies_when: { any: [{ fact: 'project:library' }] },
+      derives_from: [167],
+      syncs_with: [167],
+      sources: ['**/CHANGELOG*', '**/migration*', '**/upgrade*'],
+    }
+  - {
+      id: 186,
+      cat: A11,
+      name: 'Monorepo guide',
+      tier: 2,
+      kind: canonical,
+      patterns: ['**/MONOREPO.md', '**/monorepo*.md', '**/WORKSPACES.md', '**/workspaces.md'],
+      applies_when: { fact: 'project:monorepo' },
+      derives_from: [172],
+      sources: ['**/pnpm-workspace*', '**/lerna.json', '**/turbo.json', '**/nx.json', '**/go.work'],
+    }
+  - {
+      id: 187,
+      cat: A11,
+      name: 'Plugin development guide',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/plugin-development*.md', '**/developing-plugins*.md', '**/write-a-plugin*.md'],
+      applies_when: { any: [{ fact: 'project:library' }, { fact: 'project:api' }] },
+      derives_from: [90],
+      sources: ['**/plugin*', '**/extension*'],
+    }
+  - {
+      id: 188,
+      cat: A11,
+      name: 'i18n guide (developer)',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/i18n.md', '**/I18N.md', '**/localization-guide*.md', '**/translations.md'],
+      applies_when: { any: [{ fact: 'platform:web' }, { fact: 'platform:mobile' }] },
+      derives_from: [34],
+      sources: ['**/i18n*', '**/l10n*', '**/locales/**', '**/messages/**', '**/translations/**'],
+    }
+  - {
+      id: 189,
+      cat: A11,
+      name: 'Database dev guide',
+      tier: 2,
+      kind: canonical,
+      patterns: ['**/DATABASE.md', '**/database.md', 'docs/database*', '**/db-dev*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'db:postgres' },
+              { fact: 'db:mysql' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:redis' },
+              { fact: 'db:clickhouse' },
+              { fact: 'db:elasticsearch' },
+              { fact: 'db:vector' },
+              { fact: 'db:dynamodb' },
+              { fact: 'orm:prisma' },
+              { fact: 'orm:sequelize' },
+              { fact: 'orm:sqlalchemy' },
+              { fact: 'orm:gorm' },
+              { fact: 'orm:sqlx' },
+              { fact: 'orm:diesel' },
+              { fact: 'orm:drizzle' },
+              { fact: 'orm:hibernate' },
+              { fact: 'orm:mongoose' },
+              { fact: 'orm:typeorm' },
+              { fact: 'orm:activerecord' },
+            ],
+        },
+      derives_from: [44, 46],
+      sources: ['**/migrations/**', '**/*.sql', '**/prisma/**', '**/*.prisma', '**/models/**'],
+    }
+  - {
+      id: 190,
+      cat: A11,
+      name: 'Agent / AI instructions',
+      tier: 1,
+      kind: canonical,
+      patterns:
+        [
+          'AGENTS.md',
+          'CLAUDE.md',
+          'GEMINI.md',
+          '.cursor/rules/**',
+          '**/agent-instructions*.md',
+          '**/copilot-instructions.md',
+        ],
+      derives_from: [61],
+      sources:
+        [
+          '**/AGENTS.md',
+          '**/CLAUDE.md',
+          '**/.cursor/**',
+          '**/copilot-instructions*',
+          '**/GEMINI.md',
+          '**/rules/**',
+        ],
+    }
+
+  # --------------------------------------------------------------- A12 (12)
+  - {
+      id: 191,
+      cat: A12,
+      name: 'LICENSE',
+      tier: 0,
+      kind: canonical,
+      patterns: ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENCE', 'COPYING'],
+      alias_rule: REPO-005,
+      sources:
+        [
+          'LICENSE',
+          'LICENSE.*',
+          'package.json',
+          'pyproject.toml',
+          'setup.py',
+          'go.mod',
+          'Cargo.toml',
+        ],
+    }
+  - {
+      id: 192,
+      cat: A12,
+      name: 'Third-party licenses',
+      tier: 3,
+      kind: reference,
+      patterns:
+        ['**/THIRD_PARTY.md', '**/third-party*.md', '**/vendored-licenses*.md', 'docs/licenses*'],
+      derives_from: [149],
+      sources:
+        [
+          'package.json',
+          'pnpm-lock.yaml',
+          'package-lock.json',
+          'yarn.lock',
+          'requirements*.txt',
+          'pyproject.toml',
+          'poetry.lock',
+          'uv.lock',
+          'go.mod',
+          'go.sum',
+          'Cargo.toml',
+          'Cargo.lock',
+          'pom.xml',
+          'build.gradle*',
+          'Gemfile',
+          'composer.json',
+          '*.csproj',
+        ],
+    }
+  - {
+      id: 193,
+      cat: A12,
+      name: 'Terms of service',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/TERMS.md', '**/terms.md', '**/terms-of-service*.md', '**/TOS.md'],
+      applies_when:
+        { any: [{ fact: 'platform:web' }, { fact: 'platform:mobile' }, { fact: 'project:api' }] },
+      sources: ['**/terms*', '**/tos*', '**/legal*'],
+    }
+  - {
+      id: 194,
+      cat: A12,
+      name: 'Privacy policy',
+      tier: 3,
+      kind: canonical,
+      patterns: ['**/PRIVACY.md', '**/privacy-policy*.md', '**/PRIVACY-POLICY.md'],
+      applies_when:
+        { any: [{ fact: 'platform:web' }, { fact: 'platform:mobile' }, { fact: 'project:api' }] },
+      derives_from: [146],
+      sources: ['**/privacy*', '**/consent*', '**/cookie*', '**/gdpr*'],
+    }
+  - {
+      id: 195,
+      cat: A12,
+      name: 'EULA',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/EULA.md', '**/eula.md', '**/end-user-license*.md'],
+      applies_when:
+        {
+          any:
+            [{ fact: 'platform:desktop' }, { fact: 'platform:web' }, { fact: 'platform:mobile' }],
+        },
+      sources: ['**/eula*', '**/end-user*', '**/license*'],
+    }
+  - {
+      id: 196,
+      cat: A12,
+      name: 'Compliance matrix',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/COMPLIANCE.md', '**/compliance-matrix*.md', '**/compliance/*.md'],
+      derives_from: [198],
+      sources: ['**/compliance*', '**/iso*', '**/soc2*', '**/hipaa*', '**/pci*'],
+    }
+  - {
+      id: 197,
+      cat: A12,
+      name: 'Audit log documentation',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/audit-log*.md', '**/AUDIT_LOG.md'],
+      applies_when: { any: [{ fact: 'platform:server' }, { fact: 'project:api' }] },
+      derives_from: [132],
+      sources: ['**/audit-log*', '**/audit*', '**/logging*'],
+    }
+  - {
+      id: 198,
+      cat: A12,
+      name: 'Regulatory documentation',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/HIPAA.md', '**/PCI-DSS.md', '**/FedRAMP.md', '**/regulatory*.md'],
+      sources: ['**/hipaa*', '**/pci*', '**/fedramp*', '**/gdpr*'],
+    }
+  - {
+      id: 199,
+      cat: A12,
+      name: 'Data retention policy',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/DATA_RETENTION.md', '**/data-retention*.md', '**/retention-policy*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'db:postgres' },
+              { fact: 'db:mongodb' },
+              { fact: 'db:mysql' },
+              { fact: 'db:sqlite' },
+              { fact: 'db:dynamodb' },
+              { fact: 'db:vector' },
+              { fact: 'project:api' },
+            ],
+        },
+      derives_from: [146],
+      sources: ['**/retention*', '**/deletion*', '**/data-lifecycle*'],
+    }
+  - {
+      id: 200,
+      cat: A12,
+      name: 'Data processing agreements',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/DPA.md', '**/dpa.md', '**/data-processing-agreement*.md'],
+      applies_when:
+        { any: [{ fact: 'platform:web' }, { fact: 'platform:mobile' }, { fact: 'project:api' }] },
+      derives_from: [146],
+      sources: ['**/dpa*', '**/data-processing*', '**/subprocessor*'],
+    }
+  - {
+      id: 201,
+      cat: A12,
+      name: 'Accessibility statement',
+      tier: 4,
+      kind: canonical,
+      patterns:
+        [
+          '**/accessibility-statement*.md',
+          '**/ACCESSIBILITY_STATEMENT.md',
+          '**/a11y-statement*.md',
+        ],
+      applies_when: { any: [{ fact: 'platform:web' }, { fact: 'platform:mobile' }] },
+      derives_from: [169, 33],
+      sources: ['**/accessibility*', '**/a11y*'],
+    }
+  - {
+      id: 202,
+      cat: A12,
+      name: 'Export control docs',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/EXPORT_CONTROL.md', '**/export-control*.md'],
+      derives_from: [198],
+      sources: ['**/export-control*', '**/ear*', '**/classificat*'],
+    }
+
+  # --------------------------------------------------------------- A13 (7)
+  - {
+      id: 203,
+      cat: A13,
+      name: 'KPI dashboard docs',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/KPI.md', '**/kpi*.md', '**/metrics-docs*.md'],
+      applies_when:
+        {
+          any:
+            [
+              { fact: 'platform:web' },
+              { fact: 'platform:mobile' },
+              { fact: 'obs:grafana' },
+              { fact: 'obs:datadog' },
+            ],
+        },
+      sources: ['**/kpi*', '**/metric*', '**/dashboard*'],
+    }
+  - {
+      id: 204,
+      cat: A13,
+      name: 'Analytics event schema',
+      tier: 4,
+      kind: reference,
+      patterns: ['**/events-schema*.json', '**/analytics-events*.md', '**/event-schema*.json'],
+      applies_when:
+        { any: [{ fact: 'platform:web' }, { fact: 'platform:mobile' }, { fact: 'project:api' }] },
+      derives_from: [203],
+      sources:
+        [
+          '**/analytics*',
+          '**/tracking*',
+          '**/gtag*',
+          '**/segment*',
+          '**/posthog*',
+          '**/amplitude*',
+        ],
+    }
+  - {
+      id: 205,
+      cat: A13,
+      name: 'Funnel / conversion docs',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/funnels*.md', '**/conversion-funnels*.md', '**/FUNNELS.md'],
+      derives_from: [203],
+      sources: ['**/funnel*', '**/conversion*'],
+    }
+  - {
+      id: 206,
+      cat: A13,
+      name: 'A/B testing docs',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/experiments.md', '**/ab-testing*.md', '**/experimentation*.md'],
+      derives_from: [205],
+      sources: ['**/experiment*', '**/ab-test*', '**/feature-flag*'],
+    }
+  - {
+      id: 207,
+      cat: A13,
+      name: 'BI data dictionary',
+      tier: 4,
+      kind: derived,
+      patterns: ['**/bi-dictionary*.md', '**/data-warehouse*.md', '**/warehouse-dictionary*.md'],
+      derives_from: [204],
+      sources: ['**/warehouse*', '**/lake*', '**/etl*', '**/dbt/**', '**/marts/**'],
+    }
+  - {
+      id: 208,
+      cat: A13,
+      name: 'Report documentation',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/reports/README*', '**/report-docs*.md', '**/REPORTS.md', '**/reporting.md'],
+      derives_from: [203],
+      sources: ['**/report*', '**/bi/**', '**/dashboards/**'],
+    }
+  - {
+      id: 209,
+      cat: A13,
+      name: 'Error rate / crash reporting',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/error-reporting*.md', '**/crash-reporting*.md', '**/ERROR_TRACKING.md'],
+      applies_when:
+        { any: [{ fact: 'obs:sentry' }, { fact: 'platform:server' }, { fact: 'platform:web' }] },
+      derives_from: [53, 203],
+      sources: ['**/sentry*', '**/error-tracking*', '**/crashlytics*', '**/glitchtip*'],
+    }
+
+  # --------------------------------------------------------------- A14 (11)
+  - {
+      id: 210,
+      cat: A14,
+      name: 'Documentation style guide',
+      tier: 4,
+      kind: canonical,
+      patterns:
+        ['docs/style.md', '**/doc-style*.md', '**/documentation-style*.md', '**/docs/STYLE.md'],
+      sources: ['**/writing-docs*', '**/doc-style*', '**/docs/STYLE*', '**/docs/CONTRIBUTING*'],
+    }
+  - {
+      id: 211,
+      cat: A14,
+      name: 'Documentation architecture',
+      tier: 4,
+      kind: canonical,
+      patterns: ['docs/README.md', '**/doc-architecture*.md', 'docs/ARCHITECTURE.md'],
+      derives_from: [210],
+      sources: ['docs/**', '**/*.md'],
+    }
+  - {
+      id: 212,
+      cat: A14,
+      name: 'Information architecture / sitemap',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/sitemap.md', '**/doc-sitemap*.md', '**/information-architecture*.md'],
+      derives_from: [211],
+      sources: ['docs/**', '**/mkdocs.yml', '**/docusaurus.config.*', '**/vitepress.config.*'],
+    }
+  - {
+      id: 213,
+      cat: A14,
+      name: 'Source-of-truth matrix',
+      tier: 4,
+      kind: index,
+      patterns: ['**/source-of-truth*.md', '**/SOURCE_OF_TRUTH.md', '**/doc-authority*.md'],
+      derives_from: [215],
+      sources: ['**/source-of-truth*', '**/writing-docs*'],
+    }
+  - {
+      id: 214,
+      cat: A14,
+      name: 'Documentation ownership model',
+      tier: 4,
+      kind: index,
+      patterns: ['**/docs/OWNERS.md', '**/doc-ownership*.md', '**/documentation-ownership*.md'],
+      derives_from: [215],
+      sources: ['**/docs/OWNERS*', '**/CODEOWNERS', '**/doc-ownership*'],
+    }
+  - {
+      id: 215,
+      cat: A14,
+      name: 'Documentation sync contract',
+      tier: 4,
+      kind: index,
+      patterns:
+        [
+          '**/docs-sync*.md',
+          '**/sync-contract*.md',
+          '**/documentation-contract*.md',
+          '**/writing-docs*.md',
+        ],
+      sources: ['**/docs-sync*', '**/writing-docs*', '**/docs/CONTRIBUTING*'],
+    }
+  - {
+      id: 216,
+      cat: A14,
+      name: 'Docs contribution guide',
+      tier: 4,
+      kind: canonical,
+      patterns:
+        ['**/docs/CONTRIBUTING.md', '**/contributing-to-docs*.md', '**/docs-contribution*.md'],
+      derives_from: [171, 210],
+      sources: ['docs/**'],
+    }
+  - {
+      id: 217,
+      cat: A14,
+      name: 'Docs review checklist',
+      tier: 4,
+      kind: canonical,
+      patterns: ['**/docs-review*.md', '**/doc-checklist*.md', '**/documentation-checklist*.md'],
+      derives_from: [216],
+      sources: ['**/docs-review*', '**/doc-checklist*'],
+    }
+  - {
+      id: 218,
+      cat: A14,
+      name: 'Documentation analytics',
+      tier: 4,
+      kind: reference,
+      patterns: ['**/docs-analytics*.md', '**/documentation-analytics*.md', '**/readership*.md'],
+      derives_from: [211],
+      sources: ['**/docs-analytics*', '**/readership*'],
+    }
+  - {
+      id: 219,
+      cat: A14,
+      name: 'Content audit log',
+      tier: 4,
+      kind: generated,
+      patterns: ['**/content-audit*.md', '**/docs-audit-log*.md', '**/CONTENT_AUDIT.md'],
+      derives_from: [217],
+      sources: ['docs/**'],
+    }
+  - {
+      id: 220,
+      cat: A14,
+      name: 'Documentation toolchain',
+      tier: 4,
+      kind: reference,
+      patterns:
+        [
+          '**/doc-toolchain*.md',
+          '**/documentation-toolchain*.md',
+          '**/mkdocs.yml',
+          '**/docusaurus.config.*',
+          '**/vitepress.config.*',
+          '**/docsify.json',
+        ],
+      derives_from: [215],
+      sources:
+        [
+          '**/mkdocs.yml',
+          '**/docusaurus.config.*',
+          '**/vitepress.config.*',
+          '**/docsify*',
+          '**/antora*',
+          '**/docs/**',
+          '**/scripts/**',
+        ],
+    }

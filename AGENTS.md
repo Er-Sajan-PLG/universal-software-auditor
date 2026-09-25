@@ -39,7 +39,7 @@ Conventional Commits (they feed the CHANGELOG). The engine
      what breaks, and would anything notice?
      Then, and only then, patch.
 
-   Two worked examples, both real, both in this repo's history:
+   Three worked examples, all real, all in this repo's history:
    - _"Removing `packages/*` will make changesets tag `v*`."_ Plausible.
      False. `PnpmTool.isMonorepoRoot` checks only that `pnpm-workspace.yaml`
      **has** a `packages:` key and never counts the packages — so it tags
@@ -52,6 +52,21 @@ Conventional Commits (they feed the CHANGELOG). The engine
      flagged the comment that documented it, dropping the self-audit to
      94/100. Diagnosing the rule would have surfaced that in the same
      minute; the fix (`^(?!\s*#)`) was then trivial.
+   - _"Scorecard's Token-Permissions check wants job-level grants, so moving
+     `contents: write` from the top level to a job will clear the alerts."_
+     Half right, and the wrong half was the whole point. Scorecard flags a
+     write grant **on the top level unconditionally** — read
+     `checks/raw/permissions.go`: `validateTopLevelPermissions` runs before
+     `createIgnoredPermissions`, so the semantic-release / npm-packaging
+     allowlist that exempts a grant never applies at the top level. A
+     job-level write, by contrast, costs nothing at scoring time
+     (`checks/evaluation/permissions.go` only penalizes it when the same
+     workflow also writes at the top level). So the rule is exactly inverted
+     from the guess: **top level must be `contents: read`; every write belongs
+     on the one job that needs it.** Reproduce with
+     `scorecard --local . --checks Token-Permissions --format probe` — it
+     prints per-workflow findings the JSON view hides. Full mechanism in
+     `docs/standards-mapping.md` "On Scorecard specifically".
 
    Corollary for automation: **"the workflow ran" is not "the workflow did
    its job."** A release can publish, report success, and skip every

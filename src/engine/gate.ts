@@ -24,13 +24,19 @@ export function blockingFindings(report: AuditReport, threshold: Severity): Find
 }
 
 /**
- * `--fail-on` gate. Returns a process exit code.
+ * `--fail-on` gate over a bare finding list. This is the single gate logic
+ * for BOTH the main audit and the documentation universe (`usa docs audit`):
+ * same function, same findings in, same exit code out (AC-8/AC-9).
  *
  * The ladder is ascending (`FUTURE` … `CRITICAL`), so "at or above" means
  * *higher* index. Getting this backwards makes `--fail-on critical` fail on
  * every finding in the report, which is a memorable way to lose a CI pipeline.
  */
-export function evaluateGate(report: AuditReport, failOn: string, quiet: boolean): number {
+export function evaluateGateForFindings(
+  findings: Finding[],
+  failOn: string,
+  quiet: boolean,
+): number {
   if (failOn === 'none') return 0;
 
   const threshold = failOn.toUpperCase() as Severity;
@@ -41,7 +47,15 @@ export function evaluateGate(report: AuditReport, failOn: string, quiet: boolean
     return 2;
   }
 
-  const blocking = blockingFindings(report, threshold);
+  const blocking = findings
+    .filter(
+      (f) =>
+        f.status !== 'PASS' &&
+        f.status !== 'NOT_APPLICABLE' &&
+        f.status !== 'UNKNOWN' &&
+        !f.suppressedReason,
+    )
+    .filter((f) => SEVERITY_LADDER.indexOf(f.severity) >= SEVERITY_LADDER.indexOf(threshold));
   if (blocking.length === 0) return 0;
 
   if (!quiet) {
@@ -53,6 +67,11 @@ export function evaluateGate(report: AuditReport, failOn: string, quiet: boolean
     if (blocking.length > 10) console.error(`  … and ${blocking.length - 10} more`);
   }
   return 1;
+}
+
+/** `--fail-on` gate. Returns a process exit code. */
+export function evaluateGate(report: AuditReport, failOn: string, quiet: boolean): number {
+  return evaluateGateForFindings(report.findings, failOn, quiet);
 }
 
 /* ------------------------------------------ new-code gate (--baseline) -- */
