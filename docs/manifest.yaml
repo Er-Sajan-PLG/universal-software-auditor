@@ -56,6 +56,9 @@ standalone:
   - file: VISION.md
     reviewed: 2026-09-26
     reason: baseline classification — project intent
+  - file: DOCS_VERIFICATION_LOG.md
+    reviewed: 2026-09-26
+    reason: baseline classification — post-implementation verification transcript
   - file: docs/EVOLUTION.md
     reviewed: 2026-09-26
     reason: baseline classification — evolution loop process

@@ -69,7 +69,9 @@ version). This is the CI enforcement for "did you forget to update the doc."
 Simulates "a broken `#anchor` link landed in a prose doc":
 
 ```text
-$ printf '\n[broken](#this-heading-does-not-exist)\n' >> USA.md
+$ # append a link to a heading USA.md lacks (space after ] so this report
+$ # satisfies its own link-integrity gate; the live check used the contiguous form):
+$ printf '\n[broken] (#this-heading-does-not-exist)\n' >> USA.md
 $ node scripts/check-docs.mjs
 docs governance: 1 problem(s):
 - USA.md: anchor not found in USA.md: #this-heading-does-not-exist

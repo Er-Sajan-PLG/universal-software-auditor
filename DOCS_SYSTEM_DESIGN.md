@@ -88,7 +88,7 @@ pnpm exec lint-staged            # eslint+prettier on staged source; prettier on
 ```
 
 This keeps the **mechanical facts** true on the very commit that would drift
-them (e.g. a PR adding 5 rules auto-updates `rules = N` in USA.md). It does
+them (e.g. a PR that adds rules auto-updates the `rules` fact to the new total in USA.md). It does
 **not** run the heavier `--check` gates (they need `dist/`, i.e. a build, which
 would make every commit slow) — that is the Layer-2 job. This is the repo's
 deliberate trade (documented in `docs/writing-docs.md` §3): keep commit fast;

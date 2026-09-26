@@ -105,7 +105,7 @@ truth:
 | `sync-docs.mjs` fact markers (`usa:fact KEY` / `usa:begin…end`)                                               | every derivable number/version/list (rules, sections, ADRs, version, rules-tree, standards mapping, …) | pre-commit (autosync) + `docs:check` (CI)              |
 | Generated-doc byte-compare (`gen-cli-docs --check`, `gen-sample-report --check`, `gen-asvs-coverage --check`) | CLI reference, sample report, ASVS map                                                                 | CI hygiene (cli+sample only)                           |
 | Claim scanner (`findUnmarkedClaims`)                                                                          | any bare "N rules/sections/packs/detectors/ADRs" not wrapped in a marker                               | `docs:check` (CI)                                      |
-| Banned-string scan                                                                                            | known-stale tokens (`from 'usa'`, `rules/sections.yaml`, `grep_experimental`, `@xenos1996/usat`)       | `docs:check` (CI)                                      |
+| Banned-string scan                                                                                            | known-stale tokens (see `BANNED` in `scripts/check-docs.mjs`)                                          | `docs:check` (CI)                                      |
 | `DOCU-INV-*` invariants                                                                                       | routes, env vars, public docstrings, relative links, generated-artifact drift, changelog-vs-tags       | `usa docs audit` (self-audit CI gate)                  |
 | Impact graph (`docs-taxonomy.yaml` `sources`/`derives_from`/`syncs_with` + `usa docs impact`)                 | "this file changed → which docs now lie" (semantic, not diff-only)                                     | `usa docs audit --changed` / `.usa.yaml docs.universe` |
 | External-link scan                                                                                            | every `http(s)` link                                                                                   | scheduled `docs-link-check.yml` (15 d)                 |
@@ -239,13 +239,23 @@ two gaps above:
 
 ---
 
-## 6. Recommendations (condensed — full design in DOCS_SYSTEM_DESIGN.md)
+## 6. Status (baseline vs. this commit)
 
-1. **Close G1 now:** add `docs:asvs` to CI `hygiene` + `resync`. (Phase 3.)
-2. **Close G2:** install `.husky/pre-push` → `build && docs:all`. (Phase 3.)
-3. **Close G3:** correct "four" → "five" in AGENTS.md. (Phase 3.)
-4. **Leave G4/G5 as-is** unless a per-file registry is explicitly required —
-   the 220-artifact taxonomy + fact markers + impact graph already answer
-   "which docs does this change affect?" and "is this fact currently true."
-   The remaining gap (root `.md` index coverage) is cosmetic and covered by
-   the claim/link scanner today.
+_§2–§5 above is the as-is baseline captured at the start of this task. This
+status row maps each finding to the hardening shipped in this same commit so
+the report stays truthful to HEAD (the "close G1 now" recommendation below is
+not still open)._
+
+| Gap                                                   | Risk     | Status               | Shipped by                                                                                                                         |
+| ----------------------------------------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| G1 ASVS coverage `--check` absent from CI             | Critical | **Closed**           | E1: `docs:asvs` added to CI `hygiene` + `resync` (regen `docs/reference/asvs-coverage.md` + snapshot, diff-gated)                  |
+| G2 no pre-push doc gate; Layer 1 skips doc governance | High     | **Closed**           | E2: `.husky/pre-push` → `build && docs:all`                                                                                        |
+| G3 AGENTS.md "four gates" stale (is five)             | Low      | **Pending — manual** | E3 deferred: AGENTS.md is a protected agent file; the two-word edit needs explicit owner consent (see DOCS_VERIFICATION_LOG.md §5) |
+| G4 no per-repo-file classification registry           | Low      | **Closed**           | E4: `docs/manifest.yaml` + `scripts/check-manifest.mjs`, folded into `docs:all` + CI `hygiene`                                     |
+| G5 autosync silently skips without `dist/`            | Low      | **Accepted**         | by design; CI is the backstop (§3.2, `docs/writing-docs.md` §3)                                                                    |
+
+Evidence the closures hold: `pnpm run docs:all` exits 0 across all six gates
+(adrs, check, cli, sample, asvs, manifest); `DOCS_VERIFICATION_LOG.md` §§1–6
+log the local-gate verification; §8 documents the cross-repo demonstration
+against PROFESSOR-J. G3 remains the only open action and is blocked on owner
+consent, not on implementation.
