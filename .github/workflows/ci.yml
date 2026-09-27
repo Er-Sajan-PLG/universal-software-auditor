@@ -285,7 +285,13 @@ jobs:
       - name: Sample report is generated and committed
         run: pnpm run docs:sample
 
-  # Generated files (docs/reference/cli.md, examples/sample-report.md) are
+      - name: ASVS coverage map is generated and committed
+        run: pnpm run docs:asvs
+
+      - name: Doc classification manifest (every doc tracked or standalone-review-dated)
+        run: pnpm run docs:manifest
+
+  # Generated files (docs/reference/cli.md, examples/sample-report.md,
   # byte-compared by the hygiene job, so any engine/CLI change turns the next
   # PR red until someone runs the generators. This job is those hands: on
   # same-repo PRs it regenerates and pushes the result back to the PR branch,
@@ -348,7 +354,8 @@ jobs:
           fi
           node scripts/gen-cli-docs.mjs
           node scripts/gen-sample-report.mjs
-          if git diff --quiet -- docs/reference/cli.md examples/sample-report.md; then
+          node scripts/gen-asvs-coverage.mjs
+          if git diff --quiet -- docs/reference/cli.md docs/reference/asvs-coverage.md tests/fixtures/asvs-coverage-snapshot.json examples/sample-report.md; then
             echo "generated docs already in sync."
             exit 0
           fi
@@ -358,7 +365,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/reference/cli.md examples/sample-report.md
+          git add docs/reference/cli.md docs/reference/asvs-coverage.md tests/fixtures/asvs-coverage-snapshot.json examples/sample-report.md
           # Conventional: the commits job lints every PR commit with commitlint.
           git commit -m "docs: resync generated docs"
           # HEAD, not a branch name: no ref text enters the shell at all.

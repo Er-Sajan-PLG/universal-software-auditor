@@ -1,0 +1,17 @@
+# Pre-push documentation gate (see DOCS_SYSTEM_DESIGN.md §3 Layer 2).
+# This file is the husky BODY: git runs .husky/_/pre-push -> .husky/_/h ->
+# `sh -e .husky/pre-push "$@"` (husky v9, core.hooksPath=.husky/_). The `sh -e`
+# shim propagates the first failing command's exit code, so this hook aborts the
+# push on any red gate. Mirror the style of .husky/pre-commit (body only; do not
+# source any shim here or you hit `.husky/h: No such file or directory`).
+#
+# Build first so the generated-doc --check gates (cli/sample/ASVS) compare the
+# committed docs against a fresh dist/, THEN run docs:all: ADR hygiene, docs
+# governance (claim scanner), CLI/sample/ASVS sync, and the manifest gate.
+#
+# A red push beats a red main; CI (hygiene + self-audit) stays the independent
+# backstop. Bypassable with --no-verify only in an emergency — see AGENTS.md
+# "Never bypass its own protection" and DOCS_SYSTEM_DESIGN.md §3.
+echo "pre-push: building + running docs:all"
+pnpm run build
+pnpm run docs:all

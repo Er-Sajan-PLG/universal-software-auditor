@@ -10,6 +10,9 @@ Regenerated from the built CLI. If this file disagrees with `--help`, the file i
 usa — Universal Software Auditor
 
   usa audit [path]              Audit a project and write a Markdown report
+  usa docs audit [path]         Documentation universe audit (14 categories, 220 artifacts)
+  usa docs impact [path]        Which documentation a change affects (semantic model)
+  usa docs coverage [path]      Documentation coverage report against the taxonomy
   usa detect [path]             Print the auto-detected facts and maturity
   usa rules [--section S2]      List all loaded rule packs and rules
   usa explain <RULE-ID>         Show everything about one rule
@@ -76,6 +79,19 @@ serve options
   --allow-root <dir>  Auditable root, repeatable (default: working directory)
   --data-dir <dir>    Persist finished audits here (default: memory only)
 
+docs options (usa docs audit | impact | coverage)
+  --out <file>        Report path for audit (default DOC-AUDIT.md)
+  --format <fmt>      md | json                       (default md)
+  --fail-on <sev>     audit only: exit 1 on findings >= sev
+                      (same gate as CI; none|critical|high|medium|low)
+  --changed <file>    audit/impact: changed file (repeatable, or comma separated)
+  --describe <file>   impact: show one file's documentation relationship
+  --tiers <list>      audit: expected tiers, comma separated (default by maturity)
+  --profile <stage>   auto | prototype | mvp | beta | production | legacy
+  --rules-dir <dir>   Rule pack directory             (default bundled rules/)
+  --config <file>     Explicit .usa.yaml location
+  --dry-run           audit only: print the report path that would be written
+
 audit options
   --dry-run           Print the report path that would be written and exit
   --out <file>        Report path (default AUDIT.md)
@@ -86,6 +102,8 @@ audit options
   --config <file>     Explicit .usa.yaml location
   --include <packs>   Force these packs on (comma separated)
   --exclude <packs>   Force these packs off
+  --docs-universe     Include the documentation universe audit (DOCU-* findings in S12;
+                      also via .usa.yaml `docs.universe: true`)
   --fact <ns:value>   Assert a fact detection missed, e.g. --fact has:database
   --allow-commands    Run `command:` checks (shells out; off by default)
   --fail-on <sev>     Exit 1 on findings >= sev: critical|high|medium|low|none

@@ -51,6 +51,8 @@ const KNOWN_FACT_KEYS = new Set([
   'adrs',
   'version',
   'version-major',
+  'taxonomy-artifacts',
+  'taxonomy-categories',
 ]);
 for (const rel of docFiles()) {
   // ADRs are immutable records; meta-docs quote the machinery. Both are exempt

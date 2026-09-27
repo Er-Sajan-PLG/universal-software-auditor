@@ -66,6 +66,15 @@ export function computeFacts() {
     .readdirSync(path.join(ROOT, 'docs/adr'))
     .filter((f) => /^\d{4}-.+\.md$/.test(f)).length;
 
+  // Documentation universe size (ADR-0042). The taxonomy is data, so docs can
+  // name its size with a marker instead of a number that rots.
+  const taxonomyFile = path.join(ROOT, 'rules', 'docs-taxonomy.yaml');
+  const taxonomy = fs.existsSync(taxonomyFile)
+    ? parseYaml(fs.readFileSync(taxonomyFile, 'utf8'))
+    : {};
+  const taxonomyArtifacts = (taxonomy.artifacts ?? []).length;
+  const taxonomyCategories = (taxonomy.categories ?? []).length;
+
   return {
     version: pkg.version,
     versionMajor: String(pkg.version).split('.')[0],
@@ -79,6 +88,8 @@ export function computeFacts() {
     sections,
     checkKinds,
     adrs,
+    taxonomyArtifacts,
+    taxonomyCategories,
   };
 }
 
@@ -229,6 +240,8 @@ const BLOCK_RE =
 function factValue(key, facts) {
   if (key === 'rules-floor') return `${facts.rulesFloor}+`;
   if (key === 'detectors-approx') return facts.detectorsApprox;
+  if (key === 'taxonomy-artifacts') return String(facts.taxonomyArtifacts);
+  if (key === 'taxonomy-categories') return String(facts.taxonomyCategories);
   if (key in facts) return String(facts[key]);
   return null;
 }

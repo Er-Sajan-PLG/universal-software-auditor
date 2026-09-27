@@ -5,6 +5,7 @@ import type {
   Facts,
   Finding,
   Maturity,
+  Rule,
   RulePack,
   Suppression,
   UsaConfig,
@@ -37,6 +38,8 @@ import { fingerprintRulesDir } from './ruleset.js';
 import { loadSections } from './sections.js';
 import { loadProfiles, dampen, type MaturityProfile } from './maturity.js';
 import { loadConfig } from '../config.js';
+import { docFindings, runDocAudit } from './docs-audit.js';
+import { loadDocTaxonomy } from './docs-taxonomy.js';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -86,6 +89,14 @@ export interface AuditOptions {
    * `usa audit` behaviour is unchanged.
    */
   extraPacks?: RulePack[];
+  /**
+   * Include the documentation universe audit (14 categories / 220 artifacts,
+   * rules/docs-taxonomy.yaml) in this run: DOCU-* findings join S12. Opt-in
+   * (CLI `--docs-universe` or `.usa.yaml` `docs.universe: true`) so existing
+   * baselines stay stable; the standalone `usa docs audit` runs the same
+   * computation and must agree (AC-8).
+   */
+  docsUniverse?: boolean;
 }
 
 export interface AuditOutcome {
@@ -160,6 +171,23 @@ export function runAudit(options: AuditOptions): AuditOutcome {
     ctx,
     profile,
   );
+  // Documentation universe (opt-in): the same computation `usa docs audit`
+  // runs standalone, injected as DOCU-* findings so the main report and the
+  // docs gate can never disagree (AC-8). Only open findings are appended —
+  // the 200+ present artifacts would drown the section in noise.
+  if (options.docsUniverse ?? config.docs?.universe ?? false) {
+    appendDocUniverseFindings(evaluatedAll, {
+      project,
+      facts,
+      rulesDir: opts.rulesDir,
+      profile,
+      maturity,
+      git,
+      warnings,
+      usaVersion: opts.usaVersion,
+      target: opts.target,
+    });
+  }
   // A `sections:` restriction narrows both the scored set and the report, so a
   // scoped audit cannot leak findings it promised to exclude.
   const sectionFilter = config.sections ?? [];
@@ -600,6 +628,64 @@ function evaluatePacks(
     evaluated.push(scoreInvariant(rule, ctx, profile, evaluated));
   }
   return evaluated;
+}
+
+/**
+ * Appends the documentation-universe findings to the evaluated set. The
+ * findings come from `docFindings` — the exact function the standalone
+ * `usa docs audit` report uses — with the main audit's maturity profile for
+ * dampening and the already-evaluated rule ids for alias suppression (an
+ * absence an existing rule already reports, e.g. DOC-006 vs the getting
+ * started artifact, is scored once, not twice).
+ */
+function appendDocUniverseFindings(
+  evaluated: ScoredRule[],
+  ctx: {
+    project: Project;
+    facts: Facts;
+    rulesDir: string;
+    profile: MaturityProfile;
+    maturity: Maturity;
+    git: ReturnType<Project['gitInfo']>;
+    warnings: string[];
+    usaVersion: string;
+    target: string;
+  },
+): void {
+  const { taxonomy, warnings: taxWarnings } = loadDocTaxonomy(ctx.rulesDir);
+  ctx.warnings.push(...taxWarnings);
+  if (!taxonomy) return; // already warned: universe unavailable, audit continues
+  const result = runDocAudit({
+    project: ctx.project,
+    facts: ctx.facts,
+    taxonomy,
+    maturity: ctx.maturity,
+    usaVersion: ctx.usaVersion,
+    target: ctx.target,
+    commit: ctx.git.commit,
+    gitTags: ctx.project.gitTags(),
+  });
+  const knownRules = new Set(evaluated.map((e) => e.finding.ruleId));
+  for (const f of docFindings(result, {
+    suppressAliasedRules: knownRules,
+    dampen: (base) => dampen(base, 'documentation', ctx.profile),
+  })) {
+    evaluated.push({ rule: syntheticDocRule(f), finding: f });
+  }
+}
+
+/** DOCU findings have no YAML rule; the minimal Rule shape keeps scoring intact. */
+function syntheticDocRule(f: Finding): Rule {
+  return {
+    id: f.ruleId,
+    title: f.title,
+    section: f.section,
+    sectionTitle: f.sectionTitle,
+    severity: f.baseSeverity,
+    ruleClass: f.ruleClass,
+    check: { kind: 'info' },
+    tags: f.tags,
+  };
 }
 
 function scoreInvariant(

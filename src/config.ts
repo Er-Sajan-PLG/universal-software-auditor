@@ -2,7 +2,7 @@ import { parse as parseYaml } from 'yaml';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { UsaConfig } from './types.js';
-import { asMap, maps, num, str, strList } from './util/yaml.js';
+import { asMap, bool, maps, num, str, strList } from './util/yaml.js';
 
 function parseLimits(v: unknown): UsaConfig['limits'] {
   const m = asMap(v);
@@ -10,6 +10,13 @@ function parseLimits(v: unknown): UsaConfig['limits'] {
   const maxBytes = num(m.max_bytes);
   if (maxFiles === undefined && maxBytes === undefined) return undefined;
   return { max_files: maxFiles, max_bytes: maxBytes };
+}
+
+function parseDocs(v: unknown): UsaConfig['docs'] {
+  const m = asMap(v);
+  const universe = bool(m.universe);
+  if (universe === undefined) return undefined;
+  return { universe };
 }
 
 export const CONFIG_FILE = '.usa.yaml';
@@ -53,6 +60,7 @@ export function loadConfig(target: string, explicit?: string): UsaConfig {
       facts: strList(doc.facts),
       sections: strList(doc.sections),
       limits: parseLimits(doc.limits),
+      docs: parseDocs(doc.docs),
     };
   } catch (err) {
     throw new Error(`Could not parse ${file}: ${(err as Error).message}`, { cause: err });
@@ -117,4 +125,10 @@ facts: []
 # limits:
 #   max_files: 120000
 #   max_bytes: 4194304
+
+# Documentation universe audit (14 categories, 220 artifacts).
+# universe: true injects DOCU-* findings into \`usa audit\` (section S12);
+# \`usa docs audit | impact | coverage\` run it standalone either way.
+# docs:
+#   universe: true
 `;

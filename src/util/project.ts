@@ -503,6 +503,15 @@ export class Project {
     return { commit, ref, repoUrl };
   }
 
+  /** Tag names, resolved once per Project (gitStats populates it). */
+  private tagNames: string[] = [];
+
+  /** List of tag names (empty when not a git repo). */
+  gitTags(): string[] {
+    this.gitInfo(); // ensure stats (and the tag list) are resolved
+    return this.tagNames;
+  }
+
   private gitStats(): {
     commits: number;
     contributors: number;
@@ -513,7 +522,8 @@ export class Project {
     const contributors = this.gitRun(['shortlog', '-sn', '--all', 'HEAD'])
       ?.split('\n')
       .filter(Boolean).length;
-    const tags = this.gitRun(['tag', '--list'])?.split('\n').filter(Boolean).length ?? 0;
+    this.tagNames = this.gitRun(['tag', '--list'])?.split('\n').filter(Boolean) ?? [];
+    const tags = this.tagNames.length;
     const branches = this.gitRun(['branch', '--list'])?.split('\n').filter(Boolean).length ?? 0;
     const lastTs = this.gitRun(['log', '-1', '--format=%ct']);
     const daysSinceLastCommit =

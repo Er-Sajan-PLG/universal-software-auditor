@@ -55,3 +55,6 @@ credentials/
 # experiments/<run_id>/ per docs/EXPERIMENT_PROTOCOL.md)
 /AUDIT.md
 /AUDIT_*.md
+# `usa docs audit` (doc-universe gate) writes this to the repo root by default;
+# CI overrides it via --out, but local runs leave a stray untracked copy.
+/DOC-AUDIT.md

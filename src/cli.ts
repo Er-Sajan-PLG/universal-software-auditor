@@ -5,6 +5,7 @@ import { VERSION, bool, parseArgs, type Args } from './cli-args.js';
 import { HELP } from './cli-help.js';
 import { loadEnvFile } from './util/env.js';
 import { cmdAudit } from './cli-audit.js';
+import { cmdDocs } from './cli-docs.js';
 import { cmdDetect, cmdRules, cmdExplain, cmdStandards, cmdCategories } from './cli-query.js';
 import { cmdFoundation, cmdLive, cmdModels } from './cli-session.js';
 import { cmdDiff, cmdVerifyReport } from './cli-reports.js';
@@ -17,6 +18,7 @@ import { cmdServe } from './cli-serve.js';
 
 const COMMANDS: Record<string, (args: Args) => number | Promise<number>> = {
   audit: cmdAudit,
+  docs: cmdDocs,
   detect: cmdDetect,
   rules: cmdRules,
   explain: cmdExplain,
@@ -40,6 +42,7 @@ function handleTopLevelFlags(args: Args, cmd: string): number | Promise<number> 
     // A subcommand's own help wins over the top-level text — `usa live --help`
     // used to print the generic help, orphaning LIVE_HELP_TEXT entirely.
     if (cmd === 'live') return cmdLive(args);
+    if (cmd === 'docs') return cmdDocs(args);
     console.log(HELP);
     return 0;
   }

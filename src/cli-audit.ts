@@ -61,6 +61,15 @@ function parseCountFlag(v: string | undefined): number | undefined {
   return Number.isFinite(n) ? n : NaN;
 }
 
+/** CLI flag wins; otherwise `.usa.yaml` `docs.universe: true` stands. */
+function resolveDocsUniverse(
+  args: Args,
+  config: { docs?: { universe?: boolean } },
+): boolean | undefined {
+  const flag = bool(args, 'docs-universe');
+  return flag || config.docs?.universe || undefined;
+}
+
 function readAuditOptions(args: Args): AuditCliOptions {
   const out = str(args, 'out', 'AUDIT.md') ?? 'AUDIT.md';
   return {
@@ -126,6 +135,7 @@ export function cmdAudit(args: Args): number {
     excludePacks: list(args, 'exclude'),
     maxFiles: o.maxFiles,
     maxBytes: o.maxBytes,
+    docsUniverse: resolveDocsUniverse(args, config),
   });
 
   for (const w of warnings) console.error(`warning: ${w}`);

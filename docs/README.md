@@ -14,6 +14,7 @@
 | [CI integration](ci-integration.md)                          | GitHub Actions, GitLab CI, quality gates, drift detection                                                                            |
 | [Standards mapping](standards-mapping.md)                    | USA ↔ ASVS 5.0, SSDF, SLSA, Scorecard, ISO 5055, WCAG, CRA, OWASP LLM/ASI                                                            |
 | [Categories](categories.md)                                  | The ten assurance categories, honest coverage labels, and how to extend them                                                         |
+| [Documentation audit](documentation-audit.md)                | The documentation universe: full-category taxonomy, tiered expectations, invariants, impact, and the docs gate                       |
 | [Architecture](ARCHITECTURE.md)                              | How the engine is put together, and what it deliberately does not do                                                                 |
 | [Evolution loop](EVOLUTION.md)                               | The deterministic self-extension pipeline: snapshot → gap → propose → benchmark → release                                            |
 | [Experiment protocol](EXPERIMENT_PROTOCOL.md)                | The mandatory process for capability-stress experiments                                                                              |
@@ -29,6 +30,7 @@
 
 - **Auditing a project?** → [Getting started](getting-started.md) → [Concepts](concepts.md)
 - **Wiring up CI?** → [CI integration](ci-integration.md)
+- **Auditing documentation health?** → [Documentation audit](documentation-audit.md)
 - **Using an agent?** → [Agent integration](agent-integration.md)
 - **Contributing a rule pack?** → [Rule packs](rule-packs.md) → [Detectors](detectors.md)
 - **Comparing to a standard?** → [Standards mapping](standards-mapping.md)

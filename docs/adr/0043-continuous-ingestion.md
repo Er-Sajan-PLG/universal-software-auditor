@@ -1,4 +1,4 @@
-# 42. Continuous ingestion: auto-fetch repos, scheduled evolve, human-gated promotion
+# 43. Continuous ingestion: auto-fetch repos, scheduled evolve, human-gated promotion
 
 - **Date:** 2026-09-21
 - **Status:** Accepted
