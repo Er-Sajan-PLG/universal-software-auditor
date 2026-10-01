@@ -40,9 +40,9 @@ plus a GitHub composite action. The defining habit: **the tool audits itself**.
 
 ## Active Agents
 
-| Agent         | Model                            | Branch                         | Task                              | Started    | Status    |
-| ------------- | -------------------------------- | ------------------------------ | --------------------------------- | ---------- | --------- |
-| HERMES (HX01) | meituan/longcat-2.5-preview:free | docs/0042-continuous-ingestion | Bootstrap MACP + merge 5 branches | 2026-10-01 | COMPLETED |
+| Agent         | Model                            | Branch                         | Task                              | Started    | Status      |
+| ------------- | -------------------------------- | ------------------------------ | --------------------------------- | ---------- | ----------- |
+| HERMES (HX01) | meituan/longcat-2.5-preview:free | docs/0042-continuous-ingestion | Bootstrap MACP + merge 5 branches | 2026-10-01 | IN-PROGRESS |
 
 See `state/REGISTRY.md` for details.
 

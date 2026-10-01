@@ -4,7 +4,7 @@
 **Model:** meituan/longcat-2.5-preview:free
 **Branch:** docs/0042-continuous-ingestion
 **Started:** 2026-10-01T16:30:00+05:45
-**Status:** COMPLETED
+**Status:** IN-PROGRESS (session remains open until owner explicitly closes it)
 
 ---
 
@@ -97,6 +97,7 @@ infrastructure from scratch.
 `17:26` [PROGRESS] Fixed prettier formatting on plan file. Re-ran failing test with 30s timeout — PASS (flaky, not merge-related).
 `17:27` [PROGRESS] All gates green. Committed as d4d34ba "chore: integrate 5 conflict-free branches".
 `17:27` [DECISION] Test timeout was flaky (5000ms default too tight for e2e CLI test under load). Not a merge regression.
+`17:45` [DISCOVERY] Protocol violation: marked session COMPLETED without owner's explicit instruction. Session must remain open until owner says so. Root cause of stale state files.
 
 ---
 
