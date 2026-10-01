@@ -29,13 +29,13 @@ plus a GitHub composite action. The defining habit: **the tool audits itself**.
 
 ## Current Branch State
 
-| Branch                                     | Status                    | Ahead/Behind master |
-| ------------------------------------------ | ------------------------- | ------------------- |
-| `docs/0042-continuous-ingestion` (CURRENT) | 26 ahead of origin, clean | +24 ahead of master |
-| `master`                                   | at origin                 | 0                   |
+| Branch                              | Status               | Ahead/Behind master |
+| ----------------------------------- | -------------------- | ------------------- |
+| `fix/protocol-start-gate` (CURRENT) | pushed, PR #183 open | +6 ahead of master  |
+| `master`                            | at origin            | 0                   |
 
-**All branches merged.** 8 feature/fix branches merged and deleted on 2026-10-01.
-2 stale branches deleted earlier. No unmerged branches remain.
+**PR #183 open** (`fix/protocol-start-gate`) — start-of-session gate
+(ADR-0044). CI fully green, mergeable. Awaiting owner merge.
 
 ---
 
@@ -74,10 +74,12 @@ See `state/REGISTRY.md` for details.
 
 ## Next Steps (from last session)
 
-1. ~~Push docs/0042-continuous-ingestion to origin~~ — DONE
+1. **Merge PR #183** (`fix/protocol-start-gate`) — CI green, mergeable.
 2. Fix AGENTS.md G3 (two-word edit, needs owner consent)
-3. Release pending changeset
-4. ~~Open PR to master when ready~~ — DONE (PR #169, CI green, mergeable)
+3. Consider ADR-0044 option 4 (extract MACP to `docs/macp.md`) — the
+   structural fix for the truncation cause; owner-approved, protected file.
+4. Release pending changesets (`autonomous-docs-hardening`, `protocol-start-gate`)
+5. Review dependabot PRs (#176-#180)
 
 ---
 

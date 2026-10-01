@@ -2,7 +2,7 @@
 **Model:** meituan/longcat-2.5-preview:free
 **Branch:** fix/protocol-start-gate
 **Started:** 2026-10-02T05:14:00+05:45
-**Status:** IN-PROGRESS
+**Status:** COMPLETED
 **Base commit:** 614530a
 
 # Session HX04 — Protocol start gate + AGENTS.md truncation root cause
@@ -107,4 +107,29 @@ git log --oneline -10                    # 614530a HEAD
 
 ## Outcome
 
-_(filled in at session close)_
+COMPLETED — PR #183 opened, all CI green (12 checks pass, Session close
+correctly skips on a PR), mergeable. Delivered:
+
+- `scripts/check-session-start.mjs` + npm `protocol:start` — the
+  start-of-session gate (ADR-0044).
+- Wired into `.husky/pre-commit` and a `Protocol compliance` CI job.
+- `.husky/pre-push` fixed: start gate on every push, close gate only on
+  master pushes.
+- `protocol-check.yml` split into `session-start` (PR + master) and
+  `session-close` (master push only, with GH_TOKEN).
+- ADR-0044 records the AGENTS.md truncation root cause and four options.
+- `tests/integration/session-start-gate.test.ts` — 7 tests, pass + fail cases.
+- Stale "43 ADRs" claims converted to `usa:fact adrs` markers (count became
+  44 with this ADR).
+
+Local gates all green: typecheck, lint, format:check, test (64 files, 1323
+passed), docs:all (6 gates).
+
+## Second defect found while pushing
+
+The pre-push hook and the CI workflow both ran `check-protocol.mjs` (a
+session-CLOSE gate) on every push/PR, so they failed whenever a session
+was legitimately in progress. This blocked every mid-session feature-branch
+push and contradicted AGENTS.md's "push when a reviewable whole is
+complete." Both are now scoped to master. This is why the protocol was
+unworkable in practice, not just unenforced.
