@@ -212,3 +212,22 @@ try {
   console.error('State update failed:', e.message);
   // Don't block the commit
 }
+
+// Auto-commit state changes so the tree stays clean
+// Guard against recursion: if we're already in the auto-update hook, skip
+if (!process.env.USA_AUTO_UPDATE) {
+  try {
+    const status = execSync('git status --porcelain', { cwd: root, encoding: 'utf-8' }).trim();
+    if (status) {
+      execSync('git add -A', { cwd: root });
+      execSync('git commit -m "chore(state): auto-update from post-commit hook"', {
+        cwd: root,
+        stdio: 'pipe',
+        env: { ...process.env, USA_AUTO_UPDATE: '1' },
+      });
+      console.log('State changes auto-committed.');
+    }
+  } catch (e) {
+    console.warn('Auto-commit failed:', e.message);
+  }
+}
