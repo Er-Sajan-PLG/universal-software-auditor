@@ -4,8 +4,8 @@
 > The mandatory MACP startup sequence is in AGENTS.md.
 > Do not skip it. Do not summarize state without following it.
 
-**Last Reconciled:** 2026-10-01T20:25:00+05:45
-**Reconciled by:** HERMES (HX02) — post-shutdown reconciliation
+**Last Reconciled:** 2026-10-01T22:30:54.065+05:45
+**Reconciled by:** auto-update (post-commit)
 **Repo:** Universal_Software_Auditor
 **Remote:** git@github.com:Er-Sajan-PLG/universal-software-auditor.git
 
@@ -55,16 +55,16 @@ See `state/REGISTRY.md` for details.
 
 ## Recently Completed (last 10 commits)
 
-1. `efa5785` feat(macp): add STEP 8 — VERIFY STATE AGAINST REALITY to startup sequence
-2. `27ff0d9` chore(docs): resync sample report after ASVS fix
-3. `93f8b9c` fix(rules): remove invalid ASVS-2.2.4 reference from SEC-014
-4. `35cb658` chore(state): add missing commit 003ebf6 to session log
-5. `ff76782` chore(state): reword numeric claims in session file
-6. `d57739f` chore(state): fix fact marker wording in session file
-7. `f21f0fc` chore(state): finalize HX02 session file with complete summary
-8. `c1abf71` docs(manifest): classify state/ files for doc gate
-9. `c96a0d2` chore(docs): resync ASVS coverage
-10. `0a39632` chore(docs): resync sample report
+1. `4df21bf docs(manifest): classify HX03 session file`
+2. `817e22a feat(macp): protocol enforcement — pre-push verification, post-commit auto-update, CI backstop`
+3. `2fe3535 docs(adr)+feat(watch): continuous ingestion loop and watch driver (#169)`
+4. `78cfdb2 docs: attach SLSA provenance bundle for v2.26.0 (#173)`
+5. `3d3c2e0 docs: autonomous documentation governance (ASVS + manifest gates, pre-push hook) (#172)`
+6. `b58eaa6 chore(master): release (#171)`
+7. `bdb49cd feat(docs): documentation universe audit — 14 categories, 220 artifacts (ADR-0042) (#170)`
+8. `509bfef fix(ci): keep top-level permissions read-only in every workflow (#167)`
+9. `4d9f029 docs: attach SLSA provenance bundle for v2.25.3 (#166)`
+10. `9781409 docs(agents): prove the diagnosis before writing the fix (#165)`
 
 ---
 
