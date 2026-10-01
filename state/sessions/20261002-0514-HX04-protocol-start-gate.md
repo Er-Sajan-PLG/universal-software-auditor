@@ -93,6 +93,12 @@ git log --oneline -10                    # 614530a HEAD
 
 ---
 
+### 23:38 — Commit
+
+`36a65bc` fix(hooks): run the close gate only on master pushes
+
+---
+
 ## Outcome
 
 _(filled in at session close)_
