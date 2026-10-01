@@ -52,6 +52,8 @@ a changed decision gets a _new_ ADR that supersedes the old one).
 | 0041 | Severity follows observed maturity, never declared stage             | Accepted   | —          |
 | 0042 | Documentation is a first-class audit universe, not a report garnish  | Accepted   | —          |
 
+| 0043 | Continuous ingestion: auto-fetch repos, scheduled evolve, human-gated promotion | Accepted | — |
+
 ## Coverage map (what has no ADR, and why)
 
 - **Scoring maths** — specified normatively in `docs/concepts.md`, not an
