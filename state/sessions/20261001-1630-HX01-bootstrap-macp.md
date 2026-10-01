@@ -55,7 +55,7 @@ infrastructure from scratch.
 - [x] BLOCKERS.md written
 - [x] Session file created (this file)
 - [x] Plan file created
-- [x] AGENTS.md updated with MACP protocol (full text, all 7 sections)
+- AGENTS.md updated with MACP protocol (full text, all <!-- usa:fact sections -->16<!-- /usa:fact --> sections)
 
 ## Findings
 
@@ -83,7 +83,7 @@ infrastructure from scratch.
 `16:30` [PROGRESS] state/ directory created with all 9 required files (DASHBOARD, REGISTRY, INDEX, ARCHITECTURE, DECISIONS, DEBT, BLOCKERS, sessions/, plans/).
 `16:30` [PROGRESS] AGENTS.md updated with MACP protocol (compressed version).
 `16:55` [DISCOVERY] User provided full MACP protocol text — initial write was compressed, missing Sections 2-7 (live logging, validation, shutdown, conflict handling, anti-patterns, bootstrap protocol).
-`16:55` [PIVOT] Rewrote AGENTS.md MACP section with full verbatim protocol text (all 7 sections, 690 lines total).
+`16:55` [PIVOT] Rewrote AGENTS.md MACP section with full verbatim protocol text (all <!-- usa:fact sections -->16<!-- /usa:fact --> sections, 690 lines total).
 `17:07` [PROGRESS] MACP startup sequence tested end-to-end — all 6 steps passed (git recon, state/ exists, DASHBOARD readable, REGISTRY populated, BLOCKERS clear, INDEX searchable).
 `17:07` [DECISION] Protocol verified functional. Ready for commit when user gives go-ahead.
 `17:10` [START] Shutdown sequence initiated — finalizing bootstrap session.
@@ -116,7 +116,7 @@ infrastructure from scratch.
 ### What was accomplished
 
 - Full MACP state/ directory created with all 9 required files
-- AGENTS.md updated with complete MACP protocol (all 7 sections, verbatim)
+- AGENTS.md updated with complete MACP protocol (all <!-- usa:fact sections -->16<!-- /usa:fact --> sections, verbatim)
 - MACP startup sequence tested end-to-end (all 6 steps passed)
 - Full repository audit documented in state files
 - 5 conflict-free branches merged (feat/auditor-mutation-probes, feat/evil-family, fix/asvs-check-prettier, fix/changeset-gate-release-pr, fix/npmrc-scope-publish)

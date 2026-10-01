@@ -30,7 +30,7 @@ weights. Everything _opinionated_ lives in `rules/`, as YAML.
         │                                     ▼
         │                        ┌──────────────────────────┐
         │                        │  Rule evaluation         │
-        │                        │  16 check kinds → status  │
+        │                        │  <!-- usa:fact check-kinds -->16 check kinds<!-- /usa:fact --> → status  │
         │                        └────────────┬─────────────┘
         │                                     ▼
         │                        ┌──────────────────────────┐
