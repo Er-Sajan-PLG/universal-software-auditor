@@ -99,6 +99,8 @@ infrastructure from scratch.
 `17:27` [DECISION] Test timeout was flaky (5000ms default too tight for e2e CLI test under load). Not a merge regression.
 `17:45` [DISCOVERY] Protocol violation: marked session COMPLETED without owner's explicit instruction. Session must remain open until owner says so. Root cause of stale state files.
 `18:00` [START] Rebase work begins — 3 branches need rebase: feat/asvs-coverage-map, feat/invariant-checks, fix/reviews-hardening-batch.
+`18:05` [PROGRESS] Rebased feat/asvs-coverage-map — commit already applied (skipped as duplicate). Gates pass. Merge: already up to date.
+`18:10` [PROGRESS] Rebased feat/invariant-checks — 2 conflicts resolved (rules/core/security.yaml: kept branch's ASVS-2.2.4 reference; src/engine/audit.ts: kept HEAD's appendDocUniverseFindings function). Second commit conflict on examples/sample-report.md (stale version 2.21.0 vs current 2.26.0 — kept HEAD). Fast-forward merge: 1 file changed.
 
 ---
 
