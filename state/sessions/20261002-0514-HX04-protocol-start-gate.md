@@ -125,8 +125,8 @@ correctly skips on a PR), mergeable. Delivered:
   `session-close` (master push only, with GH_TOKEN).
 - ADR-0044 records the AGENTS.md truncation root cause and four options.
 - `tests/integration/session-start-gate.test.ts` — 7 tests, pass + fail cases.
-- Stale "43 ADRs" claims converted to `usa:fact adrs` markers (count became
-  44 with this ADR).
+- Stale ADR-count claims converted to self-maintaining fact markers (the
+  count moved with this ADR).
 
 Local gates all green: typecheck, lint, format:check, test (64 files, 1323
 passed), docs:all (6 gates).
