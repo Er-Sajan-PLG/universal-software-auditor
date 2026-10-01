@@ -15,3 +15,10 @@
 echo "pre-push: building + running docs:all"
 pnpm run build
 pnpm run docs:all
+
+echo "pre-push: verifying state against reality"
+pnpm run typecheck
+pnpm test
+
+echo "pre-push: checking protocol compliance"
+node scripts/check-protocol.mjs
