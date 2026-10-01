@@ -4,7 +4,7 @@
 > The mandatory MACP startup sequence is in AGENTS.md.
 > Do not skip it. Do not summarize state without following it.
 
-**Last Reconciled:** 2026-10-01T20:14:40+05:45
+**Last Reconciled:** 2026-10-01T20:25:00+05:45
 **Reconciled by:** HERMES (HX02) — post-shutdown reconciliation
 **Repo:** Universal_Software_Auditor
 **Remote:** git@github.com:Er-Sajan-PLG/universal-software-auditor.git
@@ -55,16 +55,16 @@ See `state/REGISTRY.md` for details.
 
 ## Recently Completed (last 10 commits)
 
-1. `2648005` chore(state): shutdown session — all branches merged, state reconciled, P2 verified
-2. `051a9d4` docs: apply MACP amendments P1-P6 with refinements, defer P7
-3. `89b3770` chore(docs): resync sample report
-4. `426f3b2` chore(state): log invariant-checks rebase complete
-5. `8e91120` feat(invariants): multi-rule check kind over finding sets
-6. `860086a` chore(state): log rebase start
-7. `2dda365` chore(state): fix stale session summary to match IN-PROGRESS status
-8. `983c78a` chore(state): fix session status — session remains open until owner closes it
-9. `892a042` chore(state): reconcile after branch merge session
-10. `d4d34ba` chore: integrate 5 conflict-free branches
+1. `efa5785` feat(macp): add STEP 8 — VERIFY STATE AGAINST REALITY to startup sequence
+2. `27ff0d9` chore(docs): resync sample report after ASVS fix
+3. `93f8b9c` fix(rules): remove invalid ASVS-2.2.4 reference from SEC-014
+4. `35cb658` chore(state): add missing commit 003ebf6 to session log
+5. `ff76782` chore(state): reword numeric claims in session file
+6. `d57739f` chore(state): fix fact marker wording in session file
+7. `f21f0fc` chore(state): finalize HX02 session file with complete summary
+8. `c1abf71` docs(manifest): classify state/ files for doc gate
+9. `c96a0d2` chore(docs): resync ASVS coverage
+10. `0a39632` chore(docs): resync sample report
 
 ---
 
@@ -74,10 +74,10 @@ See `state/REGISTRY.md` for details.
 
 ## Next Steps (from last session)
 
-1. Push docs/0042-continuous-ingestion to origin
+1. ~~Push docs/0042-continuous-ingestion to origin~~ — DONE
 2. Fix AGENTS.md G3 (two-word edit, needs owner consent)
 3. Release pending changeset
-4. Open PR to master when ready
+4. ~~Open PR to master when ready~~ — DONE (PR #169, CI green, mergeable)
 
 ---
 

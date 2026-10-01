@@ -1,6 +1,6 @@
 # INDEX.md — Searchable Session Log
 
-**Last updated:** 2026-10-01T20:14:40+05:45
+**Last updated:** 2026-10-01T20:25:00+05:45
 
 ---
 
@@ -19,14 +19,14 @@
 
 ### 2026-10-01 — HX02 Continuation
 
-| Field        | Value                                                                                                                                                              |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Session file | `sessions/20261001-2003-HX02-continue-macp.md`                                                                                                                     |
-| Agent        | HX02 (HERMES)                                                                                                                                                      |
-| Branch       | docs/0042-continuous-ingestion                                                                                                                                     |
-| Task         | MACP startup fix + HX01 handoff                                                                                                                                    |
-| Keywords     | continuation, macp, startup, fix, dashboard, agents.md                                                                                                             |
-| Outcome      | COMPLETED — 3-part MACP startup fix applied (DASHBOARD warning, STARTUP.md, AGENTS.md table). All state files updated. HX01 next steps preserved for next session. |
+| Field        | Value                                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Session file | `sessions/20261001-2003-HX02-continue-macp.md`                                                                                                                                             |
+| Agent        | HX02 (HERMES)                                                                                                                                                                              |
+| Branch       | docs/0042-continuous-ingestion                                                                                                                                                             |
+| Task         | MACP startup fix + HX01 handoff                                                                                                                                                            |
+| Keywords     | continuation, macp, startup, fix, dashboard, agents.md                                                                                                                                     |
+| Outcome      | COMPLETED — 3-part MACP startup fix applied. PR #169 fixed (ASVS-2.2.4 invalid reference removed, changeset added). CI green. Protocol upgraded with STEP 8: VERIFY STATE AGAINST REALITY. |
 
 ---
 
