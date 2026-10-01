@@ -93,7 +93,7 @@ See `state/REGISTRY.md` for details.
 | Evolution    | `src/evolution/`                                                                                           |
 | Foundation   | `src/foundation/`                                                                                          |
 | Serve        | `src/serve/`                                                                                               |
-| Docs         | `docs/` (28 files), `docs/adr/` (43 ADRs + README)                                                         |
+| Docs         | `docs/` (28 files), `docs/adr/` (<!-- usa:fact adrs -->44<!-- /usa:fact --> ADRs + README)                 |
 | Scripts      | `scripts/` (13 .mjs files)                                                                                 |
 | Tests        | `tests/` (unit/, integration/, e2e/, contracts/)                                                           |
 | CI           | `.github/workflows/` (11 workflows)                                                                        |
@@ -123,7 +123,7 @@ Full protocol in AGENTS.md. Quick reference in `state/STARTUP.md`.
 
 The repo has a sophisticated documentation governance system (ADR-0020 + ADR-0042):
 
-- 43 ADRs, 83 tracked markdown files
+- <!-- usa:fact adrs -->44<!-- /usa:fact --> ADRs, 83 tracked markdown files
 - 6 doc gates: adrs, check, cli, sample, asvs, manifest
 - Fact-marker engine, claim scanner, byte-compare gates
 - Pre-commit: autosync + lint-staged

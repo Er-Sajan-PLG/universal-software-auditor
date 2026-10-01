@@ -33,3 +33,10 @@ jobs:
 
       - name: Protocol compliance check
         run: node scripts/check-protocol.mjs
+
+      # ADR-0044: the start-of-session gate. check-protocol.mjs above verifies
+      # the session CLOSED cleanly; this verifies the MACP startup actually
+      # happened. Without it, an agent could skip steps 0-10 and only meet
+      # friction at push time.
+      - name: Session start check
+        run: node scripts/check-session-start.mjs
