@@ -1,6 +1,6 @@
 # REGISTRY.md — Agent Registry
 
-**Last updated:** 2026-10-01T20:25:00+05:45
+**Last updated:** 2026-10-01T20:30:00+05:45
 
 ---
 
@@ -28,7 +28,7 @@ None — no active sessions.
 | Branch        | docs/0042-continuous-ingestion       |
 | Task          | MACP startup fix + HX01 handoff      |
 | Started       | 2026-10-01T20:03:17+05:45            |
-| Completed     | 2026-10-01T20:14:40+05:45            |
+| Completed     | 2026-10-01T20:30:00+05:45            |
 | Status        | COMPLETED                            |
 | Files claimed | state/ (entire directory) — released |
 
