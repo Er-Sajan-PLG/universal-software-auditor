@@ -152,3 +152,6 @@ standalone:
   - file: state/sessions/20261001-2003-HX02-continue-macp.md
     reviewed: 2026-10-01
     reason: MACP state — HX02 session file
+  - file: state/sessions/20261001-2157-HX03-fresh-session.md
+    reviewed: 2026-10-01
+    reason: MACP state — HX03 session file
