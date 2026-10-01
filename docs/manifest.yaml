@@ -125,3 +125,30 @@ standalone:
   - file: templates/AUDIT_REPORT.md
     reviewed: 2026-09-26
     reason: baseline classification — audit report template
+  - file: state.md
+    reviewed: 2026-10-01
+    reason: MACP state — primary entry point
+  - file: state/BLOCKERS.md
+    reviewed: 2026-10-01
+    reason: MACP state — blockers tracker
+  - file: state/DASHBOARD.md
+    reviewed: 2026-10-01
+    reason: MACP state — executive summary
+  - file: state/DEBT.md
+    reviewed: 2026-10-01
+    reason: MACP state — technical debt tracker
+  - file: state/DECISIONS.md
+    reviewed: 2026-10-01
+    reason: MACP state — ADR index
+  - file: state/INDEX.md
+    reviewed: 2026-10-01
+    reason: MACP state — session log
+  - file: state/REGISTRY.md
+    reviewed: 2026-10-01
+    reason: MACP state — agent registry
+  - file: state/STARTUP.md
+    reviewed: 2026-10-01
+    reason: MACP state — startup sequence reference
+  - file: state/sessions/20261001-2003-HX02-continue-macp.md
+    reviewed: 2026-10-01
+    reason: MACP state — HX02 session file
