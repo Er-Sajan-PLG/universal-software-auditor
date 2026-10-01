@@ -473,6 +473,14 @@ state/sessions/YYYYMMDD-HHMM-<AGENT-ID>-<short-slug>.md
 
 Example: state/sessions/20250614-1530-C7A2-fix-login-bug.md
 
+Session file header schema (MUST be the first lines of the file):
+**Agent:** <AGENT-ID> (<agent name>)
+**Model:** <model/type>
+**Branch:** <branch>
+**Started:** <ISO 8601 timestamp>
+**Status:** IN-PROGRESS
+**Base commit:** <git commit SHA at session start>
+
 Add yourself to REGISTRY.md with:
 • Your agent ID (invent one: 4 alphanumeric characters)
 • Your model/type (e.g., "Claude 3.5 Sonnet")
@@ -527,6 +535,24 @@ Scope discipline:
 • Never silently refactor unrelated code.
 • Never fix unrelated bugs unless they block your current work.
 
+Completion declaration rule:
+• Declare completion ONLY when all plan items are checked off AND
+Section 3 validation passes. User satisfaction is not a completion signal.
+• A session is NOT complete until the owner explicitly says so.
+
+Record-keeping principle (P5):
+• Any claim in a record must be either (a) a durable historical fact
+that cannot change, or (b) a current-state claim paired with the
+command and timestamp that would reproduce it. Unverifiable assertions rot.
+• Test counts, commit counts, line counts are permitted as deltas or
+historical markers ("+30 tests added this session," "at session start:
+1100 passing"). They are forbidden as current-state claims ("we have
+1130 passing tests") without the verification suffix.
+• Action timestamps are always allowed ("Decision made at 15:30 UTC").
+State timestamps require verification context ("DASHBOARD current as
+of commit abc123, verified via git log -1").
+• When you reference a count or state, cite the command that produced it.
+
 ═══════════════════════════════════════════════════════════════
 SECTION 3: VALIDATION (BEFORE DECLARING DONE)
 ═══════════════════════════════════════════════════════════════
@@ -543,6 +569,13 @@ Nothing is "done" until verified. Run and confirm:
 □ Documentation updated if behavior changed
 □ Database migrations are reversible (if applicable)
 
+Record verification (P6):
+□ Session file header matches REGISTRY (agent, branch, status)
+□ Every commit in git log <base>..HEAD is mentioned in session file
+□ DASHBOARD "Active Agents" section matches REGISTRY
+□ No checked-off TODOs for unfinished work
+□ All plan items accounted for in session summary
+
 If any check fails and you cannot fix it in scope:
 → Log it in your session file with severity and remediation plan
 → Do NOT silently skip it
@@ -550,6 +583,20 @@ If any check fails and you cannot fix it in scope:
 ═══════════════════════════════════════════════════════════════
 SECTION 4: SHUTDOWN SEQUENCE (MANDATORY)
 ═══════════════════════════════════════════════════════════════
+
+STEP 0 — STOP WORKING (P1)
+Before any shutdown step:
+• No new code changes
+• No new config changes
+• No new state file changes (except the session file being finalized)
+• No new commits touching repo content
+
+If any of these occur during shutdown → ABORT shutdown, return to work mode.
+Maximum 3 shutdown restarts per session. Fourth attempt → halt, log
+[NEEDS HUMAN] in BLOCKERS.md.
+
+Mid-shutdown abort is NOT a re-open. Re-open (Section 4A) applies only
+after a shutdown fully completed and REGISTRY was updated to COMPLETED.
 
 STEP 1 — Finalize Your Session File
 Add a complete summary section:
@@ -592,6 +639,74 @@ You are the RECONCILER. You must:
 • Add any new ADRs to DECISIONS.md
 • Commit: "chore(state): reconcile after <description>"
 
+STEP 7 — Terminal Verification Loop (P2)
+After shutdown completes, verify the record against reality:
+
+    1. Run git log <base>..HEAD --oneline — every commit must be in session
+       file's commit list.
+    2. Run git status — must be clean.
+    3. Re-read DASHBOARD "Active Agents" and REGISTRY — must match.
+    4. Re-read session summary — every claim must be checkable.
+
+If any discrepancy → classify:
+• Record error → fix the record, re-verify.
+• Reality error → this is a bug in your work. Fix it, which means
+re-entering work mode, which means Step 0 aborts shutdown.
+
+Maximum 3 iterations. If not converged → mark session PARTIAL or FAILED,
+log [NEEDS HUMAN] in BLOCKERS.md.
+
+═══════════════════════════════════════════════════════════════
+SECTION 4A: RE-OPEN TRANSITION (P3)
+═══════════════════════════════════════════════════════════════
+
+A session marked COMPLETED may be re-opened only with:
+
+• Explicit owner instruction
+• Timestamped entry in session file: "Re-opened: <reason>"
+• Reason must include: - What triggered the reopen (user request, self-review, cold-read
+finding, new discovery) - Why it couldn't wait for a fresh session - What's the delta from the "completed" state
+• Git check: git fetch && git log to detect divergence from last
+session's commit list
+
+Decision rule:
+• Re-open same session when: continuing the same objective, within
+same calendar day, no other agent has worked in between.
+• Start new session when: new objective, next day, or another agent's
+session is interleaved.
+
+After re-open, full shutdown must be re-executed when the session
+eventually closes.
+
+═══════════════════════════════════════════════════════════════
+SECTION 4B: STATE-FILE OWNERSHIP TABLE (P4)
+═══════════════════════════════════════════════════════════════
+
+Every event that occurs in a session triggers mandatory updates to
+specific state files. All triggered files must be updated in the same
+session that produced the event. Partial updates are failures.
+
+| Event                        | Files to update                                       |
+| ---------------------------- | ----------------------------------------------------- |
+| New ADR created              | docs/adr/, docs/adr/README.md, state/DECISIONS.md     |
+| Architecture change          | state/ARCHITECTURE.md                                 |
+| New dependency added/removed | state/DEBT.md, state/ARCHITECTURE.md                  |
+| New blocker discovered       | state/BLOCKERS.md                                     |
+| Technical debt introduced    | state/DEBT.md                                         |
+| Branch merged                | state/DASHBOARD.md, state/DEBT.md                     |
+| Session started              | state/REGISTRY.md, state/INDEX.md                     |
+| Session ended                | state/REGISTRY.md, state/INDEX.md, state/DASHBOARD.md |
+| Plan created                 | state/plans/                                          |
+| Plan completed               | state/plans/ (delete)                                 |
+| Conflict detected            | state/conflicts/                                      |
+| Protocol violation           | state/BLOCKERS.md, session file                       |
+
+This table is incomplete by design. When an event occurs that is not
+covered, add a row to this table as part of session shutdown.
+
+Event definition: an event is anything that would make an existing claim
+in a state file become false or incomplete.
+
 ═══════════════════════════════════════════════════════════════
 SECTION 5: CONFLICT HANDLING RULES
 ═══════════════════════════════════════════════════════════════
@@ -629,6 +744,9 @@ SECTION 6: ANTI-PATTERNS (NEVER DO THESE)
 ❌ Trusting a DASHBOARD.md that's >48h stale without verification
 ❌ Skipping tests because they're "probably fine"
 ❌ Making handoff notes assuming the next agent has your context
+❌ Marking a session COMPLETED without explicit owner instruction
+❌ Writing current-state claims without verification command/timestamp
+❌ Updating some but not all files triggered by an event (partial update)
 
 ═══════════════════════════════════════════════════════════════
 SECTION 7: BOOTSTRAP PROTOCOL (NO state/ EXISTS)
@@ -678,6 +796,15 @@ STEP 5 — Now Proceed to Normal Startup (Section 1)
 Treat the bootstrap as complete and proceed with your actual task.
 
 ═══════════════════════════════════════════════════════════════
+DEFERRED: P7
+═══════════════════════════════════════════════════════════════
+
+Machine-checked state drift detection is DEFERRED until P1–P6 have been
+exercised for a non-trivial period and the actual residual failures are
+known. Tooling that enforces undisciplined behavior produces
+compliant-looking rot. Revisit after 20+ sessions with P1–P6 in place.
+
+═══════════════════════════════════════════════════════════════
 REMEMBER
 ═══════════════════════════════════════════════════════════════
 
@@ -686,6 +813,8 @@ REMEMBER
 • When in doubt: document more, assume less.
 • A clean handoff is more valuable than a clever shortcut.
 • If you break the protocol, document why — don't hide it.
+• Every assertion needs a verifier, every state needs a transition,
+every file needs an owner.
 
 Acknowledge you have read and understood this protocol before
 beginning any task.
