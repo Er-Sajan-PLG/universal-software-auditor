@@ -1,6 +1,6 @@
 # REGISTRY.md — Agent Registry
 
-**Last updated:** 2026-10-01T16:30:00+05:45
+**Last updated:** 2026-10-01T17:45:00+05:45
 
 ---
 
@@ -13,7 +13,7 @@
 | Agent ID      | HX01                                 |
 | Model         | meituan/longcat-2.5-preview:free     |
 | Branch        | docs/0042-continuous-ingestion       |
-| Task          | Bootstrap MACP state/ directory      |
+| Task          | Bootstrap MACP + merge 5 branches    |
 | Started       | 2026-10-01T16:30:00+05:45            |
 | Status        | COMPLETED                            |
 | Files claimed | state/ (entire directory) — released |
@@ -39,3 +39,4 @@ None yet — this is the first session.
 | Session                                         | Agent | Branch                         | Status    |
 | ----------------------------------------------- | ----- | ------------------------------ | --------- |
 | `sessions/20261001-1630-HX01-bootstrap-macp.md` | HX01  | docs/0042-continuous-ingestion | COMPLETED |
+| `sessions/20261001-1745-HX01-merge-branches.md` | HX01  | docs/0042-continuous-ingestion | COMPLETED |

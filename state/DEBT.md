@@ -19,14 +19,14 @@
 
 ---
 
-### D2 — 10 unmerged feature/fix branches
+### D2 — 3 unmerged feature/fix branches (need rebase)
 
-| Field       | Value                                                                                                                                                                                                                                                                                              |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Severity    | Low                                                                                                                                                                                                                                                                                                |
-| Description | 10 local branches are 2-3 commits behind master. Most are stale feature branches that need rebase or closure.                                                                                                                                                                                      |
-| Branches    | `chore/autonomous-docs-system`, `feat/asvs-coverage-map`, `feat/auditor-mutation-probes`, `feat/evil-family`, `feat/invariant-checks`, `fix/asvs-check-prettier`, `fix/changeset-gate-release-pr`, `fix/npmrc-scope-publish`, `fix/reviews-hardening-batch`, `backup/reviews-hardening-pre-rebase` |
-| Status      | **Open** — need owner decision: rebase, merge, or delete                                                                                                                                                                                                                                           |
+| Field       | Value                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Severity    | Low                                                                                                                      |
+| Description | 3 local branches need rebase before merge. All conflict on src/engine/audit.ts, src/types.ts, examples/sample-report.md. |
+| Branches    | `feat/asvs-coverage-map`, `feat/invariant-checks`, `fix/reviews-hardening-batch`                                         |
+| Status      | **Open** — need rebase, then merge. Order: asvs-coverage-map → invariant-checks → reviews-hardening-batch                |
 
 ---
 
