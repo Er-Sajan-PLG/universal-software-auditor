@@ -8,15 +8,15 @@
 
 ### HERMES — Bootstrap Agent
 
-| Field         | Value                             |
-| ------------- | --------------------------------- |
-| Agent ID      | HX01                              |
-| Model         | meituan/longcat-2.5-preview:free  |
-| Branch        | docs/0042-continuous-ingestion    |
-| Task          | Bootstrap MACP + merge 5 branches |
-| Started       | 2026-10-01T16:30:00+05:45         |
-| Status        | IN-PROGRESS                       |
-| Files claimed | state/ (entire directory)         |
+| Field         | Value                                |
+| ------------- | ------------------------------------ |
+| Agent ID      | HX01                                 |
+| Model         | meituan/longcat-2.5-preview:free     |
+| Branch        | docs/0042-continuous-ingestion       |
+| Task          | Bootstrap MACP + merge 5 branches    |
+| Started       | 2026-10-01T16:30:00+05:45            |
+| Status        | COMPLETED                            |
+| Files claimed | state/ (entire directory) — released |
 
 ---
 
@@ -36,6 +36,6 @@ None yet — this is the first session.
 
 ## Session Files
 
-| Session                                         | Agent | Branch                         | Status      |
-| ----------------------------------------------- | ----- | ------------------------------ | ----------- |
-| `sessions/20261001-1630-HX01-bootstrap-macp.md` | HX01  | docs/0042-continuous-ingestion | IN-PROGRESS |
+| Session                                         | Agent | Branch                         | Status    |
+| ----------------------------------------------- | ----- | ------------------------------ | --------- |
+| `sessions/20261001-1630-HX01-bootstrap-macp.md` | HX01  | docs/0042-continuous-ingestion | COMPLETED |

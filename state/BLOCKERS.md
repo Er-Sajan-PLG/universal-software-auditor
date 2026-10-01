@@ -12,11 +12,11 @@
 
 ## Potential Blockers (watch list)
 
-| Item                                      | Type    | Notes                                                                      |
-| ----------------------------------------- | ------- | -------------------------------------------------------------------------- |
-| AGENTS.md is a protected agent file       | Consent | G3 fix (two-word edit) needs explicit owner consent                        |
-| 3 unmerged branches (need rebase)         | Hygiene | feat/asvs-coverage-map, feat/invariant-checks, fix/reviews-hardening-batch |
-| `.changeset/autonomous-docs-hardening.md` | Release | Pending changeset — will trigger Version Packages PR on next release       |
+| Item                                      | Type    | Notes                                                                   |
+| ----------------------------------------- | ------- | ----------------------------------------------------------------------- |
+| AGENTS.md is a protected agent file       | Consent | G3 fix (two-word edit) needs explicit owner consent                     |
+| All branches merged                       | Hygiene | No unmerged branches remain. Content in docs/0042-continuous-ingestion. |
+| `.changeset/autonomous-docs-hardening.md` | Release | Pending changeset — will trigger Version Packages PR on next release    |
 
 ---
 

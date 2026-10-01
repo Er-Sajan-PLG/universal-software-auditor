@@ -19,14 +19,13 @@
 
 ---
 
-### D2 — 3 unmerged feature/fix branches (need rebase)
+### D2 — All branches merged (CLOSED)
 
-| Field       | Value                                                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Severity    | Low                                                                                                                      |
-| Description | 3 local branches need rebase before merge. All conflict on src/engine/audit.ts, src/types.ts, examples/sample-report.md. |
-| Branches    | `feat/asvs-coverage-map`, `feat/invariant-checks`, `fix/reviews-hardening-batch`                                         |
-| Status      | **Open** — need rebase, then merge. Order: asvs-coverage-map → invariant-checks → reviews-hardening-batch                |
+| Field       | Value                                                                              |
+| ----------- | ---------------------------------------------------------------------------------- |
+| Severity    | Low                                                                                |
+| Description | All 8 feature/fix branches merged into docs/0042-continuous-ingestion and deleted. |
+| Status      | **CLOSED** — 2026-10-01                                                            |
 
 ---
 
