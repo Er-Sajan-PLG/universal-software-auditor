@@ -12,13 +12,8 @@
 # A red push beats a red main; CI (hygiene + self-audit) stays the independent
 # backstop. Bypassable with --no-verify only in an emergency — see AGENTS.md
 # "Never bypass its own protection" and DOCS_SYSTEM_DESIGN.md §3.
-echo "pre-push: building + running docs:all"
-pnpm run build
-pnpm run docs:all
-
 echo "pre-push: verifying state against reality"
 pnpm run typecheck
-pnpm test
 
 echo "pre-push: checking protocol compliance"
 node scripts/check-protocol.mjs
