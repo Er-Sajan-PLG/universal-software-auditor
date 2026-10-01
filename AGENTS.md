@@ -388,6 +388,7 @@ All coordination happens through a `state/` directory at the repo root:
 ```
 state/
 ├── DASHBOARD.md          # Executive summary — ALWAYS read first
+├── STARTUP.md            # Mandatory 9-step startup sequence (read first)
 ├── REGISTRY.md           # Who's actively working and what files they own
 ├── INDEX.md              # Searchable log of all past sessions
 ├── ARCHITECTURE.md       # Current system architecture (living document)
@@ -694,7 +695,7 @@ session that produced the event. Partial updates are failures.
 | New blocker discovered       | state/BLOCKERS.md                                                                |
 | Technical debt introduced    | state/DEBT.md                                                                    |
 | Branch merged                | state/DASHBOARD.md, state/DEBT.md                                                |
-| Session started              | state/REGISTRY.md, state/INDEX.md                                                |
+| Session started              | state/REGISTRY.md, state/INDEX.md, state/STARTUP.md (read)                       |
 | Session ended                | state/REGISTRY.md, state/INDEX.md, state/DASHBOARD.md (incl. Next Steps section) |
 | Plan created                 | state/plans/                                                                     |
 | Plan completed               | state/plans/ (delete)                                                            |

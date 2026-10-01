@@ -1,7 +1,11 @@
 # DASHBOARD.md — Executive Summary
 
-**Last Reconciled:** 2026-10-01T18:45:00+05:45
-**Reconciled by:** HERMES (HX01) — post-shutdown reconciliation
+> **⚠️ STOP — Read AGENTS.md before doing anything.**
+> The mandatory MACP startup sequence is in AGENTS.md.
+> Do not skip it. Do not summarize state without following it.
+
+**Last Reconciled:** 2026-10-01T20:14:40+05:45
+**Reconciled by:** HERMES (HX02) — post-shutdown reconciliation
 **Repo:** Universal_Software_Auditor
 **Remote:** git@github.com:Er-Sajan-PLG/universal-software-auditor.git
 
@@ -37,9 +41,7 @@ plus a GitHub composite action. The defining habit: **the tool audits itself**.
 
 ## Active Agents
 
-| Agent         | Model                            | Branch                         | Task                            | Started    | Status    |
-| ------------- | -------------------------------- | ------------------------------ | ------------------------------- | ---------- | --------- |
-| HERMES (HX01) | meituan/longcat-2.5-preview:free | docs/0042-continuous-ingestion | Bootstrap MACP + merge branches | 2026-10-01 | COMPLETED |
+None — no active sessions.
 
 See `state/REGISTRY.md` for details.
 
@@ -53,16 +55,16 @@ See `state/REGISTRY.md` for details.
 
 ## Recently Completed (last 10 commits)
 
-1. `d4d34ba` chore: integrate 5 conflict-free branches
-2. `e97f318` Merge branch 'fix/npmrc-scope-publish' into docs/0042-continuous-ingestion
-3. `1fc670b` Merge branch 'fix/changeset-gate-release-pr' into docs/0042-continuous-ingestion
-4. `7bf8d5c` Merge branch 'fix/asvs-check-prettier' into docs/0042-continuous-ingestion
-5. `97541dc` Merge branch 'feat/evil-family' into docs/0042-continuous-ingestion
-6. `aa558f8` Merge branch 'feat/auditor-mutation-probes' into docs/0042-continuous-ingestion
-7. `a5dff68` chore(state): bootstrap MACP protocol with repository audit
-8. `e9e14e9` docs(adr): resolve 0042 ADR collision with master (renumber to 0043)
-9. `78cfdb2` docs: attach SLSA provenance bundle for v2.26.0 (#173)
-10. `3d3c2e0` docs: autonomous documentation governance (ASVS + manifest gates, pre-push hook) (#172)
+1. `2648005` chore(state): shutdown session — all branches merged, state reconciled, P2 verified
+2. `051a9d4` docs: apply MACP amendments P1-P6 with refinements, defer P7
+3. `89b3770` chore(docs): resync sample report
+4. `426f3b2` chore(state): log invariant-checks rebase complete
+5. `8e91120` feat(invariants): multi-rule check kind over finding sets
+6. `860086a` chore(state): log rebase start
+7. `2dda365` chore(state): fix stale session summary to match IN-PROGRESS status
+8. `983c78a` chore(state): fix session status — session remains open until owner closes it
+9. `892a042` chore(state): reconcile after branch merge session
+10. `d4d34ba` chore: integrate 5 conflict-free branches
 
 ---
 
@@ -81,22 +83,23 @@ See `state/REGISTRY.md` for details.
 
 ## Key Files Map
 
-| Area         | Path                                                                       |
-| ------------ | -------------------------------------------------------------------------- |
-| CLI entry    | `src/cli.ts`                                                               |
-| Engine       | `src/engine/` (audit, evaluate, score, maturity, diff, loader)             |
-| Rules (data) | `rules/` (core/, stacks/, catalogues/, detectors.yaml, docs-taxonomy.yaml) |
-| Reports      | `src/report/` (markdown, json, sarif, html, narrative, signature)          |
-| Live/Agent   | `src/live/`, `src/agent/`                                                  |
-| Evolution    | `src/evolution/`                                                           |
-| Foundation   | `src/foundation/`                                                          |
-| Serve        | `src/serve/`                                                               |
-| Docs         | `docs/` (28 files), `docs/adr/` (43 ADRs + README)                         |
-| Scripts      | `scripts/` (13 .mjs files)                                                 |
-| Tests        | `tests/` (unit/, integration/, e2e/, contracts/)                           |
-| CI           | `.github/workflows/` (11 workflows)                                        |
-| Config       | `.usa.yaml`, `package.json`, `tsconfig.json`, `vitest.config.ts`           |
-| Provenance   | `provenance/` (v2.9.0 through v2.26.0)                                     |
+| Area         | Path                                                                                                       |
+| ------------ | ---------------------------------------------------------------------------------------------------------- |
+| CLI entry    | `src/cli.ts`                                                                                               |
+| Engine       | `src/engine/` (audit, evaluate, score, maturity, diff, loader)                                             |
+| Rules (data) | `rules/` (core/, stacks/, catalogues/, detectors.yaml, docs-taxonomy.yaml)                                 |
+| Reports      | `src/report/` (markdown, json, sarif, html, narrative, signature)                                          |
+| Live/Agent   | `src/live/`, `src/agent/`                                                                                  |
+| Evolution    | `src/evolution/`                                                                                           |
+| Foundation   | `src/foundation/`                                                                                          |
+| Serve        | `src/serve/`                                                                                               |
+| Docs         | `docs/` (28 files), `docs/adr/` (43 ADRs + README)                                                         |
+| Scripts      | `scripts/` (13 .mjs files)                                                                                 |
+| Tests        | `tests/` (unit/, integration/, e2e/, contracts/)                                                           |
+| CI           | `.github/workflows/` (11 workflows)                                                                        |
+| Config       | `.usa.yaml`, `package.json`, `tsconfig.json`, `vitest.config.ts`                                           |
+| Provenance   | `provenance/` (v2.9.0 through v2.26.0)                                                                     |
+| MACP state   | `state/` (DASHBOARD, STARTUP, REGISTRY, INDEX, ARCHITECTURE, DECISIONS, DEBT, BLOCKERS, sessions/, plans/) |
 
 ---
 
@@ -105,13 +108,13 @@ See `state/REGISTRY.md` for details.
 Every agent working in this repo MUST:
 
 1. **Start clean** — `git status`, `git branch -vva`, `git log --oneline -10`, `git stash list`
-2. **Read state/** — DASHBOARD.md first, then REGISTRY.md, BLOCKERS.md, INDEX.md
+2. **Read state/** — DASHBOARD.md first, then STARTUP.md, REGISTRY.md, BLOCKERS.md, INDEX.md
 3. **Register** — create `state/sessions/YYYYMMDD-HHMM-<AGENT-ID>-<slug>.md`
 4. **Plan** — create `state/plans/agent-<ID>-<slug>.md`
 5. **Work** — log progress in real-time in session file
 6. **End clean** — commit or stash all work, update DASHBOARD.md, update REGISTRY.md
 
-Full protocol in AGENTS.md.
+Full protocol in AGENTS.md. Quick reference in `state/STARTUP.md`.
 
 ---
 
