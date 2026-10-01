@@ -99,6 +99,12 @@ git log --oneline -10                    # 614530a HEAD
 
 ---
 
+### 23:40 — Commit
+
+`fe2b726` fix(ci): split protocol workflow into start (PR) and close (master push)
+
+---
+
 ## Outcome
 
 _(filled in at session close)_
