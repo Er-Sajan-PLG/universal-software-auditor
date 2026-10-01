@@ -686,20 +686,20 @@ Every event that occurs in a session triggers mandatory updates to
 specific state files. All triggered files must be updated in the same
 session that produced the event. Partial updates are failures.
 
-| Event                        | Files to update                                       |
-| ---------------------------- | ----------------------------------------------------- |
-| New ADR created              | docs/adr/, docs/adr/README.md, state/DECISIONS.md     |
-| Architecture change          | state/ARCHITECTURE.md                                 |
-| New dependency added/removed | state/DEBT.md, state/ARCHITECTURE.md                  |
-| New blocker discovered       | state/BLOCKERS.md                                     |
-| Technical debt introduced    | state/DEBT.md                                         |
-| Branch merged                | state/DASHBOARD.md, state/DEBT.md                     |
-| Session started              | state/REGISTRY.md, state/INDEX.md                     |
-| Session ended                | state/REGISTRY.md, state/INDEX.md, state/DASHBOARD.md |
-| Plan created                 | state/plans/                                          |
-| Plan completed               | state/plans/ (delete)                                 |
-| Conflict detected            | state/conflicts/                                      |
-| Protocol violation           | state/BLOCKERS.md, session file                       |
+| Event                        | Files to update                                                                  |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| New ADR created              | docs/adr/, docs/adr/README.md, state/DECISIONS.md                                |
+| Architecture change          | state/ARCHITECTURE.md                                                            |
+| New dependency added/removed | state/DEBT.md, state/ARCHITECTURE.md                                             |
+| New blocker discovered       | state/BLOCKERS.md                                                                |
+| Technical debt introduced    | state/DEBT.md                                                                    |
+| Branch merged                | state/DASHBOARD.md, state/DEBT.md                                                |
+| Session started              | state/REGISTRY.md, state/INDEX.md                                                |
+| Session ended                | state/REGISTRY.md, state/INDEX.md, state/DASHBOARD.md (incl. Next Steps section) |
+| Plan created                 | state/plans/                                                                     |
+| Plan completed               | state/plans/ (delete)                                                            |
+| Conflict detected            | state/conflicts/                                                                 |
+| Protocol violation           | state/BLOCKERS.md, session file                                                  |
 
 This table is incomplete by design. When an event occurs that is not
 covered, add a row to this table as part of session shutdown.

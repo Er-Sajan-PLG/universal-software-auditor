@@ -70,6 +70,13 @@ See `state/REGISTRY.md` for details.
 
 `.changeset/autonomous-docs-hardening.md` — unreleased changeset waiting for next release.
 
+## Next Steps (from last session)
+
+1. Push docs/0042-continuous-ingestion to origin
+2. Fix AGENTS.md G3 (two-word edit, needs owner consent)
+3. Release pending changeset
+4. Open PR to master when ready
+
 ---
 
 ## Key Files Map
