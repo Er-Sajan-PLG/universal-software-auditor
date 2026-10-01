@@ -200,22 +200,24 @@ function updateSessionFile() {
   console.log('  Session file updated');
 }
 
-// Run updates
-console.log('Auto-updating state files...');
-try {
-  updateDashboard();
-  updateRegistry();
-  updateIndex();
-  updateSessionFile();
-  console.log('State update complete.');
-} catch (e) {
-  console.error('State update failed:', e.message);
-  // Don't block the commit
-}
+// Guard against recursion: if we're already in the auto-update hook, skip everything
+if (process.env.USA_AUTO_UPDATE) {
+  console.log('Auto-update already in progress, skipping.');
+} else {
+  // Run updates
+  console.log('Auto-updating state files...');
+  try {
+    updateDashboard();
+    updateRegistry();
+    updateIndex();
+    updateSessionFile();
+    console.log('State update complete.');
+  } catch (e) {
+    console.error('State update failed:', e.message);
+    // Don't block the commit
+  }
 
-// Auto-commit state changes so the tree stays clean
-// Guard against recursion: if we're already in the auto-update hook, skip
-if (!process.env.USA_AUTO_UPDATE) {
+  // Auto-commit state changes so the tree stays clean
   try {
     const status = execSync('git status --porcelain', { cwd: root, encoding: 'utf-8' }).trim();
     if (status) {
