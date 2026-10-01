@@ -4,7 +4,7 @@
 > The mandatory MACP startup sequence is in AGENTS.md.
 > Do not skip it. Do not summarize state without following it.
 
-**Last Reconciled:** 2026-10-01T22:30:54.065+05:45
+**Last Reconciled:** 2026-10-01T22:37:12.207+05:45
 **Reconciled by:** auto-update (post-commit)
 **Repo:** Universal_Software_Auditor
 **Remote:** git@github.com:Er-Sajan-PLG/universal-software-auditor.git
@@ -55,16 +55,16 @@ See `state/REGISTRY.md` for details.
 
 ## Recently Completed (last 10 commits)
 
-1. `4df21bf docs(manifest): classify HX03 session file`
-2. `817e22a feat(macp): protocol enforcement — pre-push verification, post-commit auto-update, CI backstop`
-3. `2fe3535 docs(adr)+feat(watch): continuous ingestion loop and watch driver (#169)`
-4. `78cfdb2 docs: attach SLSA provenance bundle for v2.26.0 (#173)`
-5. `3d3c2e0 docs: autonomous documentation governance (ASVS + manifest gates, pre-push hook) (#172)`
-6. `b58eaa6 chore(master): release (#171)`
-7. `bdb49cd feat(docs): documentation universe audit — 14 categories, 220 artifacts (ADR-0042) (#170)`
-8. `509bfef fix(ci): keep top-level permissions read-only in every workflow (#167)`
-9. `4d9f029 docs: attach SLSA provenance bundle for v2.25.3 (#166)`
-10. `9781409 docs(agents): prove the diagnosis before writing the fix (#165)`
+1. `112cdd8 fix(state): auto-commit state changes in post-commit hook with recursion guard`
+2. `14adb17 fix(hooks): reduce pre-push to fast gates, CI handles full suite`
+3. `ca77fe5 chore(state): restore HX03 session file, update DASHBOARD and INDEX`
+4. `4df21bf docs(manifest): classify HX03 session file`
+5. `817e22a feat(macp): protocol enforcement — pre-push verification, post-commit auto-update, CI backstop`
+6. `2fe3535 docs(adr)+feat(watch): continuous ingestion loop and watch driver (#169)`
+7. `78cfdb2 docs: attach SLSA provenance bundle for v2.26.0 (#173)`
+8. `3d3c2e0 docs: autonomous documentation governance (ASVS + manifest gates, pre-push hook) (#172)`
+9. `b58eaa6 chore(master): release (#171)`
+10. `bdb49cd feat(docs): documentation universe audit — 14 categories, 220 artifacts (ADR-0042) (#170)`
 
 ---
 
