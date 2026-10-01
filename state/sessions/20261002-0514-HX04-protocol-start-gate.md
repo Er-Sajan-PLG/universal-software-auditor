@@ -87,6 +87,12 @@ git log --oneline -10                    # 614530a HEAD
   via reflog; reported to the owner at the time.
 - Started tool work before the owner finished speaking, twice.
 
+### 23:36 — Commit
+
+`abc2254` feat(macp): add start-of-session gate (ADR-0044)
+
+---
+
 ## Outcome
 
 _(filled in at session close)_
