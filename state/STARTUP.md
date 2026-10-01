@@ -139,6 +139,30 @@ Add `state/plans/agent-<YOUR-ID>-<slug>.md` with:
 
 ---
 
+## Session Close Checklist (MANDATORY)
+
+Before marking a session COMPLETED, verify ALL of the following:
+
+1. **Working tree clean** — `git status --porcelain` returns empty
+2. **All PRs merged** — `gh pr list --state open` returns nothing, OR all open PRs are not yet mergeable (CI red, conflicts, etc.)
+3. **Session file marked COMPLETED** — `**Status:** COMPLETED` in session file
+4. **REGISTRY.md has no active agents** — "None — no active sessions"
+5. **State files updated** — DASHBOARD.md reconciliation timestamp is current
+
+Run `node scripts/check-protocol.mjs` — it checks all of the above mechanically.
+If any check fails → fix it before closing the session.
+
+## Session Close is FINAL
+
+When the owner says "close the session", the session is CLOSED. Do NOT reopen it unless:
+
+- The owner explicitly says there is work to do, AND
+- The owner paraphrases or confirms they want the session reopened
+
+If the owner says "close the session" and then later says "continue" or "reopen", ASK for paraphrase before reopening. A closed session stays closed until the owner explicitly reopens it with clear intent.
+
+---
+
 ## Quick Reference: State File Map
 
 | File              | Purpose                          |

@@ -343,6 +343,27 @@ on criticals — a red USA audit blocks merge like any red test.
 - `docs/ARCHITECTURE.md` — the five stages, the fact system, severity
   dampening, and what USA deliberately does not do. Read it once.
 
+## Agent Communication Rules
+
+When asking the owner what to do next, the agent MUST present options.
+The session has full context of previous work (INDEX.md, DASHBOARD.md,
+session files) — use it to offer concrete choices, not open-ended questions.
+
+Example: "I can fix G3, release the changeset, or review the dependabot PRs. Which first?"
+
+Never ask "What would you like me to do?" without options.
+
+## Session Close is FINAL
+
+When the owner says "close the session", the session is CLOSED. Do NOT reopen it unless:
+
+- The owner explicitly says there is work to do, AND
+- The owner paraphrases or confirms they want the session reopened
+
+If the owner says "close the session" and then later says "continue" or "reopen", ASK for paraphrase before reopening. A closed session stays closed until the owner explicitly reopens it with clear intent.
+
+---
+
 ## Review culture
 
 A good review records a verdict **per change** with the reason and the

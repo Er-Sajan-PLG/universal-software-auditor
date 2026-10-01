@@ -75,11 +75,46 @@ function checkRegistry() {
   return { pass: true, detail: 'no active agents' };
 }
 
+function checkPRs() {
+  try {
+    const result = execSync(
+      'gh pr list --head master --state open --json number,title,mergeable,mergeStateStatus,statusCheckRollup',
+      { cwd: root, encoding: 'utf-8' },
+    );
+    const prs = JSON.parse(result);
+
+    if (prs.length === 0) return { pass: true, detail: 'no open PRs' };
+
+    const issues = [];
+    for (const pr of prs) {
+      if (pr.mergeable === 'MERGEABLE' && pr.mergeStateStatus === 'CLEAN') {
+        const ciGreen = pr.statusCheckRollup?.every(
+          (c) => c.conclusion === 'SUCCESS' || c.conclusion === 'SKIPPED',
+        );
+        if (ciGreen) {
+          issues.push(
+            `PR #${pr.number} is mergeable and CI green — must be merged before session close`,
+          );
+        }
+      }
+    }
+
+    if (issues.length > 0) {
+      return { pass: false, detail: issues.join('; ') };
+    }
+
+    return { pass: true, detail: 'no mergeable PRs pending' };
+  } catch {
+    return { pass: true, detail: 'could not check PRs (gh not available)' };
+  }
+}
+
 // Run checks
 const checks = [
   { name: 'Working tree clean', ...checkWorkingTreeClean() },
   { name: 'Session file COMPLETED', ...checkSessionFile() },
   { name: 'No active agents', ...checkRegistry() },
+  { name: 'No mergeable PRs pending', ...checkPRs() },
 ];
 
 console.log('Protocol enforcement check:');
