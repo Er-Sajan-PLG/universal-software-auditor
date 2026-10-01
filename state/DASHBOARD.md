@@ -109,10 +109,11 @@ Every agent working in this repo MUST:
 
 1. **Start clean** — `git status`, `git branch -vva`, `git log --oneline -10`, `git stash list`
 2. **Read state/** — DASHBOARD.md first, then STARTUP.md, REGISTRY.md, BLOCKERS.md, INDEX.md
-3. **Register** — create `state/sessions/YYYYMMDD-HHMM-<AGENT-ID>-<slug>.md`
-4. **Plan** — create `state/plans/agent-<ID>-<slug>.md`
-5. **Work** — log progress in real-time in session file
-6. **End clean** — commit or stash all work, update DASHBOARD.md, update REGISTRY.md
+3. **Verify** — check PR exists, CI green, tests pass, typecheck passes, spot-check claims
+4. **Register** — create `state/sessions/YYYYMMDD-HHMM-<AGENT-ID>-<slug>.md`
+5. **Plan** — create `state/plans/agent-<ID>-<slug>.md`
+6. **Work** — log progress in real-time in session file
+7. **End clean** — commit or stash all work, update DASHBOARD.md, update REGISTRY.md
 
 Full protocol in AGENTS.md. Quick reference in `state/STARTUP.md`.
 

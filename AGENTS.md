@@ -468,7 +468,17 @@ STEP 7 — Read ARCHITECTURE.md and DECISIONS.md (conditionally)
 • Only read DECISIONS.md if you're about to make a design choice
 (someone may have already decided it)
 
-STEP 8 — Register Yourself
+STEP 8 — VERIFY STATE AGAINST REALITY (MANDATORY)
+State files are claims, not facts. Before proceeding, verify:
+□ Run `gh pr list --head <current-branch> --state open` — does a PR already exist?
+□ Run `gh pr checks <pr-number>` — is CI green?
+□ Run `pnpm test` — do tests actually pass?
+□ Run `pnpm run typecheck` — does the code compile?
+□ Spot-check at least one claim from DASHBOARD.md against actual code
+□ If any verification fails → STOP. Document the discrepancy in your session file.
+Fix it, or escalate to the owner. Do NOT proceed on stale state.
+
+STEP 9 — Register Yourself
 Create your session file:
 state/sessions/YYYYMMDD-HHMM-<AGENT-ID>-<short-slug>.md
 
@@ -490,7 +500,7 @@ Add yourself to REGISTRY.md with:
 • Current UTC timestamp
 • Files/directories you claim ownership of
 
-STEP 9 — Create a Plan Entry
+STEP 10 — Create a Plan Entry
 Add state/plans/agent-<YOUR-ID>-<slug>.md with:
 • Objective
 • Scope (what's in and out)
@@ -499,7 +509,7 @@ Add state/plans/agent-<YOUR-ID>-<slug>.md with:
 • Rollback strategy
 • Success criteria
 
-Only after all 9 steps are complete may you begin actual work.
+Only after all 10 steps are complete may you begin actual work.
 
 ═══════════════════════════════════════════════════════════════
 SECTION 2: DURING WORK (LIVE LOGGING)

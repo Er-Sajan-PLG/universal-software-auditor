@@ -6,7 +6,7 @@ reading `state/`, even if they skip AGENTS.md.
 
 ---
 
-## The 9-Step Startup Sequence
+## The 10-Step Startup Sequence
 
 Before doing ANY work, execute these steps in order:
 
@@ -83,7 +83,19 @@ DO NOT read every session file — that wastes your context window.
 - Only read DECISIONS.md if you're about to make a design choice
   (someone may have already decided it)
 
-### STEP 8 — Register Yourself
+### STEP 8 — VERIFY STATE AGAINST REALITY (MANDATORY)
+
+State files are claims, not facts. Before proceeding, verify:
+
+- Run `gh pr list --head <current-branch> --state open` — does a PR already exist?
+- Run `gh pr checks <pr-number>` — is CI green?
+- Run `pnpm test` — do tests actually pass?
+- Run `pnpm run typecheck` — does the code compile?
+- Spot-check at least one claim from DASHBOARD.md against actual code
+- If any verification fails → STOP. Document the discrepancy in your session file.
+  Fix it, or escalate to the owner. Do NOT proceed on stale state.
+
+### STEP 9 — Register Yourself
 
 Create your session file:
 `state/sessions/YYYYMMDD-HHMM-<AGENT-ID>-<short-slug>.md`
@@ -110,7 +122,7 @@ Add yourself to REGISTRY.md with:
 - Current UTC timestamp
 - Files/directories you claim ownership of
 
-### STEP 9 — Create a Plan Entry
+### STEP 10 — Create a Plan Entry
 
 Add `state/plans/agent-<YOUR-ID>-<slug>.md` with:
 
@@ -123,23 +135,23 @@ Add `state/plans/agent-<YOUR-ID>-<slug>.md` with:
 
 ---
 
-**Only after all 9 steps are complete may you begin actual work.**
+**Only after all 10 steps are complete may you begin actual work.**
 
 ---
 
 ## Quick Reference: State File Map
 
-| File              | Purpose                         |
-| ----------------- | ------------------------------- |
-| `DASHBOARD.md`    | Executive summary — read first  |
-| `REGISTRY.md`     | Who's active and what they own  |
-| `INDEX.md`        | Searchable session log          |
-| `ARCHITECTURE.md` | System architecture             |
-| `DECISIONS.md`    | ADR index                       |
-| `DEBT.md`         | Technical debt tracker          |
-| `BLOCKERS.md`     | Active blockers                 |
-| `STARTUP.md`      | This file — the 9-step sequence |
-| `sessions/`       | One file per agent session      |
-| `plans/`          | Active plans                    |
-| `conflicts/`      | Documented conflicts            |
-| `archive/`        | Old sessions                    |
+| File              | Purpose                          |
+| ----------------- | -------------------------------- |
+| `DASHBOARD.md`    | Executive summary — read first   |
+| `REGISTRY.md`     | Who's active and what they own   |
+| `INDEX.md`        | Searchable session log           |
+| `ARCHITECTURE.md` | System architecture              |
+| `DECISIONS.md`    | ADR index                        |
+| `DEBT.md`         | Technical debt tracker           |
+| `BLOCKERS.md`     | Active blockers                  |
+| `STARTUP.md`      | This file — the 10-step sequence |
+| `sessions/`       | One file per agent session       |
+| `plans/`          | Active plans                     |
+| `conflicts/`      | Documented conflicts             |
+| `archive/`        | Old sessions                     |
